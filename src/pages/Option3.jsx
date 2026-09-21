@@ -26,6 +26,7 @@ function Option3() {
   const [pagesCount, setPagesCount] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
   
   const [printState, setPrintState] = useState({
     active: false,
@@ -151,8 +152,7 @@ function Option3() {
         </div>
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 py-10 px-4 md:px-10 text-white font-sans overflow-x-hidden relative">
-
+      {/* Print Modal - Placed outside relative wrappers to fix mobile fixed positioning */}
       <PrintModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -163,6 +163,26 @@ function Option3() {
         setPagesCount={setPagesCount}
       />
 
+      {/* Enlarge Preview Modal */}
+      {isPreviewExpanded && (
+        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col z-[60]">
+          <div className="flex justify-between items-center p-4 bg-slate-900 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">Full Size Preview</h2>
+            <button onClick={() => setIsPreviewExpanded(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-lg text-white transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto p-4 sm:p-10">
+            <div className="min-w-[700px] flex justify-center items-start pb-20">
+              <div className="bg-slate-200/90 p-4 sm:p-8 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/40">
+                <VoterSlipOption3 data={formData} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 py-10 px-4 md:px-10 text-white font-sans overflow-x-hidden relative">
       <div className="max-w-7xl mx-auto">
         <Link to="/" className="inline-flex items-center text-indigo-300 hover:text-white mb-8 font-medium transition-colors">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -203,7 +223,7 @@ function Option3() {
                   <input type="text" name="symbolName" value={formData.symbolName} onChange={handleChange} className="w-full rounded-xl bg-slate-800/50 border border-slate-600 text-white p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-slate-300">वार्ड न० (Ward No)</label>
                   <input type="text" name="wardNo" value={formData.wardNo} onChange={handleChange} className="w-full rounded-xl bg-slate-800/50 border border-slate-600 text-white p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" />
@@ -214,7 +234,7 @@ function Option3() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-slate-300">क्रम संख्या (Serial No)</label>
                   <input type="text" name="serialNo" value={formData.serialNo} onChange={handleChange} className="w-full rounded-xl bg-slate-800/50 border border-slate-600 text-white p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" />
@@ -235,7 +255,7 @@ function Option3() {
                 <input type="text" name="fatherHusbandName" value={formData.fatherHusbandName} onChange={handleChange} className="w-full rounded-xl bg-slate-800/50 border border-slate-600 text-white p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" />
               </div>
 
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-slate-300">मकान न० (House)</label>
                   <input type="text" name="houseNo" value={formData.houseNo} onChange={handleChange} className="w-full rounded-xl bg-slate-800/50 border border-slate-600 text-white p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" />
@@ -260,13 +280,25 @@ function Option3() {
           {/* Preview Section */}
           <div className="xl:w-[55%] flex flex-col items-center justify-start">
             <div className="w-full bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl flex flex-col items-center">
-              <h2 className="text-2xl font-semibold mb-6 text-white self-start flex items-center">
-                <svg className="w-6 h-6 mr-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                Live Preview
-              </h2>
+              <div className="w-full flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold text-white flex items-center">
+                  <svg className="w-6 h-6 mr-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                  Live Preview
+                </h2>
+                <button 
+                  onClick={() => setIsPreviewExpanded(true)}
+                  className="bg-white/10 hover:bg-white/20 text-indigo-200 p-2 rounded-xl transition-all flex items-center text-sm font-medium border border-white/10"
+                  title="Enlarge Preview"
+                >
+                  <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                  Enlarge
+                </button>
+              </div>
               
-              <div className="bg-slate-200/90 p-8 rounded-2xl w-full flex justify-center overflow-auto shadow-inner mb-8 border border-white/40">
-                <VoterSlipOption3 data={formData} ref={slipRef} />
+              <div className="bg-slate-200/90 p-4 md:p-8 rounded-2xl w-full flex justify-center overflow-auto shadow-inner mb-8 border border-white/40">
+                <div style={{ zoom: 'min(1, calc((100vw - 4rem) / 650))' }}>
+                  <VoterSlipOption3 data={formData} ref={slipRef} />
+                </div>
               </div>
 
               <button 
