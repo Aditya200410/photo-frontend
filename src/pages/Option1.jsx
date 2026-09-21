@@ -109,6 +109,23 @@ function Option1() {
       }
     }
 
+    try {
+      await fetch('http://localhost:5000/api/prints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          optionType: 'Option 1',
+          wardNo: formData.wardNo,
+          partNo: formData.partNo,
+          serialNo: formData.serialNo,
+          voterName: formData.voterName,
+          pagesCount: pagesCount
+        })
+      });
+    } catch (err) {
+      console.error('Failed to log print to backend:', err);
+    }
+
     pdf.save(`voter-list-${pagesCount}-pages.pdf`);
     
     // Cleanup
