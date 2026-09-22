@@ -6,8 +6,8 @@ function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Authentication states
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem('adminToken') || null);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
@@ -21,7 +21,18 @@ function Admin() {
   const fetchPrints = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/prints');
+      const response = await fetch('http://localhost:5000/api/prints', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.status === 401) {
+        setIsAuthenticated(false);
+        setToken(null);
+        localStorage.removeItem('adminToken');
+        setError('Session expired. Please login again.');
+        return;
+      }
       if (!response.ok) {
         throw new Error('Failed to fetch prints data');
       }
@@ -35,15 +46,30 @@ function Admin() {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (email === 'admin123' && password === 'admin123') {
-      setIsAuthenticated(true);
-      setAuthError('');
-    } else {
-      setAuthError('Invalid credentials');
+    setAuthError('');
+    try {
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setToken(data.token);
+        localStorage.setItem('adminToken', data.token);
+        setIsAuthenticated(true);
+      } else {
+        setAuthError(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setAuthError('Could not connect to the backend server.');
     }
   };
+
 
   if (!isAuthenticated) {
     return (
@@ -110,13 +136,26 @@ function Admin() {
           <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-400">
             Admin Dashboard
           </h1>
-          <button 
-            onClick={fetchPrints}
-            className="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-xl border border-white/20 transition-all flex items-center"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            Refresh
-          </button>
+          <div className="flex space-x-4">
+            <button 
+              onClick={fetchPrints}
+              className="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-xl border border-white/20 transition-all flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              Refresh
+            </button>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('adminToken');
+                setToken(null);
+                setIsAuthenticated(false);
+              }}
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-200 py-2 px-4 rounded-xl border border-red-500/30 transition-all flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+              Logout
+            </button>
+          </div>
         </div>
 
         {error && (
