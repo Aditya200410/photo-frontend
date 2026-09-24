@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import VoterSlip from '../components/VoterSlip';
@@ -7,6 +7,7 @@ import PrintModal from '../components/PrintModal';
 import A4PrintLayout from '../components/A4PrintLayout';
 
 function Option1() {
+  const location = useLocation();
   const [formData, setFormData] = useState({
     wardNo: '5',
     partNo: '1',
@@ -20,6 +21,12 @@ function Option1() {
     pollingStation: '28 - राजकीय उच्च माध्यमिक विद्यालय दायीं ओर का कमरा हाथीखेड़ा अजमेर',
     topImage: null
   });
+
+  useEffect(() => {
+    if (location.state && location.state.voterData) {
+      setFormData(prev => ({ ...prev, ...location.state.voterData }));
+    }
+  }, [location]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pagesCount, setPagesCount] = useState(1);

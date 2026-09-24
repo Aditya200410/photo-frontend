@@ -1,221 +1,45 @@
-import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function Admin() {
-  const [prints, setPrints] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [token, setToken] = useState(localStorage.getItem('adminToken') || null);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchPrints();
-    }
-  }, [isAuthenticated]);
-
-  const fetchPrints = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/prints', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        setToken(null);
-        localStorage.removeItem('adminToken');
-        setError('Session expired. Please login again.');
-        return;
-      }
-      if (!response.ok) {
-        throw new Error('Failed to fetch prints data');
-      }
-      const data = await response.json();
-      setPrints(data);
-    } catch (err) {
-      console.error(err);
-      setError('Could not connect to the backend server. Is it running?');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setAuthError('');
-    try {
-      const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setToken(data.token);
-        localStorage.setItem('adminToken', data.token);
-        setIsAuthenticated(true);
-      } else {
-        setAuthError(data.error || 'Invalid credentials');
-      }
-    } catch (err) {
-      setAuthError('Could not connect to the backend server.');
-    }
-  };
-
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold text-white mb-2">Admin Login</h2>
-            <p className="text-slate-300">Enter your credentials to access the dashboard</p>
-          </div>
-          
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter email"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter password"
-                required
-              />
-            </div>
-            
-            {authError && <p className="text-red-400 text-sm font-medium">{authError}</p>}
-            
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-indigo-600/30"
-            >
-              Sign In
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <Link to="/" className="text-indigo-300 hover:text-white text-sm font-medium transition-colors">
-              &larr; Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 py-10 px-4 md:px-10 text-white font-sans">
-      <div className="max-w-7xl mx-auto">
-        <Link to="/" className="inline-flex items-center text-indigo-300 hover:text-white mb-8 font-medium transition-colors">
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Back to Home
-        </Link>
-
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-400">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-10 md:p-16 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-gray-800 to-black"></div>
+        
+        <div className="text-center mb-12">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-gray-800 mx-auto mb-6 shadow-inner">
+            <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </div>
+          <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight mb-4">
             Admin Dashboard
           </h1>
-          <div className="flex space-x-4">
-            <button 
-              onClick={fetchPrints}
-              className="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-xl border border-white/20 transition-all flex items-center"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              Refresh
-            </button>
-            <button 
-              onClick={() => {
-                localStorage.removeItem('adminToken');
-                setToken(null);
-                setIsAuthenticated(false);
-              }}
-              className="bg-red-500/20 hover:bg-red-500/30 text-red-200 py-2 px-4 rounded-xl border border-red-500/30 transition-all flex items-center"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-              Logout
-            </button>
-          </div>
+          <p className="text-lg text-slate-500">
+            Manage your system data and view print records.
+          </p>
         </div>
 
-        {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-4 rounded-xl mb-8 flex items-center">
-            <svg className="w-6 h-6 mr-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            {error}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Link 
+            to="/admin/add-excel" 
+            className="group relative flex flex-col items-center p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 hover:-translate-y-2 transition-all duration-300"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Upload Excel Data</h2>
+            <p className="text-sm text-slate-500 text-center">Import voter data and booths via Excel sheet.</p>
+          </Link>
 
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 text-indigo-300">
-                  <th className="py-4 px-4 font-semibold text-sm">ID</th>
-                  <th className="py-4 px-4 font-semibold text-sm">Date & Time</th>
-                  <th className="py-4 px-4 font-semibold text-sm">Option Type</th>
-                  <th className="py-4 px-4 font-semibold text-sm">Voter Name</th>
-                  <th className="py-4 px-4 font-semibold text-sm">Ward / Part / Serial</th>
-                  <th className="py-4 px-4 font-semibold text-sm">Pages Printed</th>
-                  <th className="py-4 px-4 font-semibold text-sm text-right">Total Slips</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {loading ? (
-                  <tr>
-                    <td colSpan="7" className="py-10 text-center text-slate-400">Loading prints data...</td>
-                  </tr>
-                ) : prints.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="py-10 text-center text-slate-400">No print records found. Generate a PDF to see it here!</td>
-                  </tr>
-                ) : (
-                  prints.map((print) => (
-                    <tr key={print.id} className="hover:bg-white/5 transition-colors">
-                      <td className="py-4 px-4 text-slate-400">#{print.id}</td>
-                      <td className="py-4 px-4 text-slate-300 whitespace-nowrap">
-                        {new Date(print.timestamp).toLocaleString()}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="bg-indigo-500/20 text-indigo-300 py-1 px-3 rounded-full text-xs font-semibold border border-indigo-500/30">
-                          {print.option_type}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 font-medium text-white">{print.voter_name || 'N/A'}</td>
-                      <td className="py-4 px-4 text-slate-300">
-                        {print.ward_no || '-'} / {print.part_no || '-'} / {print.serial_no || '-'}
-                      </td>
-                      <td className="py-4 px-4 text-slate-300">
-                        {print.pages_count}
-                      </td>
-                      <td className="py-4 px-4 text-slate-300 font-bold text-right">
-                        {print.pages_count * 8}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Link 
+            to="/admin/print-data" 
+            className="group relative flex flex-col items-center p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-2 transition-all duration-300"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Print Records</h2>
+            <p className="text-sm text-slate-500 text-center">View and analyze the print history and generated PDFs.</p>
+          </Link>
         </div>
       </div>
     </div>
