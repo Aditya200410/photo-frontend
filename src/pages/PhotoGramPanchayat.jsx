@@ -4,6 +4,8 @@ import { State, City } from 'country-state-city';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import TemplateSelectorModal from '../components/TemplateSelectorModal';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 function PhotoGramPanchayat() {
   const navigate = useNavigate();
@@ -215,8 +217,10 @@ function PhotoGramPanchayat() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+      <div className="w-full max-w-2xl lg:max-w-6xl xl:max-w-7xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-violet-500 to-purple-500"></div>
         <div className="p-8 md:p-12">
           <div className="flex items-center justify-between mb-8">
@@ -230,7 +234,7 @@ function PhotoGramPanchayat() {
           </div>
 
           <form className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 block">State</label>
                 <div className="relative">
@@ -269,9 +273,7 @@ function PhotoGramPanchayat() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 block">Gram Panchayat</label>
                 <div className="relative">
@@ -307,9 +309,7 @@ function PhotoGramPanchayat() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 block">Ward Number</label>
                 <div className="relative">
@@ -347,12 +347,12 @@ function PhotoGramPanchayat() {
               </div>
             </div>
 
-            <div className="pt-6">
+            <div className="pt-2 lg:pt-4 flex justify-center lg:justify-end">
               <button 
                 type="button" 
                 onClick={fetchVoters}
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl px-6 py-4 font-bold shadow-lg shadow-violet-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
+                className="w-full lg:w-auto bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl px-10 py-4 font-bold shadow-lg shadow-violet-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {isLoading ? (
                   <span>Loading Data...</span>
@@ -448,12 +448,13 @@ function PhotoGramPanchayat() {
           </Link>
         </div>
       </div>
-
+      </div>
       <TemplateSelectorModal 
         isOpen={isTemplateModalOpen} 
         onClose={() => setIsTemplateModalOpen(false)} 
         onSelect={handleTemplateSelect} 
       />
+      <Footer />
     </div>
   );
 }

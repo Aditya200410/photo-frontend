@@ -1,47 +1,56 @@
 import { Link } from 'react-router-dom';
 import OptionCard from '../components/OptionCard';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 function Home() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900 text-white py-12 px-6 text-center relative">
-        <div className="absolute top-6 right-6">
-          <Link to="/admin" className="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-xl border border-white/20 transition-all font-medium text-sm flex items-center shadow-lg">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            Admin Panel
-          </Link>
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      <Navbar />
+
+      <header className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white py-20 px-6 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div className="inline-block bg-indigo-500/20 backdrop-blur-md border border-indigo-400/30 text-indigo-200 rounded-full px-4 py-1.5 text-sm font-semibold mb-6">
+            🖨️ High Quality Print Ready
+          </div>
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
+            Voter Slip <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Generator</span>
+          </h1>
+          <p className="text-lg text-indigo-200/80 max-w-2xl mx-auto">
+            Choose your preferred design layout to generate professional voter slips effortlessly. Select an option below to get started.
+          </p>
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-          Welcome to voter slip Generator
-        </h1>
       </header>
 
       {/* Main content - Options grid */}
-      <main className="max-w-7xl mx-auto px-6 py-16">
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-20 -mt-10 relative z-20 w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Link to="/option/1" className="block">
+          <Link to="/option/1" className="block transform transition-transform hover:-translate-y-2 hover:shadow-2xl rounded-2xl">
             <OptionCard
-              title="text with image"
+              title="Text with Image"
               image="/option1.jpg"
               onClick={() => { }}
             />
           </Link>
-          <Link to="/option/2" className="block">
+          <Link to="/option/2" className="block transform transition-transform hover:-translate-y-2 hover:shadow-2xl rounded-2xl">
             <OptionCard
-              title="only text"
+              title="Only Text"
               image="/option2.jpg"
               onClick={() => { }}
             />
           </Link>
-          <Link to="/option/3" className="block">
+          <Link to="/option/3" className="block transform transition-transform hover:-translate-y-2 hover:shadow-2xl rounded-2xl">
             <OptionCard
-              title="right side image"
+              title="Right Side Image"
               image="/option3.jpg"
               onClick={() => { }}
             />
           </Link>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

@@ -1,56 +1,118 @@
 import { Link } from 'react-router-dom';
-
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 function PhotoIndex() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-4xl bg-white/70 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80 p-10 md:p-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight mb-4">
-            Generate Directory
-          </h1>
-          <p className="text-lg text-slate-500">
-            Select the administrative region to create your specialized PDF directory.
-          </p>
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      <Navbar />
+
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-slate-900 text-white pt-24 pb-32 px-6 flex items-center min-h-[500px]">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img src="https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?q=80&w=2070&auto=format&fit=crop" alt="Elections" className="w-full h-full object-cover opacity-20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent"></div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link 
-            to="/photo/assembly" 
-            className="group relative flex flex-col items-center p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 hover:-translate-y-2 transition-all duration-300 overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+        
+        <div className="max-w-7xl mx-auto relative z-10 w-full flex flex-col md:flex-row items-center gap-12">
+          <div className="flex-1 max-w-2xl">
+            <div className="inline-block bg-blue-500/20 backdrop-blur-md border border-blue-400/30 text-blue-200 rounded-full px-4 py-1.5 text-sm font-semibold mb-6">
+              ✨ Seamless Electoral Management
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2 relative z-10">Assembly</h2>
-            <p className="text-sm text-slate-500 text-center relative z-10">Generate directory by booth number for assembly regions.</p>
-          </Link>
-
-          <Link 
-            to="/photo/nagar-nigam" 
-            className="group relative flex flex-col items-center p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-2 transition-all duration-300 overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+              Digitize Your <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">Voter Directories.</span>
+            </h1>
+            <p className="text-lg md:text-xl text-slate-300 mb-8 leading-relaxed">
+              Generate structured, printable PDF directories for Assembly, Nagar Nigam, and Gram Panchayat elections in seconds. A complete solution for administrative precision.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <a href="#directories" className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all">
+                Generate Directory
+              </a>
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2 relative z-10">Nagar Nigam</h2>
-            <p className="text-sm text-slate-500 text-center relative z-10">Filter by city, ward and booth for Nagar Palika regions.</p>
-          </Link>
-
-          <Link 
-            to="/photo/gram-panchayat" 
-            className="group relative flex flex-col items-center p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-violet-200 hover:-translate-y-2 transition-all duration-300 overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          
+          <div className="flex-1 hidden md:block">
+            {/* Decorative Element */}
+            <div className="relative w-full max-w-lg mx-auto">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-teal-400 rounded-2xl blur opacity-30"></div>
+              <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop" alt="Dashboard Preview" className="relative rounded-2xl border border-white/10 shadow-2xl object-cover h-[320px] w-full" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2 relative z-10">Gram Panchayat</h2>
-            <p className="text-sm text-slate-500 text-center relative z-10">Filter by village, ward and booth for Panchayat regions.</p>
-          </Link>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Main Options */}
+      <section id="directories" className="max-w-7xl mx-auto px-6 py-20 -mt-16 relative z-20 w-full">
+        <div className="bg-white/90 backdrop-blur-2xl rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12">
+          <div className="text-center mb-12 max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-800 tracking-tight">Select Region Type</h2>
+            <p className="text-slate-500 mt-4 text-lg">Choose the administrative level to begin filtering data and creating your localized PDF directory.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Link 
+              to="/photo/assembly" 
+              className="group flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 hover:-translate-y-2 transition-all duration-300 overflow-hidden"
+            >
+              <div className="h-48 overflow-hidden relative">
+                 <img src="https://images.unsplash.com/photo-1575517111478-7f6afd0973db?q=80&w=2070&auto=format&fit=crop" alt="Assembly" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                 <div className="absolute bottom-4 left-6 text-white">
+                    <h3 className="text-2xl font-bold">Assembly</h3>
+                 </div>
+              </div>
+              <div className="p-6">
+                <p className="text-slate-600 leading-relaxed mb-6">Generate directories mapped precisely to assembly constituencies and booths for large scale management.</p>
+                <div className="flex items-center text-blue-600 font-bold group-hover:gap-2 transition-all">
+                  Proceed <svg className="w-5 h-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </div>
+              </div>
+            </Link>
+
+            <Link 
+              to="/photo/nagar-nigam" 
+              className="group flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-2 transition-all duration-300 overflow-hidden"
+            >
+              <div className="h-48 overflow-hidden relative">
+                 <img src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop" alt="Nagar Nigam" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                 <div className="absolute bottom-4 left-6 text-white">
+                    <h3 className="text-2xl font-bold">Nagar Nigam</h3>
+                 </div>
+              </div>
+              <div className="p-6">
+                <p className="text-slate-600 leading-relaxed mb-6">Detailed urban directories structured by city municipalities, wards, and distinct neighborhood booths.</p>
+                <div className="flex items-center text-emerald-600 font-bold group-hover:gap-2 transition-all">
+                  Proceed <svg className="w-5 h-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </div>
+              </div>
+            </Link>
+
+            <Link 
+              to="/photo/gram-panchayat" 
+              className="group flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-violet-300 hover:-translate-y-2 transition-all duration-300 overflow-hidden"
+            >
+              <div className="h-48 overflow-hidden relative">
+                 <img src="https://images.unsplash.com/photo-1592659762303-90081d34b277?q=80&w=2073&auto=format&fit=crop" alt="Gram Panchayat" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                 <div className="absolute bottom-4 left-6 text-white">
+                    <h3 className="text-2xl font-bold">Gram Panchayat</h3>
+                 </div>
+              </div>
+              <div className="p-6">
+                <p className="text-slate-600 leading-relaxed mb-6">Village-level rural directories organized meticulously by local wards and community polling stations.</p>
+                <div className="flex items-center text-violet-600 font-bold group-hover:gap-2 transition-all">
+                  Proceed <svg className="w-5 h-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

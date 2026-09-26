@@ -4,6 +4,8 @@ import { State, City } from 'country-state-city';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import TemplateSelectorModal from '../components/TemplateSelectorModal';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 function PhotoNagarNigam() {
   const navigate = useNavigate();
@@ -201,8 +203,10 @@ function PhotoNagarNigam() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+      <div className="w-full max-w-2xl lg:max-w-6xl xl:max-w-7xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
         <div className="p-8 md:p-12">
           <div className="flex items-center justify-between mb-8">
@@ -216,7 +220,7 @@ function PhotoNagarNigam() {
           </div>
 
           <form className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 block">State</label>
                 <div className="relative">
@@ -255,27 +259,25 @@ function PhotoNagarNigam() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 block">City</label>
-              <div className="relative">
-                <select 
-                  value={cityName}
-                  onChange={handleCityChange}
-                  disabled={!selectedDistrict || availableCities.length === 0}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">{availableCities.length === 0 && selectedDistrict ? 'No City Data Uploaded' : 'Select City'}</option>
-                  {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 block">City</label>
+                <div className="relative">
+                  <select 
+                    value={cityName}
+                    onChange={handleCityChange}
+                    disabled={!selectedDistrict || availableCities.length === 0}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{availableCities.length === 0 && selectedDistrict ? 'No City Data Uploaded' : 'Select City'}</option>
+                    {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 block">Ward Number</label>
                 <div className="relative">
@@ -313,12 +315,12 @@ function PhotoNagarNigam() {
               </div>
             </div>
 
-            <div className="pt-6">
+            <div className="pt-2 lg:pt-4 flex justify-center lg:justify-end">
               <button 
                 type="button"
                 onClick={fetchVoters}
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl px-6 py-4 font-bold shadow-lg shadow-emerald-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
+                className="w-full lg:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl px-10 py-4 font-bold shadow-lg shadow-emerald-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {isLoading ? (
                   <span>Loading Data...</span>
@@ -410,18 +412,19 @@ function PhotoNagarNigam() {
         </div>
         
         <div className="bg-slate-50 px-8 py-5 border-t border-slate-100">
-          <Link to="/photo" className="text-emerald-600 font-medium hover:text-emerald-800 flex items-center gap-2 transition-colors duration-200 w-fit">
+          <Link to="/" className="text-emerald-600 font-medium hover:text-emerald-800 flex items-center gap-2 transition-colors duration-200 w-fit">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Back to Options
           </Link>
         </div>
       </div>
-
+      </div>
       <TemplateSelectorModal 
         isOpen={isTemplateModalOpen} 
         onClose={() => setIsTemplateModalOpen(false)} 
         onSelect={handleTemplateSelect} 
       />
+      <Footer />
     </div>
   );
 }

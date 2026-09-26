@@ -16,11 +16,19 @@ import PhotoIndex from './pages/PhotoIndex';
 import PhotoAssembly from './pages/PhotoAssembly';
 import PhotoNagarNigam from './pages/PhotoNagarNigam';
 import PhotoGramPanchayat from './pages/PhotoGramPanchayat';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import ContactSupport from './pages/ContactSupport';
+import FloatingButtons from './components/FloatingButtons';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
+    <>
+      <ScrollToTop />
+      <FloatingButtons />
+      <Routes>
+      <Route path="/" element={<PhotoIndex />} />
       <Route path="/option/1" element={<Option1 />} />
       <Route path="/option/2" element={<Option2 />} />
       <Route path="/option/3" element={<Option3 />} />
@@ -33,11 +41,15 @@ function App() {
       <Route path="/admin/print-data/assembly" element={<AdminPrintDataAssembly />} />
       <Route path="/admin/print-data/nagar-nigam" element={<AdminPrintDataNagarNigam />} />
       <Route path="/admin/print-data/panchayat" element={<AdminPrintDataPanchayat />} />
-      <Route path="/photo" element={<PhotoIndex />} />
+      <Route path="/photo" element={<Home />} />
       <Route path="/photo/assembly" element={<PhotoAssembly />} />
       <Route path="/photo/nagar-nigam" element={<PhotoNagarNigam />} />
       <Route path="/photo/gram-panchayat" element={<PhotoGramPanchayat />} />
-    </Routes>
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/contact-support" element={<ContactSupport />} />
+      </Routes>
+    </>
   );
 }
 
