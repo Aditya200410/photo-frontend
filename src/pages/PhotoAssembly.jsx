@@ -285,7 +285,7 @@ function PhotoAssembly() {
               </div>
             </div>
 
-            <div className="pt-2 lg:pt-4 flex justify-center lg:justify-end">
+            <div className="pt-2 lg:pt-4 flex justify-center lg:justify-end gap-4 flex-wrap"> 
               <button 
                 type="button" 
                 onClick={fetchVoters}
@@ -300,6 +300,49 @@ function PhotoAssembly() {
                     Fetch Voter Data
                   </>
                 )}
+              </button>
+              
+              <button 
+                type="button" 
+                onClick={async () => {
+                  setIsLoading(true);
+                  setError(null);
+                  try {
+                    const XLSX = await import('xlsx');
+                    const response = await fetch('/AJMER.xlsx');
+                    if (!response.ok) throw new Error('Failed to load AJMER.xlsx');
+                    const arrayBuffer = await response.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    const mappedData = rawData.map(row => ({
+                      ...row,
+                      VID: row.VID || row.IDCARD || '-',
+                      ID: row.ID || row.SRNO || '-',
+                      EFVNAME: row.EFVNAME || row.V_FNAME_EN || '-',
+                      FVNAME: row.FVNAME || row.V_FNAME_HI || '-',
+                      EFRNAME: row.EFRNAME || row.VR_FNAME_EN || '-',
+                      FRNAME: row.FRNAME || row.VR_FNAME_HI || '-',
+                      MAGE: row.MAGE || row.FAGE || row.AGE || '-',
+                      MSEX: row.MSEX || row.FGENDER || row.SEX || '-',
+                      MHOUSENO: row.MHOUSENO || row.FHOUSENO || row.HOUSE_NO || '-'
+                    }));
+                    setVoters(mappedData || []);
+                    setDisplayedVoters((mappedData || []).slice(0, itemsPerPage));
+                    setPageCount(1);
+                    if (mappedData.length === 0) setError('No voters found in test data');
+                    setAssemblyName('AJMER TEST');
+                    setBoothNumber('001');
+                  } catch (err) {
+                    console.error(err);
+                    setError('Failed to load local test data: ' + err.message);
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                disabled={isLoading}
+                className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-10 py-4 font-bold shadow-lg shadow-emerald-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                Load Local Test Data
               </button>
             </div>
           </form>

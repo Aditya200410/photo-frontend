@@ -1,7 +1,51 @@
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useState } from 'react';
+import * as XLSX from 'xlsx';
+
 function PhotoIndex() {
+  const [loadingTest, setLoadingTest] = useState(false);
+  const [testResults, setTestResults] = useState(null);
+
+  const loadTestData = async () => {
+    setLoadingTest(true);
+    setTestResults(null);
+    try {
+      const filesToLoad = [
+        { name: 'AJMER', url: '/AJMER.xlsx' },
+        { name: 'FinalDetails_ENGLISH', url: '/FinalDetailsofVoter_ENGLISH.xlsx' },
+        { name: 'Ward_33', url: '/Ward_33.xlsx' }
+      ];
+
+      const results = {};
+
+      for (const file of filesToLoad) {
+        const response = await fetch(file.url);
+        if (!response.ok) {
+          throw new Error(`Failed to load ${file.name}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        results[file.name] = {
+          rowCount: jsonData.length,
+          preview: jsonData.slice(0, 3) // preview first 3 rows
+        };
+      }
+      
+      setTestResults(results);
+    } catch (error) {
+      console.error("Error loading test data:", error);
+      alert("Error loading test data: " + error.message);
+    } finally {
+      setLoadingTest(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
       <Navbar />
@@ -46,6 +90,31 @@ function PhotoIndex() {
       {/* Main Options */}
       <section id="directories" className="max-w-7xl mx-auto px-6 py-20 -mt-16 relative z-20 w-full">
         <div className="bg-white/90 backdrop-blur-2xl rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12">
+          
+          <div className="text-center mb-8 max-w-2xl mx-auto">
+            <button 
+              onClick={loadTestData} 
+              disabled={loadingTest}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all disabled:opacity-50 mb-6"
+            >
+              {loadingTest ? 'Loading Test Data...' : 'Load Test Data'}
+            </button>
+            {testResults && (
+              <div className="bg-slate-100 p-6 rounded-2xl text-left shadow-inner overflow-auto max-h-96">
+                <h3 className="text-2xl font-bold text-slate-800 mb-4">Test Data Loaded</h3>
+                {Object.entries(testResults).map(([filename, data]) => (
+                  <div key={filename} className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h4 className="text-lg font-bold text-blue-700">{filename}</h4>
+                    <p className="text-slate-600 font-medium mb-2">Total Rows: {data.rowCount}</p>
+                    <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg overflow-x-auto whitespace-pre">
+                      {JSON.stringify(data.preview, null, 2)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="text-center mb-12 max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-800 tracking-tight">Select Region Type</h2>
             <p className="text-slate-500 mt-4 text-lg">Choose the administrative level to begin filtering data and creating your localized PDF directory.</p>

@@ -17,7 +17,6 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-8">
           <Link to="/" className={`text-sm font-semibold transition-colors ${isHome ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}>Home</Link>
           <Link to="/photo" className={`text-sm font-semibold transition-colors ${location.pathname.includes('/photo') && location.pathname !== '/' ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}>Voter Slips</Link>
-          <Link to="/help-center" className={`text-sm font-semibold transition-colors ${location.pathname === '/help-center' ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}>Help Center</Link>
           <Link to="/contact-support" className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 hover:shadow-lg transition-all hover:-translate-y-0.5">Contact Us</Link>
         </div>
         {/* Mobile menu button could go here */}
