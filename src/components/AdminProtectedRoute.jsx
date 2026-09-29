@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import bcrypt from 'bcryptjs';
 
 const AdminProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -10,14 +9,14 @@ const AdminProtectedRoute = ({ children }) => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    const hash = import.meta.env.VITE_ADMIN_PASSWORD_HASH;
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
     
-    if (!hash) {
-      setError('Admin password hash not configured in environment.');
+    if (!adminPassword) {
+      setError('Admin password not configured in environment.');
       return;
     }
 
-    if (bcrypt.compareSync(password, hash)) {
+    if (password === adminPassword) {
       sessionStorage.setItem('isAdmin', 'true');
       setIsAuthenticated(true);
       setError('');
