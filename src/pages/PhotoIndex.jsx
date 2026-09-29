@@ -1,18 +1,33 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import PhotoAssembly from './PhotoAssembly';
 import PhotoNagarNigam from './PhotoNagarNigam';
 import PhotoGramPanchayat from './PhotoGramPanchayat';
 
 function PhotoIndex() {
-  const [activeComponent, setActiveComponent] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeComponent, setActiveComponent] = useState(searchParams.get('view') || null);
   const componentRef = useRef(null);
+
+  // Sync state with URL params if they change
+  useEffect(() => {
+    const view = searchParams.get('view');
+    if (view && view !== activeComponent) {
+      setActiveComponent(view);
+      setTimeout(() => {
+        if (componentRef.current) {
+          componentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [searchParams]);
 
   const handleSelectComponent = (comp) => {
     setActiveComponent(comp);
+    setSearchParams({ view: comp });
     setTimeout(() => {
       if (componentRef.current) {
         componentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -96,9 +111,9 @@ function PhotoIndex() {
 
       {/* Render selected component */}
       <div ref={componentRef} className="w-full flex-1">
-        {activeComponent === 'assembly' && <PhotoAssembly onBack={() => setActiveComponent(null)} />}
-        {activeComponent === 'nagar-nigam' && <PhotoNagarNigam onBack={() => setActiveComponent(null)} />}
-        {activeComponent === 'gram-panchayat' && <PhotoGramPanchayat onBack={() => setActiveComponent(null)} />}
+        {activeComponent === 'assembly' && <PhotoAssembly onBack={() => { setActiveComponent(null); setSearchParams({}); }} />}
+        {activeComponent === 'nagar-nigam' && <PhotoNagarNigam onBack={() => { setActiveComponent(null); setSearchParams({}); }} />}
+        {activeComponent === 'gram-panchayat' && <PhotoGramPanchayat onBack={() => { setActiveComponent(null); setSearchParams({}); }} />}
       </div>
 
       {/* Hero Section */}

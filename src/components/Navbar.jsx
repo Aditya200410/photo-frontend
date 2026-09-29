@@ -7,6 +7,19 @@ const Navbar = () => {
   const [lang, setLang] = useState('en');
 
   useEffect(() => {
+    // Check if there's already a cookie explicitly for hindi
+    const isHi = document.cookie.includes('googtrans=/en/hi');
+    
+    if (isHi) {
+      setLang('hi');
+    } else {
+      // Force clear any unwanted googtrans cookies (like /auto/hi) to prevent random auto-translation
+      const domain = window.location.hostname;
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`;
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain}`;
+    }
+
     // Add Google Translate script if it doesn't exist
     if (!document.getElementById('google-translate-script')) {
       const addScript = document.createElement('script');
@@ -20,37 +33,37 @@ const Navbar = () => {
             { 
               pageLanguage: 'en', 
               includedLanguages: 'en,hi', // Only English and Hindi
-              layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE 
+              layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+              autoDisplay: false
             },
             'google_translate_element'
           );
         }
       };
     }
-    
-    // Check if there's already a cookie for hindi
-    if (document.cookie.includes('googtrans=/en/hi')) {
-      setLang('hi');
-    }
   }, []);
 
   const changeLanguage = (targetLang) => {
     if (targetLang === lang) return;
     
+    const domain = window.location.hostname;
+    
     if (targetLang === 'en') {
-      // To reliably revert from Google Translate, clear cookies and reload
-      const domain = window.location.hostname;
+      // Clear cookies to revert from Google Translate
       document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`;
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain}`;
       document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-      window.location.reload();
+      document.cookie = `googtrans=/en/en; path=/; domain=${domain}`;
+      document.cookie = `googtrans=/en/en; path=/;`;
     } else {
-      const selectField = document.querySelector('.goog-te-combo');
-      if (selectField) {
-        selectField.value = targetLang;
-        selectField.dispatchEvent(new Event('change'));
-        setLang(targetLang);
-      }
+      // Set cookie to automatically translate to target language on load
+      document.cookie = `googtrans=/en/${targetLang}; path=/;`;
+      document.cookie = `googtrans=/en/${targetLang}; path=/; domain=${domain}`;
+      document.cookie = `googtrans=/en/${targetLang}; path=/; domain=.${domain}`;
     }
+    
+    // Reloading is the most reliable way to force Google Translate to apply/remove the language
+    window.location.reload();
   };
 
   return (
@@ -64,20 +77,21 @@ const Navbar = () => {
         </Link>
         
         <div className="flex items-center gap-4 md:gap-6 ml-auto">
-          {/* Custom Language Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-            <button 
-              onClick={() => changeLanguage('en')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${lang === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          {/* Custom Language Dropdown */}
+          <div className="relative group">
+            <select
+              value={lang}
+              onChange={(e) => changeLanguage(e.target.value)}
+              className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 cursor-pointer shadow-sm group-hover:shadow"
             >
-              EN
-            </button>
-            <button 
-              onClick={() => changeLanguage('hi')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${lang === 'hi' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              HI
-            </button>
+              <option value="en">English (EN)</option>
+              <option value="hi">हिंदी (HI)</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 group-hover:text-blue-500 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
           </div>
 
           {/* Hidden Google Translate Widget */}

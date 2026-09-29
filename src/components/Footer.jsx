@@ -16,13 +16,13 @@ const Footer = () => {
             Empowering electoral bodies with seamless data management, slip generation, and directory structuring across all administrative levels.
           </p>
         </div>
-        
+
         <div className="col-span-1 md:col-span-3 lg:col-span-4 lg:justify-self-center">
           <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Services</h4>
           <ul className="space-y-3 text-sm text-slate-400">
-            <li><Link to="/photo/assembly" className="hover:text-blue-400 transition-colors">Assembly Directories</Link></li>
-            <li><Link to="/photo/nagar-nigam" className="hover:text-emerald-400 transition-colors">Nagar Nigam Directories</Link></li>
-            <li><Link to="/photo/gram-panchayat" className="hover:text-violet-400 transition-colors">Panchayat Directories</Link></li>
+            <li><Link to="/?view=assembly" className="hover:text-blue-400 transition-colors">Assembly Directories</Link></li>
+            <li><Link to="/?view=nagar-nigam" className="hover:text-emerald-400 transition-colors">Nagar Nigam Directories</Link></li>
+            <li><Link to="/?view=gram-panchayat" className="hover:text-violet-400 transition-colors">Panchayat Directories</Link></li>
             <li><Link to="/photo" className="hover:text-white transition-colors">Print Voter Slips</Link></li>
           </ul>
         </div>
@@ -36,7 +36,7 @@ const Footer = () => {
           </ul>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-12 mt-12 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
         <div>
           &copy; {new Date().getFullYear()} Voter Directory System. All rights reserved.
@@ -44,7 +44,6 @@ const Footer = () => {
         <div className="flex gap-6">
           <a href="#" className="hover:text-white transition-colors">Twitter</a>
           <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
-          <a href="#" className="hover:text-white transition-colors">GitHub</a>
         </div>
       </div>
     </footer>

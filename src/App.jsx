@@ -45,9 +45,6 @@ function App() {
         <Route path="print-data/panchayat" element={<AdminPrintDataPanchayat />} />
       </Route>
       <Route path="/photo" element={<Home />} />
-      <Route path="/photo/assembly" element={<PhotoAssembly />} />
-      <Route path="/photo/nagar-nigam" element={<PhotoNagarNigam />} />
-      <Route path="/photo/gram-panchayat" element={<PhotoGramPanchayat />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/contact-support" element={<ContactSupport />} />
