@@ -1,13 +1,7 @@
 import React, { forwardRef } from 'react';
 import VoterSlip from './VoterSlip';
 
-const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSerialNo, SlipComponent = VoterSlip }, ref) => {
-  // We need 8 slips for one A4 page
-  const slips = Array.from({ length: 8 }, (_, i) => ({
-    ...baseData,
-    serialNo: baseData.serialNo
-  }));
-
+const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, SlipComponent = VoterSlip, headerData }, ref) => {
   return (
     <div 
       ref={ref}
@@ -15,7 +9,7 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         width: '1240px',
         height: '1754px',
         backgroundColor: '#ffffff',
-        padding: '15px 10px', // Reduced top/bottom padding to maximize vertical space
+        padding: '15px 10px',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column'
@@ -28,31 +22,31 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         alignItems: 'center',
         paddingBottom: '5px',
         borderBottom: '2px solid black',
-        marginBottom: '10px', // Reduced margin
+        marginBottom: '10px',
         marginLeft: '10px',
         marginRight: '10px',
         fontSize: '22px',
         fontWeight: 'bold',
         fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
       }}>
-        <span>अजमेर नगर निगम</span>
-        <span>वार्ड न०: {baseData.wardNo}</span>
-        <span>भाग न०: {baseData.partNo}</span>
+        <span>{headerData.title || 'अजमेर नगर निगम'}</span>
+        <span>वार्ड न०: {headerData.wardNo}</span>
+        <span>भाग न०: {headerData.partNo}</span>
         <span>Page {pageNumber} of {totalPages}</span>
       </div>
 
-      {/* Grid of 8 slips (2 columns, 4 rows) */}
+      {/* Grid of up to 8 slips */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gridTemplateRows: 'repeat(4, 1fr)', // Force 4 even rows
-        gap: '8px 20px', // Minimized vertical gap
+        gridTemplateRows: 'repeat(4, 1fr)',
+        gap: '8px 20px',
         justifyItems: 'center',
-        alignItems: 'center', // Center vertically within the forced row height
+        alignItems: 'center',
         flex: 1,
         minHeight: 0
       }}>
-        {slips.map((slipData, index) => (
+        {slipsData.map((slipData, index) => (
           <div key={index}>
             <SlipComponent data={slipData} />
           </div>
@@ -62,4 +56,4 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
   );
 });
 
-export default A4PrintLayout;
+export default BatchA4PrintLayout;

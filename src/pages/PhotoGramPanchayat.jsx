@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import TemplateSelectorModal from '../components/TemplateSelectorModal';
 import SlipPrintManager from '../components/SlipPrintManager';
+import BatchSlipPrintManager from '../components/BatchSlipPrintManager';
 
 function PhotoGramPanchayat({ onBack }) {
   const [states, setStates] = useState([]);
@@ -93,6 +94,7 @@ function PhotoGramPanchayat({ onBack }) {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isBatchPrintModalOpen, setIsBatchPrintModalOpen] = useState(false);
   const [selectedOptionTemplate, setSelectedOptionTemplate] = useState(1);
   const [mappedVoterData, setMappedVoterData] = useState({});
 
@@ -128,52 +130,7 @@ function PhotoGramPanchayat({ onBack }) {
 
   const generatePDF = async () => {
     if (voters.length === 0) return;
-    setIsGenerating(true);
-
-    // Yield to the main thread so React can render the "Generating..." button state
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    try {
-      const doc = new jsPDF();
-      doc.text(`Voters Directory - Panchayat: ${panchayatName}, Ward: ${wardNumber}, Booth: ${boothNumber}`, 14, 15);
-
-      const tableData = voters.map(v => [
-        v.IDCARD || '-',
-        v.V_FNAME_EN || '-',
-        v.VR_FNAME_EN || '-',
-        `${v.AGE || '-'} Y / ${v.SEX === 'M' || v.SEX === 'पुरुष' ? 'Male' : (v.SEX === 'F' || v.SEX === 'स्त्री' ? 'Female' : v.SEX)}`,
-        v.HOUSE_NO || '-'
-      ]);
-
-      autoTable(doc, {
-        startY: 20,
-        head: [['ID Card', 'Name', 'Relation', 'Age/Sex', 'House No']],
-        body: tableData,
-      });
-
-      const pages = doc.internal.getNumberOfPages();
-      doc.save(`Panchayat_Ward_${wardNumber}_Booth_${boothNumber}_Directory.pdf`);
-
-      await fetch('http://localhost:5000/api/prints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          optionType: 'Gram Panchayat',
-          wardNo: wardNumber,
-          partNo: boothNumber,
-          serialNo: 'ALL',
-          voterName: 'Batch Directory',
-          pagesCount: pages
-        })
-      });
-
-      alert('PDF Generated and logged successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Error generating PDF.');
-    } finally {
-      setIsGenerating(false);
-    }
+    setIsBatchPrintModalOpen(true);
   };
 
   const fetchVoters = async () => {
@@ -506,6 +463,14 @@ function PhotoGramPanchayat({ onBack }) {
         onClose={() => setIsPrintModalOpen(false)}
         optionNumber={selectedOptionTemplate}
         voterData={mappedVoterData}
+      />
+      <BatchSlipPrintManager
+        isOpen={isBatchPrintModalOpen}
+        onClose={() => setIsBatchPrintModalOpen(false)}
+        voters={voters}
+        assemblyName={panchayatName}
+        wardNo={wardNumber}
+        boothNumber={boothNumber}
       />
     </>
   );

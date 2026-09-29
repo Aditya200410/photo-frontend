@@ -43,7 +43,7 @@ const Footer = () => {
         </div>
         <div className="flex gap-6">
           <a href="#" className="hover:text-white transition-colors">Twitter</a>
-          <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
+          <a href="#" className="hover:text-white transition-colors">Instagram</a>
         </div>
       </div>
     </footer>

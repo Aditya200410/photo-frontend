@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import TemplateSelectorModal from '../components/TemplateSelectorModal';
 import SlipPrintManager from '../components/SlipPrintManager';
+import BatchSlipPrintManager from '../components/BatchSlipPrintManager';
 
 function PhotoNagarNigam({ onBack }) {
   const [states, setStates] = useState([]);
@@ -80,6 +81,7 @@ function PhotoNagarNigam({ onBack }) {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isBatchPrintModalOpen, setIsBatchPrintModalOpen] = useState(false);
   const [selectedOptionTemplate, setSelectedOptionTemplate] = useState(1);
   const [mappedVoterData, setMappedVoterData] = useState({});
 
@@ -115,52 +117,7 @@ function PhotoNagarNigam({ onBack }) {
 
   const generatePDF = async () => {
     if (voters.length === 0) return;
-    setIsGenerating(true);
-
-    // Yield to the main thread so React can render the "Generating..." button state
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    try {
-      const doc = new jsPDF();
-      doc.text(`Voters Directory - Nagar Nigam: ${cityName}, Ward: ${wardNumber}, Booth: ${boothNumber}`, 14, 15);
-
-      const tableData = voters.map(v => [
-        v.SRNO || v.VID || '-',
-        v.EFVNAME || '-',
-        v.EFRNAME || '-',
-        `${v.FAGE || '-'} Y / ${v.FGENDER === 'M' || v.FGENDER === 'पुरुष' ? 'Male' : (v.FGENDER === 'F' || v.FGENDER === 'स्त्री' ? 'Female' : v.FGENDER)}`,
-        v.FHOUSENO || '-'
-      ]);
-
-      autoTable(doc, {
-        startY: 20,
-        head: [['SRNO/VID', 'Name', 'Relation', 'Age/Sex', 'House No']],
-        body: tableData,
-      });
-
-      const pages = doc.internal.getNumberOfPages();
-      doc.save(`NagarNigam_Ward_${wardNumber}_Booth_${boothNumber}_Directory.pdf`);
-
-      await fetch('http://localhost:5000/api/prints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          optionType: 'Nagar Nigam',
-          wardNo: wardNumber,
-          partNo: boothNumber,
-          serialNo: 'ALL',
-          voterName: 'Batch Directory',
-          pagesCount: pages
-        })
-      });
-
-      alert('PDF Generated and logged successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Error generating PDF.');
-    } finally {
-      setIsGenerating(false);
-    }
+    setIsBatchPrintModalOpen(true);
   };
 
   const fetchVoters = async () => {
@@ -472,6 +429,14 @@ function PhotoNagarNigam({ onBack }) {
         onClose={() => setIsPrintModalOpen(false)}
         optionNumber={selectedOptionTemplate}
         voterData={mappedVoterData}
+      />
+      <BatchSlipPrintManager
+        isOpen={isBatchPrintModalOpen}
+        onClose={() => setIsBatchPrintModalOpen(false)}
+        voters={voters}
+        assemblyName={cityName}
+        wardNo={wardNumber}
+        boothNumber={boothNumber}
       />
     </>
   );

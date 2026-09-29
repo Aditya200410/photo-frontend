@@ -11,6 +11,11 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [printState, setPrintState] = useState({ active: false, currentPage: 1 });
+  const [localVoterData, setLocalVoterData] = useState(voterData);
+  
+  React.useEffect(() => {
+    setLocalVoterData(voterData);
+  }, [voterData]);
   
   const printLayoutRef = useRef(null);
   
@@ -83,7 +88,7 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
         {printState.active && (
           <A4PrintLayout 
             ref={printLayoutRef}
-            baseData={voterData}
+            baseData={localVoterData}
             pageNumber={printState.currentPage}
             totalPages={pagesCount}
             startSerialNo={parseInt(voterData.serialNo || 1) + ((printState.currentPage - 1) * 8)}
@@ -100,6 +105,9 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
         progress={progress}
         pagesCount={pagesCount}
         setPagesCount={setPagesCount}
+        optionNumber={optionNumber}
+        voterData={localVoterData}
+        setVoterData={setLocalVoterData}
       />
     </>
   );

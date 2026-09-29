@@ -1,6 +1,6 @@
 import React from 'react';
 
-function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pagesCount, setPagesCount }) {
+function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pagesCount, setPagesCount, optionNumber, voterData, setVoterData }) {
   if (!isOpen) return null;
 
   return (
@@ -21,6 +21,35 @@ function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pages
           </div>
         ) : (
           <div className="space-y-6">
+            {optionNumber === 1 && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Poster Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setVoterData({ ...voterData, topImage: event.target.result });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="block w-full text-sm text-slate-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-indigo-50 file:text-indigo-700
+                    hover:file:bg-indigo-100 mb-4"
+                />
+                {voterData?.topImage && (
+                  <img src={voterData.topImage} alt="Preview" className="w-full h-32 object-contain border border-slate-200 rounded-lg mb-4 bg-slate-50" />
+                )}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages (8 slips per page)</label>
               <input
