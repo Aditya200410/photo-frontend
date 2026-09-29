@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Outlet } from 'react-router-dom';
 import Home from './pages/Home';
 import Option1 from './pages/Option1';
 import Option2 from './pages/Option2';
@@ -21,6 +21,7 @@ import TermsOfService from './pages/TermsOfService';
 import ContactSupport from './pages/ContactSupport';
 import FloatingButtons from './components/FloatingButtons';
 import ScrollToTop from './components/ScrollToTop';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 function App() {
   return (
@@ -32,15 +33,17 @@ function App() {
       <Route path="/option/1" element={<Option1 />} />
       <Route path="/option/2" element={<Option2 />} />
       <Route path="/option/3" element={<Option3 />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/admin/add-excel" element={<AdminAddExcel />} />
-      <Route path="/admin/add-excel/assembly" element={<AdminAddExcelAssembly />} />
-      <Route path="/admin/add-excel/nagar-nigam" element={<AdminAddExcelNagarNigam />} />
-      <Route path="/admin/add-excel/panchayat" element={<AdminAddExcelPanchayat />} />
-      <Route path="/admin/print-data" element={<AdminPrintData />} />
-      <Route path="/admin/print-data/assembly" element={<AdminPrintDataAssembly />} />
-      <Route path="/admin/print-data/nagar-nigam" element={<AdminPrintDataNagarNigam />} />
-      <Route path="/admin/print-data/panchayat" element={<AdminPrintDataPanchayat />} />
+      <Route path="/admin" element={<AdminProtectedRoute><Outlet /></AdminProtectedRoute>}>
+        <Route index element={<Admin />} />
+        <Route path="add-excel" element={<AdminAddExcel />} />
+        <Route path="add-excel/assembly" element={<AdminAddExcelAssembly />} />
+        <Route path="add-excel/nagar-nigam" element={<AdminAddExcelNagarNigam />} />
+        <Route path="add-excel/panchayat" element={<AdminAddExcelPanchayat />} />
+        <Route path="print-data" element={<AdminPrintData />} />
+        <Route path="print-data/assembly" element={<AdminPrintDataAssembly />} />
+        <Route path="print-data/nagar-nigam" element={<AdminPrintDataNagarNigam />} />
+        <Route path="print-data/panchayat" element={<AdminPrintDataPanchayat />} />
+      </Route>
       <Route path="/photo" element={<Home />} />
       <Route path="/photo/assembly" element={<PhotoAssembly />} />
       <Route path="/photo/nagar-nigam" element={<PhotoNagarNigam />} />
