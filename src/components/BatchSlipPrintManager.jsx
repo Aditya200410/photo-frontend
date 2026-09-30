@@ -106,7 +106,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
   return (
     <>
-      <div style={{ position: 'absolute', top: 0, left: 0, zIndex: -10, width: '1240px', height: '1754px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -10, width: '1240px', height: '1754px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
         {printState.active && (
           <BatchA4PrintLayout 
             ref={printLayoutRef}
@@ -123,9 +123,9 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         )}
       </div>
 
-      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Batch Generating PDF</h2>
+      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6">
+        <div className="bg-white rounded-3xl p-5 sm:p-8 w-full max-w-md shadow-2xl">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-5 sm:mb-6">Batch Generating PDF</h2>
           
           {isGenerating ? (
             <div className="space-y-6">
@@ -164,16 +164,16 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 ) : null}
               </div>
 
-              <div className="flex justify-end space-x-4 mt-8">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8">
                 <button
                   onClick={onClose}
-                  className="px-6 py-2 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="w-full sm:w-auto px-6 py-3 sm:py-2 rounded-xl font-semibold text-slate-600 bg-slate-100 sm:bg-transparent hover:bg-slate-200 sm:hover:bg-slate-100 transition-colors text-center"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handlePrintGenerate}
-                  className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-6 py-3 sm:py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-center"
                   disabled={!pagesCount || pagesCount < 1}
                 >
                   Start Print

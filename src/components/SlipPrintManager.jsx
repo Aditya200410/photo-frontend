@@ -84,7 +84,7 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: 0, left: 0, zIndex: -10, width: '1240px', height: '1754px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -10, width: '1240px', height: '1754px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
         {printState.active && (
           <A4PrintLayout 
             ref={printLayoutRef}
