@@ -4,9 +4,9 @@ function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pages
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-slate-800 mb-6">Print Voter Slips</h2>
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6">
+      <div className="bg-white rounded-3xl p-5 sm:p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-5 sm:mb-6">Print Voter Slips</h2>
 
         {isGenerating ? (
           <div className="space-y-6">
@@ -75,10 +75,10 @@ function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pages
               ) : null}
             </div>
 
-            <div className="flex justify-end space-x-4 mt-8">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8">
               <button
                 onClick={onClose}
-                className="px-6 py-2 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                className="w-full sm:w-auto px-6 py-3 sm:py-2 rounded-xl font-semibold text-slate-600 bg-slate-100 sm:bg-transparent hover:bg-slate-200 sm:hover:bg-slate-100 transition-colors text-center"
               >
                 Cancel
               </button>
@@ -90,7 +90,7 @@ function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pages
                     alert('Please enter a valid number of pages (minimum 1).');
                   }
                 }}
-                className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-6 py-3 sm:py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-center"
                 disabled={!pagesCount || pagesCount < 1}
               >
                 Start Print
