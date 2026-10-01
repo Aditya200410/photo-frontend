@@ -291,49 +291,6 @@ function PhotoNagarNigam({ onBack }) {
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setIsLoading(true);
-                    setError(null);
-                    try {
-                      const XLSX = await import('xlsx');
-                      const response = await fetch('/Ward_33.xlsx');
-                      if (!response.ok) throw new Error('Failed to load Ward_33.xlsx');
-                      const arrayBuffer = await response.arrayBuffer();
-                      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                      const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                      const mappedData = rawData.map(row => ({
-                        ...row,
-                        VID: row.VID || row.IDCARD || '-',
-                        SRNO: row.SRNO || row.ID || '-',
-                        EFVNAME: row.EFVNAME || row.V_FNAME_EN || '-',
-                        FVNAME: row.FVNAME || row.V_FNAME_HI || '-',
-                        EFRNAME: row.EFRNAME || row.VR_FNAME_EN || '-',
-                        FRNAME: row.FRNAME || row.VR_FNAME_HI || '-',
-                        FAGE: row.FAGE || row.MAGE || row.AGE || '-',
-                        FGENDER: row.FGENDER || row.MSEX || row.SEX || '-',
-                        FHOUSENO: row.FHOUSENO || row.MHOUSENO || row.HOUSE_NO || '-'
-                      }));
-                      setVoters(mappedData || []);
-                      setDisplayedVoters((mappedData || []).slice(0, itemsPerPage));
-                      setPageCount(1);
-                      if (mappedData.length === 0) setError('No voters found in test data');
-                      setCityName('TEST CITY');
-                      setWardNumber('33');
-                      setBoothNumber('001');
-                    } catch (err) {
-                      console.error(err);
-                      setError('Failed to load local test data: ' + err.message);
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="w-full lg:w-auto bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-10 py-4 font-bold shadow-lg shadow-blue-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  Load Local Test Data
-                </button>
               </div>
             </form>
 

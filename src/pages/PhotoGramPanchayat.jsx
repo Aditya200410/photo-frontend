@@ -323,53 +323,6 @@ function PhotoGramPanchayat({ onBack }) {
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setIsLoading(true);
-                    setError(null);
-                    try {
-                      const XLSX = await import('xlsx');
-                      const response = await fetch('/FinalDetailsofVoter_ENGLISH.xlsx');
-                      if (!response.ok) throw new Error('Failed to load FinalDetailsofVoter_ENGLISH.xlsx');
-                      const arrayBuffer = await response.arrayBuffer();
-                      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                      const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                      const mappedData = rawData.map(row => ({
-                        ...row,
-                        IDCARD: row.IDCARD || row.VID || '-',
-                        V_FNAME_EN: row.V_FNAME_EN || row.EFVNAME || '-',
-                        V_LNAME_EN: row.V_LNAME_EN || '',
-                        V_FNAME_HI: row.V_FNAME_HI || row.FVNAME || '-',
-                        V_LNAME_HI: row.V_LNAME_HI || '',
-                        VR_FNAME_EN: row.VR_FNAME_EN || row.EFRNAME || '-',
-                        VR_LNAME_EN: row.VR_LNAME_EN || '',
-                        VR_FNAME_HI: row.VR_FNAME_HI || row.FRNAME || '-',
-                        VR_LNAME_HI: row.VR_LNAME_HI || '',
-                        AGE: row.AGE || row.MAGE || row.FAGE || '-',
-                        SEX: row.SEX || row.MSEX || row.FGENDER || '-',
-                        HOUSE_NO: row.HOUSE_NO || row.MHOUSENO || row.FHOUSENO || '-'
-                      }));
-                      setVoters(mappedData || []);
-                      setDisplayedVoters((mappedData || []).slice(0, itemsPerPage));
-                      setPageCount(1);
-                      if (mappedData.length === 0) setError('No voters found in test data');
-                      setPanchayatName('TEST PANCHAYAT');
-                      setVillageName('TEST VILLAGE');
-                      setWardNumber('1');
-                      setBoothNumber('001');
-                    } catch (err) {
-                      console.error(err);
-                      setError('Failed to load local test data: ' + err.message);
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="w-full lg:w-auto bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-10 py-4 font-bold shadow-lg shadow-blue-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  Load Local Test Data
-                </button>
               </div>
             </form>
 
