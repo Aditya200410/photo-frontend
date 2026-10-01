@@ -20,7 +20,7 @@ function AdminAddExcelPanchayat() {
 
   const fetchFiles = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/excel-files/panchayat');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/panchayat`);
       const data = await res.json();
       setFiles(data);
     } catch (err) {
@@ -72,7 +72,7 @@ function AdminAddExcelPanchayat() {
     formData.append('booth', boothNumber);
 
     try {
-      const res = await fetch('http://localhost:5000/api/upload-excel', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-excel`, {
         method: 'POST',
         body: formData,
       });
@@ -201,7 +201,7 @@ function AdminAddExcelPanchayat() {
                 <div className="flex items-center gap-3 mt-4 md:mt-0">
                   <span className="bg-violet-100 text-violet-700 text-xs px-3 py-1 rounded-full font-bold hidden xl:inline-block">Panchayat</span>
                   <a 
-                    href={`http://localhost:5000/api/uploads/${file.fileName}`}
+                    href={`${import.meta.env.VITE_API_URL}/api/uploads/${file.fileName}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-sm font-semibold text-violet-600 hover:text-violet-800 px-3 py-1.5 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors"
@@ -209,7 +209,7 @@ function AdminAddExcelPanchayat() {
                     Open
                   </a>
                   <a 
-                    href={`http://localhost:5000/api/download/${file.fileName}`}
+                    href={`${import.meta.env.VITE_API_URL}/api/download/${file.fileName}`}
                     className="text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>

@@ -30,7 +30,7 @@ function PhotoGramPanchayat({ onBack }) {
 
   useEffect(() => {
     setStates(State.getStatesOfCountry('IN'));
-    fetch('http://localhost:5000/api/excel-files/panchayat')
+    fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/panchayat`)
       .then(res => res.json())
       .then(data => setAvailableFiles(data))
       .catch(err => console.error(err));
@@ -142,7 +142,7 @@ function PhotoGramPanchayat({ onBack }) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL('http://localhost:5000/api/voters');
+      const url = new URL(`${import.meta.env.VITE_API_URL}/api/voters`);
       url.searchParams.append('category', 'panchayat');
       url.searchParams.append('state', selectedState);
       url.searchParams.append('district', selectedDistrict);

@@ -18,7 +18,7 @@ function AdminAddExcelAssembly() {
 
   const fetchFiles = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/excel-files/assembly');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/assembly`);
       const data = await res.json();
       setFiles(data);
     } catch (err) {
@@ -68,7 +68,7 @@ function AdminAddExcelAssembly() {
     formData.append('booth', boothNumber);
 
     try {
-      const res = await fetch('http://localhost:5000/api/upload-excel', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-excel`, {
         method: 'POST',
         body: formData,
       });
@@ -187,7 +187,7 @@ function AdminAddExcelAssembly() {
                 <div className="flex items-center gap-3 mt-4 md:mt-0">
                   <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-bold hidden xl:inline-block">Assembly</span>
                   <a 
-                    href={`http://localhost:5000/api/uploads/${file.fileName}`}
+                    href={`${import.meta.env.VITE_API_URL}/api/uploads/${file.fileName}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-sm font-semibold text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
@@ -195,7 +195,7 @@ function AdminAddExcelAssembly() {
                     Open
                   </a>
                   <a 
-                    href={`http://localhost:5000/api/download/${file.fileName}`}
+                    href={`${import.meta.env.VITE_API_URL}/api/download/${file.fileName}`}
                     className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>

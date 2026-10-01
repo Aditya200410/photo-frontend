@@ -29,7 +29,7 @@ function PhotoNagarNigam({ onBack }) {
 
   useEffect(() => {
     setStates(State.getStatesOfCountry('IN'));
-    fetch('http://localhost:5000/api/excel-files/nagar-nigam')
+    fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/nagar-nigam`)
       .then(res => res.json())
       .then(data => setAvailableFiles(data))
       .catch(err => console.error(err));
@@ -129,7 +129,7 @@ function PhotoNagarNigam({ onBack }) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL('http://localhost:5000/api/voters');
+      const url = new URL(`${import.meta.env.VITE_API_URL}/api/voters`);
       url.searchParams.append('category', 'nagar-nigam');
       url.searchParams.append('state', selectedState);
       url.searchParams.append('district', selectedDistrict);

@@ -35,7 +35,7 @@ function PhotoAssembly({ onBack }) {
 
   useEffect(() => {
     setStates(State.getStatesOfCountry('IN'));
-    fetch('http://localhost:5000/api/excel-files/assembly')
+    fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/assembly`)
       .then(res => res.json())
       .then(data => setAvailableFiles(data))
       .catch(err => console.error(err));
@@ -118,7 +118,7 @@ function PhotoAssembly({ onBack }) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL('http://localhost:5000/api/voters');
+      const url = new URL(`${import.meta.env.VITE_API_URL}/api/voters`);
       url.searchParams.append('category', 'assembly');
       url.searchParams.append('state', selectedState);
       url.searchParams.append('district', selectedDistrict);
