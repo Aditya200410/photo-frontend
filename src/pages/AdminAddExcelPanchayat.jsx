@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { State, City } from 'country-state-city';
+import FileEditModal from '../components/FileEditModal';
 
 function AdminAddExcelPanchayat() {
   const [files, setFiles] = useState([]);
@@ -8,6 +9,8 @@ function AdminAddExcelPanchayat() {
   const [fileName, setFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const [editingFile, setEditingFile] = useState(null);
 
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -198,8 +201,14 @@ function AdminAddExcelPanchayat() {
                   </div>
                   <p className="text-xs text-slate-500 mt-2">Uploaded at: {new Date(file.timestamp).toLocaleString()}</p>
                 </div>
-                <div className="flex items-center gap-3 mt-4 md:mt-0">
+                <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
                   <span className="bg-violet-100 text-violet-700 text-xs px-3 py-1 rounded-full font-bold hidden xl:inline-block">Panchayat</span>
+                  <button 
+                    onClick={() => setEditingFile(file)}
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    Edit
+                  </button>
                   <a 
                     href={`${import.meta.env.VITE_API_URL}/api/uploads/${file.fileName}`}
                     target="_blank"
@@ -222,6 +231,13 @@ function AdminAddExcelPanchayat() {
         )}
       </div>
       
+      <FileEditModal 
+        isOpen={!!editingFile} 
+        file={editingFile} 
+        onClose={() => setEditingFile(null)} 
+        onSave={() => { fetchFiles(); setEditingFile(null); }} 
+      />
+
       <Link to="/admin/add-excel" className="text-violet-600 font-medium hover:text-violet-800 flex items-center gap-2 transition-colors duration-200">
         &larr; Back to Upload Options
       </Link>
