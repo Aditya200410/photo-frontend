@@ -7,8 +7,6 @@ import SlipPrintManager from '../components/SlipPrintManager';
 import BatchSlipPrintManager from '../components/BatchSlipPrintManager';
 
 function PhotoGramPanchayat({ onBack }) {
-  const [states, setStates] = useState([]);
-  const [districts, setDistricts] = useState([]);
   const [selectedState, setSelectedState] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
 
@@ -29,7 +27,6 @@ function PhotoGramPanchayat({ onBack }) {
   const [availableFiles, setAvailableFiles] = useState([]);
 
   useEffect(() => {
-    setStates(State.getStatesOfCountry('IN'));
     fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/panchayat`)
       .then(res => res.json())
       .then(data => setAvailableFiles(data))
@@ -39,11 +36,6 @@ function PhotoGramPanchayat({ onBack }) {
   const handleStateChange = (e) => {
     const stateCode = e.target.value;
     setSelectedState(stateCode);
-    if (stateCode) {
-      setDistricts(City.getCitiesOfState('IN', stateCode));
-    } else {
-      setDistricts([]);
-    }
     setSelectedDistrict('');
     setPanchayatName('');
     setVillageName('');
@@ -78,7 +70,13 @@ function PhotoGramPanchayat({ onBack }) {
   };
 
   // Compute available options based on selections
-  const validFiles = availableFiles.filter(f => f.state === selectedState && f.district === selectedDistrict);
+  const availableStateCodes = [...new Set(availableFiles.map(f => f.state).filter(Boolean))];
+  const availableStates = State.getStatesOfCountry('IN').filter(s => availableStateCodes.includes(s.isoCode));
+
+  const stateFiles = availableFiles.filter(f => f.state === selectedState);
+  const availableDistricts = [...new Set(stateFiles.map(f => f.district).filter(Boolean))];
+
+  const validFiles = stateFiles.filter(f => f.district === selectedDistrict);
   const availablePanchayats = [...new Set(validFiles.map(f => f.panchayat).filter(Boolean))];
 
   const villageFiles = validFiles.filter(f => f.panchayat === panchayatName);
@@ -204,8 +202,8 @@ function PhotoGramPanchayat({ onBack }) {
                       onChange={handleStateChange}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer"
                     >
-                      <option value="">Select State</option>
-                      {states.map(state => (
+                      <option value="">{availableStates.length === 0 ? 'No State Data Uploaded' : 'Select State'}</option>
+                      {availableStates.map(state => (
                         <option key={state.isoCode} value={state.isoCode}>{state.name}</option>
                       ))}
                     </select>
@@ -221,12 +219,12 @@ function PhotoGramPanchayat({ onBack }) {
                     <select
                       value={selectedDistrict}
                       onChange={handleDistrictChange}
-                      disabled={!selectedState}
+                      disabled={!selectedState || availableDistricts.length === 0}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">Select District</option>
-                      {districts.map(district => (
-                        <option key={district.name} value={district.name}>{district.name}</option>
+                      <option value="">{availableDistricts.length === 0 && selectedState ? 'No District Data Uploaded' : 'Select District'}</option>
+                      {availableDistricts.map(district => (
+                        <option key={district} value={district}>{district}</option>
                       ))}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
