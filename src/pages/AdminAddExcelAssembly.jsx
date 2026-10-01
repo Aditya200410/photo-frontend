@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { State, City } from 'country-state-city';
 import FileEditModal from '../components/FileEditModal';
 
 function AdminAddExcelAssembly() {
@@ -12,12 +11,7 @@ function AdminAddExcelAssembly() {
   
   const [editingFile, setEditingFile] = useState(null);
 
-  const [states, setStates] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [assemblyName, setAssemblyName] = useState('');
-  const [boothNumber, setBoothNumber] = useState('');
+
 
   const fetchFiles = async () => {
     try {
@@ -31,19 +25,7 @@ function AdminAddExcelAssembly() {
 
   useEffect(() => {
     fetchFiles();
-    setStates(State.getStatesOfCountry('IN'));
   }, []);
-
-  const handleStateChange = (e) => {
-    const stateCode = e.target.value;
-    setSelectedState(stateCode);
-    if (stateCode) {
-      setDistricts(City.getCitiesOfState('IN', stateCode));
-    } else {
-      setDistricts([]);
-    }
-    setSelectedDistrict('');
-  };
 
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -64,11 +46,7 @@ function AdminAddExcelAssembly() {
     formData.append('fileName', fileName);
     formData.append('category', 'assembly');
     
-    // Add location metadata
-    formData.append('state', selectedState);
-    formData.append('district', selectedDistrict);
-    formData.append('assembly', assemblyName);
-    formData.append('booth', boothNumber);
+
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-excel`, {
@@ -104,30 +82,7 @@ function AdminAddExcelAssembly() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="text-sm font-semibold text-slate-700 block mb-1">State</label>
-              <select value={selectedState} onChange={handleStateChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-700 focus:outline-none focus:border-blue-500">
-                <option value="">Select State</option>
-                {states.map(state => <option key={state.isoCode} value={state.isoCode}>{state.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-slate-700 block mb-1">District</label>
-              <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={!selectedState} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-700 focus:outline-none focus:border-blue-500 disabled:opacity-50">
-                <option value="">Select District</option>
-                {districts.map(district => <option key={district.name} value={district.name}>{district.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-slate-700 block mb-1">Assembly Name</label>
-              <input type="text" value={assemblyName} onChange={(e) => setAssemblyName(e.target.value)} placeholder="e.g. Ajmer North" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-700 focus:outline-none focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-slate-700 block mb-1">Booth Number</label>
-              <input type="text" value={boothNumber} onChange={(e) => setBoothNumber(e.target.value)} placeholder="e.g. 104" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-700 focus:outline-none focus:border-blue-500" />
-            </div>
-          </div>
+
 
           <div 
             className="border-2 border-dashed border-slate-300 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-500 hover:bg-blue-50/50 transition-colors duration-300 group cursor-pointer relative"

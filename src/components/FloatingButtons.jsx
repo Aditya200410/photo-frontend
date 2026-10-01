@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const FloatingButtons = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -22,6 +23,10 @@ const FloatingButtons = () => {
       behavior: 'smooth'
     });
   };
+
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <>

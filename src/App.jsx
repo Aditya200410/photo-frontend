@@ -23,6 +23,9 @@ import ContactSupport from './pages/ContactSupport';
 import FloatingButtons from './components/FloatingButtons';
 import ScrollToTop from './components/ScrollToTop';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
+import AdminLayout from './components/AdminLayout';
+import AdminPrivacyPolicy from './pages/AdminPrivacyPolicy';
+import AdminTerms from './pages/AdminTerms';
 
 function App() {
   return (
@@ -34,7 +37,7 @@ function App() {
       <Route path="/option/1" element={<Option1 />} />
       <Route path="/option/2" element={<Option2 />} />
       <Route path="/option/3" element={<Option3 />} />
-      <Route path="/admin" element={<AdminProtectedRoute><Outlet /></AdminProtectedRoute>}>
+      <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
         <Route index element={<Admin />} />
         <Route path="add-excel" element={<AdminAddExcel />} />
         <Route path="add-excel/assembly" element={<AdminAddExcelAssembly />} />
@@ -45,6 +48,8 @@ function App() {
         <Route path="print-data/nagar-nigam" element={<AdminPrintDataNagarNigam />} />
         <Route path="print-data/panchayat" element={<AdminPrintDataPanchayat />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="privacy-policy" element={<AdminPrivacyPolicy />} />
+        <Route path="terms" element={<AdminTerms />} />
       </Route>
       <Route path="/photo" element={<Home />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
