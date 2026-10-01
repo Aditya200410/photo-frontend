@@ -12,6 +12,26 @@ function PhotoIndex() {
   const [activeComponent, setActiveComponent] = useState(searchParams.get('view') || null);
   const componentRef = useRef(null);
 
+  const [images, setImages] = useState({
+    assemblyImage: "https://images.unsplash.com/photo-1575517111478-7f6afd0973db?q=80&w=2070&auto=format&fit=crop",
+    nagarNigamImage: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop",
+    gramPanchayatImage: "https://images.unsplash.com/photo-1592659762303-90081d34b277?q=80&w=2073&auto=format&fit=crop"
+  });
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setImages(prev => ({
+            ...prev,
+            ...data
+          }));
+        }
+      })
+      .catch(err => console.error("Failed to load images:", err));
+  }, []);
+
   // Sync state with URL params if they change
   useEffect(() => {
     const view = searchParams.get('view');
@@ -54,7 +74,7 @@ function PhotoIndex() {
               className={`group flex flex-col bg-white rounded-3xl border ${activeComponent === 'assembly' ? 'border-blue-500 shadow-xl' : 'border-slate-200'} shadow-sm hover:shadow-xl hover:border-blue-300 hover:-translate-y-2 transition-all duration-300 overflow-hidden text-left`}
             >
               <div className="h-48 overflow-hidden relative w-full">
-                 <img src="https://images.unsplash.com/photo-1575517111478-7f6afd0973db?q=80&w=2070&auto=format&fit=crop" alt="Assembly" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                 <img src={images.assemblyImage} alt="Assembly" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                  <div className="absolute bottom-4 left-6 text-white">
                     <h3 className="text-2xl font-bold">Assembly</h3>
@@ -73,7 +93,7 @@ function PhotoIndex() {
               className={`group flex flex-col bg-white rounded-3xl border ${activeComponent === 'nagar-nigam' ? 'border-emerald-500 shadow-xl' : 'border-slate-200'} shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-2 transition-all duration-300 overflow-hidden text-left`}
             >
               <div className="h-48 overflow-hidden relative w-full">
-                 <img src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop" alt="Nagar Nigam" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                 <img src={images.nagarNigamImage} alt="Nagar Nigam" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                  <div className="absolute bottom-4 left-6 text-white">
                     <h3 className="text-2xl font-bold">Nagar Nigam</h3>
@@ -92,7 +112,7 @@ function PhotoIndex() {
               className={`group flex flex-col bg-white rounded-3xl border ${activeComponent === 'gram-panchayat' ? 'border-violet-500 shadow-xl' : 'border-slate-200'} shadow-sm hover:shadow-xl hover:border-violet-300 hover:-translate-y-2 transition-all duration-300 overflow-hidden text-left`}
             >
               <div className="h-48 overflow-hidden relative w-full">
-                 <img src="https://images.unsplash.com/photo-1592659762303-90081d34b277?q=80&w=2073&auto=format&fit=crop" alt="Gram Panchayat" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                 <img src={images.gramPanchayatImage} alt="Gram Panchayat" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                  <div className="absolute bottom-4 left-6 text-white">
                     <h3 className="text-2xl font-bold">Gram Panchayat</h3>

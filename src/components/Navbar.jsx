@@ -9,7 +9,7 @@ const Navbar = () => {
   useEffect(() => {
     // Check if there's already a cookie explicitly for hindi
     const isHi = document.cookie.includes('googtrans=/en/hi');
-    
+
     if (isHi) {
       setLang('hi');
     } else {
@@ -30,8 +30,8 @@ const Navbar = () => {
       window.googleTranslateElementInit = () => {
         if (window.google && window.google.translate) {
           new window.google.translate.TranslateElement(
-            { 
-              pageLanguage: 'en', 
+            {
+              pageLanguage: 'en',
               includedLanguages: 'en,hi', // Only English and Hindi
               layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
               autoDisplay: false
@@ -45,9 +45,9 @@ const Navbar = () => {
 
   const changeLanguage = (targetLang) => {
     if (targetLang === lang) return;
-    
+
     const domain = window.location.hostname;
-    
+
     if (targetLang === 'en') {
       // Clear cookies to revert from Google Translate
       document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`;
@@ -61,7 +61,7 @@ const Navbar = () => {
       document.cookie = `googtrans=/en/${targetLang}; path=/; domain=${domain}`;
       document.cookie = `googtrans=/en/${targetLang}; path=/; domain=.${domain}`;
     }
-    
+
     // Reloading is the most reliable way to force Google Translate to apply/remove the language
     window.location.reload();
   };
@@ -75,7 +75,7 @@ const Navbar = () => {
           </div>
           <span className="hidden sm:block text-xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">Voter Directory</span>
         </Link>
-        
+
         <div className="flex items-center gap-4 md:gap-6 ml-auto">
           {/* Custom Language Dropdown */}
           <div className="relative group">
@@ -96,10 +96,9 @@ const Navbar = () => {
 
           {/* Hidden Google Translate Widget */}
           <div id="google_translate_element" className="absolute opacity-0 pointer-events-none -z-10 w-0 h-0 overflow-hidden"></div>
-          
+
           <div className="hidden md:flex items-center gap-6">
             <Link to="/" className={`text-sm font-semibold transition-colors ${isHome ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}>Home</Link>
-            <Link to="/photo" className={`text-sm font-semibold transition-colors ${location.pathname.includes('/photo') && location.pathname !== '/' ? 'text-blue-600' : 'text-slate-600 hover:text-blue-600'}`}>Voter Slips</Link>
             <Link to="/contact-support" className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 hover:shadow-lg transition-all hover:-translate-y-0.5">Contact Us</Link>
           </div>
 
@@ -108,7 +107,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      
+
       <style>{`
         /* Hide the top Google Translate toolbar */
         .skiptranslate iframe { display: none !important; }
