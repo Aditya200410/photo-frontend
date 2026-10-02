@@ -3,15 +3,29 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import BatchA4PrintLayout from './BatchA4PrintLayout';
 import VoterSlip from './VoterSlip';
+import VoterSlipOption3 from './VoterSlipOption3';
 
 function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNumber, wardNo }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [printState, setPrintState] = useState({ active: false, currentPage: 1 });
+  const [batchImage, setBatchImage] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(1);
   
   const printLayoutRef = useRef(null);
   
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBatchImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const maxPages = voters ? Math.ceil(voters.length / 8) : 1;
   const [pagesCount, setPagesCount] = useState(maxPages);
@@ -60,7 +74,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          optionType: 'Batch Slips',
+          optionType: `Batch Slips Option ${selectedOption}`,
           wardNo: wardNo || '-',
           partNo: boothNumber || '-',
           serialNo: 'ALL',
@@ -99,7 +113,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         gender: voter.MSEX === 'M' || voter.MSEX === 'पुरुष' ? 'पुरुष' : (voter.MSEX === 'F' || voter.MSEX === 'स्त्री' ? 'स्त्री' : voter.MSEX),
         age: voter.MAGE || '18',
         pollingStation: `${assemblyName || ''} ${boothNumber ? '- ' + boothNumber : ''}`,
-        topImage: null, // No image for batch by default as per request
+        topImage: selectedOption === 1 ? batchImage : null,
+        symbolImage: selectedOption === 3 ? batchImage : null,
       });
     });
   }
@@ -113,7 +128,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
             slipsData={currentSlipsData}
             pageNumber={printState.currentPage}
             totalPages={pagesCount}
-            SlipComponent={VoterSlip}
+            SlipComponent={selectedOption === 3 ? VoterSlipOption3 : VoterSlip}
             headerData={{
               title: assemblyName || 'Voters Directory',
               wardNo: wardNo || '-',
@@ -162,6 +177,30 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 {pagesCount === 0 || pagesCount === '' || pagesCount < 1 ? (
                    <p className="text-sm text-red-500 mt-2 font-medium">Please enter a valid number of pages (minimum 1).</p>
                 ) : null}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Select Template</label>
+                <select
+                  value={selectedOption}
+                  onChange={(e) => setSelectedOption(Number(e.target.value))}
+                  className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium mb-4 bg-white"
+                >
+                  <option value={1}>Option 1 (Top Banner Image)</option>
+                  <option value={3}>Option 3 (Right Symbol Image)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  {selectedOption === 1 ? 'Top Banner Image (Optional)' : 'Symbol Image (Optional)'}
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImageUpload} 
+                  className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                />
               </div>
 
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { State, City } from 'country-state-city';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -16,9 +16,39 @@ function PhotoGramPanchayat({ onBack }) {
   const [boothNumber, setBoothNumber] = useState('');
 
   const [voters, setVoters] = useState([]);
+  const [filters, setFilters] = useState({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
   const [displayedVoters, setDisplayedVoters] = useState([]);
   const [pageCount, setPageCount] = useState(1);
   const itemsPerPage = 10;
+
+  const filteredVoters = useMemo(() => {
+    return voters.filter(v => {
+      const idMatch = !filters.id || (v.IDCARD || '').toString().toLowerCase().includes(filters.id.toLowerCase());
+      const nameMatch = !filters.name || (v.V_FNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || (v.V_FNAME_HI || '').toString().includes(filters.name) || (v.V_LNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase());
+      const houseMatch = !filters.houseNo || (v.HOUSE_NO || '').toString().toLowerCase().includes(filters.houseNo.toLowerCase());
+
+      const vAge = parseInt(v.AGE) || 0;
+      const ageMatch = !filters.age || vAge === parseInt(filters.age);
+      const minAgeMatch = !filters.minAge || vAge >= parseInt(filters.minAge);
+      const maxAgeMatch = !filters.maxAge || vAge <= parseInt(filters.maxAge);
+      
+      let sexMatch = true;
+      if (filters.sex) {
+        const vSex = (v.SEX || '').toUpperCase();
+        if (filters.sex === 'M') {
+          sexMatch = vSex === 'M' || vSex === 'पुरुष';
+        } else if (filters.sex === 'F') {
+          sexMatch = vSex === 'F' || vSex === 'स्त्री';
+        }
+      }
+
+      return idMatch && nameMatch && houseMatch && ageMatch && minAgeMatch && maxAgeMatch && sexMatch;
+    });
+  }, [voters, filters]);
+
+  useEffect(() => {
+    setDisplayedVoters(filteredVoters.slice(0, pageCount * itemsPerPage));
+  }, [filteredVoters, pageCount, itemsPerPage]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -127,7 +157,7 @@ function PhotoGramPanchayat({ onBack }) {
   };
 
   const generatePDF = async () => {
-    if (voters.length === 0) return;
+    if (filteredVoters.length === 0) return;
     setIsBatchPrintModalOpen(true);
   };
 
@@ -158,7 +188,6 @@ function PhotoGramPanchayat({ onBack }) {
         setDisplayedVoters([]);
       } else {
         setVoters(data.voters || []);
-        setDisplayedVoters((data.voters || []).slice(0, itemsPerPage));
         setPageCount(1);
         if (data.voters.length === 0) setError('No voters found for this location');
       }
@@ -172,7 +201,6 @@ function PhotoGramPanchayat({ onBack }) {
 
   const loadMore = () => {
     const nextPage = pageCount + 1;
-    setDisplayedVoters(voters.slice(0, nextPage * itemsPerPage));
     setPageCount(nextPage);
   };
 
@@ -330,11 +358,11 @@ function PhotoGramPanchayat({ onBack }) {
 
             {voters.length > 0 && (
               <div className="mt-10 pt-8 border-t border-slate-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
-                  <h3 className="text-xl font-bold text-slate-800">Panchayat Voters ({voters.length} entries)</h3>
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                  <h3 className="text-xl font-bold text-slate-800">Panchayat Voters ({filteredVoters.length} entries)</h3>
                   <button
                     onClick={generatePDF}
-                    disabled={isGenerating}
+                    disabled={isGenerating || filteredVoters.length === 0}
                     className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-xl font-bold shadow-md shadow-violet-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
                   >
                     {isGenerating ? 'Generating...' : (
@@ -345,6 +373,90 @@ function PhotoGramPanchayat({ onBack }) {
                     )}
                   </button>
                 </div>
+
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6 shadow-sm">
+                  <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                    Filter Data
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">ID / VID</label>
+                      <input 
+                        type="text" 
+                        placeholder="Search by ID..." 
+                        value={filters.id} 
+                        onChange={e => { setFilters(prev => ({...prev, id: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Voter Name</label>
+                      <input 
+                        type="text" 
+                        placeholder="Search by Name..." 
+                        value={filters.name} 
+                        onChange={e => { setFilters(prev => ({...prev, name: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">House No</label>
+                      <input 
+                        type="text" 
+                        placeholder="Search by House No..." 
+                        value={filters.houseNo} 
+                        onChange={e => { setFilters(prev => ({...prev, houseNo: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Exact Age</label>
+                      <input 
+                        type="number" 
+                        placeholder="Age..." 
+                        value={filters.age} 
+                        onChange={e => { setFilters(prev => ({...prev, age: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Min Age</label>
+                      <input 
+                        type="number" 
+                        placeholder="Min Age..." 
+                        value={filters.minAge} 
+                        onChange={e => { setFilters(prev => ({...prev, minAge: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Max Age</label>
+                      <input 
+                        type="number" 
+                        placeholder="Max Age..." 
+                        value={filters.maxAge} 
+                        onChange={e => { setFilters(prev => ({...prev, maxAge: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sex</label>
+                      <select 
+                        value={filters.sex} 
+                        onChange={e => { setFilters(prev => ({...prev, sex: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                      >
+                        <option value="">All</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -386,7 +498,7 @@ function PhotoGramPanchayat({ onBack }) {
                     </tbody>
                   </table>
                 </div>
-                {voters.length > displayedVoters.length && (
+                {filteredVoters.length > displayedVoters.length && (
                   <div className="mt-6 flex justify-center">
                     <button
                       onClick={loadMore}
@@ -394,6 +506,11 @@ function PhotoGramPanchayat({ onBack }) {
                     >
                       Load More Entries
                     </button>
+                  </div>
+                )}
+                {filteredVoters.length === 0 && (
+                  <div className="text-center py-10 text-slate-500 font-medium">
+                    No voters match the current filters.
                   </div>
                 )}
               </div>
@@ -418,7 +535,7 @@ function PhotoGramPanchayat({ onBack }) {
       <BatchSlipPrintManager
         isOpen={isBatchPrintModalOpen}
         onClose={() => setIsBatchPrintModalOpen(false)}
-        voters={voters}
+        voters={filteredVoters}
         assemblyName={panchayatName}
         wardNo={wardNumber}
         boothNumber={boothNumber}

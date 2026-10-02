@@ -1,0 +1,48 @@
+{
+  "locations": [
+    {
+      "id": "assembly",
+      "name": "Assembly",
+      "stats": {
+        "totalVoters": 150000,
+        "maleVoters": 80000,
+        "femaleVoters": 70000,
+        "averageAge": 42,
+        "printsCount": 5,
+        "directoriesIndexed": 2
+      }
+    },
+    {
+      "id": "nagar-nigam",
+      "name": "Nagar Nigam",
+      "stats": {
+        "totalVoters": 120000,
+        "maleVoters": 65000,
+        "femaleVoters": 55000,
+        "averageAge": 39,
+        "printsCount": 3,
+        "directoriesIndexed": 1
+      }
+    },
+    {
+      "id": "gram-panchayat",
+      "name": "Gram Panchayat",
+      "stats": {
+        "totalVoters": 46878,
+        "maleVoters": 25143,
+        "femaleVoters": 21735,
+        "averageAge": 45,
+        "printsCount": 1,
+        "directoriesIndexed": 0
+      }
+    }
+  ],
+  "overall": {
+    "totalVoters": 316878,
+    "maleVoters": 170143,
+    "femaleVoters": 146735,
+    "averageAge": 42,
+    "printsCount": 9,
+    "directoriesIndexed": 3
+  }
+}
