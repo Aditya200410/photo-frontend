@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 import PrintModal from './PrintModal';
 import A4PrintLayout from './A4PrintLayout';
@@ -8,6 +8,7 @@ import VoterSlipOption3 from './VoterSlipOption3';
 
 function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
   const [pagesCount, setPagesCount] = useState(1);
+  const [cardsPerPage, setCardsPerPage] = useState(8);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [printState, setPrintState] = useState({ active: false, currentPage: 1 });
@@ -91,7 +92,8 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
             baseData={localVoterData}
             pageNumber={printState.currentPage}
             totalPages={pagesCount}
-            startSerialNo={parseInt(voterData.serialNo || 1) + ((printState.currentPage - 1) * 8)}
+            startSerialNo={parseInt(voterData.serialNo || 1) + ((printState.currentPage - 1) * cardsPerPage)}
+            cardsPerPage={cardsPerPage}
             SlipComponent={SlipComp}
           />
         )}
@@ -108,6 +110,8 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
         optionNumber={optionNumber}
         voterData={localVoterData}
         setVoterData={setLocalVoterData}
+        cardsPerPage={cardsPerPage}
+        setCardsPerPage={setCardsPerPage}
       />
     </>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 import BatchA4PrintLayout from './BatchA4PrintLayout';
 import VoterSlip from './VoterSlip';
@@ -11,6 +11,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
   const [printState, setPrintState] = useState({ active: false, currentPage: 1 });
   const [batchImage, setBatchImage] = useState(null);
   const [selectedOption, setSelectedOption] = useState(1);
+  const [cardsPerPage, setCardsPerPage] = useState(8);
   
   const printLayoutRef = useRef(null);
   
@@ -27,7 +28,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     }
   };
 
-  const maxPages = voters ? Math.ceil(voters.length / 8) : 1;
+  const maxPages = voters ? Math.ceil(voters.length / cardsPerPage) : 1;
   const [pagesCount, setPagesCount] = useState(maxPages);
   
   useEffect(() => {
@@ -97,8 +98,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
   const currentSlipsData = [];
   if (printState.active) {
-    const startIndex = (printState.currentPage - 1) * 8;
-    const endIndex = startIndex + 8;
+    const startIndex = (printState.currentPage - 1) * cardsPerPage;
+    const endIndex = startIndex + cardsPerPage;
     const pageVoters = voters.slice(startIndex, endIndex);
     
     pageVoters.forEach(voter => {
@@ -134,6 +135,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
               wardNo: wardNo || '-',
               partNo: boothNumber || '-'
             }}
+            cardsPerPage={cardsPerPage}
           />
         )}
       </div>
@@ -156,7 +158,20 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
           ) : (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages (8 entries per page)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Cards per Page</label>
+                <select
+                  value={cardsPerPage}
+                  onChange={(e) => setCardsPerPage(Number(e.target.value))}
+                  className="w-full rounded-xl border border-slate-300 p-3 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white"
+                >
+                  <option value={4}>4 Cards</option>
+                  <option value={8}>8 Cards</option>
+                  <option value={12}>12 Cards</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages ({cardsPerPage} entries per page)</label>
                 <input
                   type="number"
                   min="1"

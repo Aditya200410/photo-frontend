@@ -1,6 +1,6 @@
 import React from 'react';
 
-function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pagesCount, setPagesCount, optionNumber, voterData, setVoterData }) {
+function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pagesCount, setPagesCount, optionNumber, voterData, setVoterData, cardsPerPage, setCardsPerPage }) {
   if (!isOpen) return null;
 
   return (
@@ -80,7 +80,18 @@ function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pages
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages (8 slips per page)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Cards per Page</label>
+              <select
+                value={cardsPerPage}
+                onChange={(e) => setCardsPerPage(Number(e.target.value))}
+                className="w-full rounded-xl border border-slate-300 p-3 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white"
+              >
+                <option value={4}>4 Cards</option>
+                <option value={8}>8 Cards</option>
+                <option value={12}>12 Cards</option>
+              </select>
+
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages ({cardsPerPage} slips per page)</label>
               <input
                 type="number"
                 min="1"
@@ -96,7 +107,7 @@ function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pages
                 }}
                 className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium"
               />
-              <p className="text-sm text-slate-500 mt-2">This will generate {pagesCount ? pagesCount * 8 : 0} total slips.</p>
+              <p className="text-sm text-slate-500 mt-2">This will generate {pagesCount ? pagesCount * cardsPerPage : 0} total slips.</p>
               
               {/* Error Message */}
               {pagesCount === 0 || pagesCount === '' || pagesCount < 1 ? (

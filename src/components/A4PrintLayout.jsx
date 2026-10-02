@@ -1,12 +1,28 @@
 import React, { forwardRef } from 'react';
 import VoterSlip from './VoterSlip';
 
-const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSerialNo, SlipComponent = VoterSlip }, ref) => {
-  // We need 8 slips for one A4 page
-  const slips = Array.from({ length: 8 }, (_, i) => ({
+const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSerialNo, SlipComponent = VoterSlip, cardsPerPage = 8 }, ref) => {
+  // We need `cardsPerPage` slips for one A4 page
+  const slips = Array.from({ length: cardsPerPage }, (_, i) => ({
     ...baseData,
-    serialNo: baseData.serialNo
+    serialNo: baseData.serialNo // Typically startSerialNo + i if dynamic
   }));
+
+  // Determine grid layout
+  let gridTemplateColumns = '1fr 1fr';
+  let gridTemplateRows = 'repeat(4, 1fr)';
+  let transform = 'scale(1)';
+  let gap = '8px 20px';
+
+  if (cardsPerPage === 4) {
+    gridTemplateRows = 'repeat(2, 1fr)';
+    gap = '20px 20px';
+  } else if (cardsPerPage === 12) {
+    gridTemplateColumns = '1fr 1fr';
+    gridTemplateRows = 'repeat(6, 1fr)';
+    transform = 'scale(0.85)';
+    gap = '4px 10px';
+  }
 
   return (
     <div 
@@ -18,7 +34,8 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         padding: '15px 10px', // Reduced top/bottom padding to maximize vertical space
         boxSizing: 'border-box',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}
     >
       {/* Header */}
@@ -41,16 +58,18 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         <span>Page {pageNumber} of {totalPages}</span>
       </div>
 
-      {/* Grid of 8 slips (2 columns, 4 rows) */}
+      {/* Grid of slips */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gridTemplateRows: 'repeat(4, 1fr)', // Force 4 even rows
-        gap: '8px 20px', // Minimized vertical gap
+        gridTemplateColumns,
+        gridTemplateRows,
+        gap,
         justifyItems: 'center',
-        alignItems: 'center', // Center vertically within the forced row height
+        alignItems: 'center', 
         flex: 1,
-        minHeight: 0
+        minHeight: 0,
+        transform,
+        transformOrigin: 'top center'
       }}>
         {slips.map((slipData, index) => (
           <div key={index}>

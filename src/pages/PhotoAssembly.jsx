@@ -47,6 +47,7 @@ function PhotoAssembly({ onBack }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
+  const [fetchSuccess, setFetchSuccess] = useState(false);
 
   const [assemblyName, setAssemblyName] = useState('');
   const [boothNumber, setBoothNumber] = useState('');
@@ -163,7 +164,12 @@ function PhotoAssembly({ onBack }) {
       } else {
         setVoters(data.voters || []);
         setPageCount(1);
-        if (data.voters.length === 0) setError('No voters found for this location');
+        if (data.voters.length === 0) {
+          setError('No voters found for this location');
+        } else {
+          setFetchSuccess(true);
+          setTimeout(() => setFetchSuccess(false), 3000);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -180,16 +186,16 @@ function PhotoAssembly({ onBack }) {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-4 md:p-8 w-full">
-        <div className="w-full max-w-2xl lg:max-w-5xl xl:max-w-6xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-          <div className="p-8 md:p-12">
-            <div className="flex items-center justify-between mb-8">
+      <div className="flex-1 flex items-center justify-center p-0 md:p-8 w-full">
+        <div className="w-full max-w-2xl lg:max-w-5xl xl:max-w-6xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+          <div className="p-5 sm:p-8 md:p-12">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-0">
               <div>
-                <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Assembly Details</h2>
-                <p className="text-slate-500 mt-2">Generate PDF based on Booth Number</p>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Assembly Details</h2>
+                <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base">Generate PDF based on Booth Number</p>
               </div>
-              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-inner">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-inner shrink-0">
                 <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
               </div>
             </div>
@@ -272,12 +278,12 @@ function PhotoAssembly({ onBack }) {
                 </div>
               </div>
 
-              <div className="pt-2 lg:pt-4 flex justify-center lg:justify-end gap-4 flex-wrap">
+              <div className="pt-4 sm:pt-6 flex justify-center lg:justify-end gap-4 flex-wrap">
                 <button
                   type="button"
                   onClick={fetchVoters}
                   disabled={isLoading}
-                  className="w-full lg:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl px-10 py-4 font-bold shadow-lg shadow-blue-500/30 transform hover:-translate-y-1 transition-all duration-300 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl px-6 sm:px-10 py-3 sm:py-4 font-bold shadow-lg shadow-blue-500/30 transform hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg flex items-center justify-center gap-2 disabled:opacity-70"
                 >
                   {isLoading ? (
                     <span>Loading Data...</span>
@@ -292,16 +298,17 @@ function PhotoAssembly({ onBack }) {
               </div>
             </form>
 
-            {error && <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100">{error}</div>}
+            {error && <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 font-medium">{error}</div>}
+            {fetchSuccess && <div className="mt-6 p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 font-medium flex items-center gap-2"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Data fetched successfully!</div>}
 
             {voters.length > 0 && (
               <div className="mt-10 pt-8 border-t border-slate-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                  <h3 className="text-xl font-bold text-slate-800">Voters Directory ({filteredVoters.length} entries)</h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-800">Voters Directory ({filteredVoters.length} entries)</h3>
                   <button
                     onClick={generatePDF}
                     disabled={isGenerating || filteredVoters.length === 0}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl font-bold shadow-md shadow-emerald-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-emerald-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 text-sm sm:text-base"
                   >
                     {isGenerating ? 'Generating...' : (
                       <>

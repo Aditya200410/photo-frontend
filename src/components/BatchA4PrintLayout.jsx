@@ -1,7 +1,22 @@
 import React, { forwardRef } from 'react';
 import VoterSlip from './VoterSlip';
 
-const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, SlipComponent = VoterSlip, headerData }, ref) => {
+const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, SlipComponent = VoterSlip, headerData, cardsPerPage = 8 }, ref) => {
+  let gridTemplateColumns = '1fr 1fr';
+  let gridTemplateRows = 'repeat(4, 1fr)';
+  let transform = 'scale(1)';
+  let gap = '8px 20px';
+
+  if (cardsPerPage === 4) {
+    gridTemplateRows = 'repeat(2, 1fr)';
+    gap = '20px 20px';
+  } else if (cardsPerPage === 12) {
+    gridTemplateColumns = '1fr 1fr';
+    gridTemplateRows = 'repeat(6, 1fr)';
+    transform = 'scale(0.85)';
+    gap = '4px 10px';
+  }
+
   return (
     <div 
       ref={ref}
@@ -12,7 +27,8 @@ const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, Slip
         padding: '15px 10px',
         boxSizing: 'border-box',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}
     >
       {/* Header */}
@@ -35,16 +51,18 @@ const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, Slip
         <span>Page {pageNumber} of {totalPages}</span>
       </div>
 
-      {/* Grid of up to 8 slips */}
+      {/* Grid of up to cardsPerPage slips */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gridTemplateRows: 'repeat(4, 1fr)',
-        gap: '8px 20px',
+        gridTemplateColumns,
+        gridTemplateRows,
+        gap,
         justifyItems: 'center',
         alignItems: 'center',
         flex: 1,
-        minHeight: 0
+        minHeight: 0,
+        transform,
+        transformOrigin: 'top center'
       }}>
         {slipsData.map((slipData, index) => (
           <div key={index}>

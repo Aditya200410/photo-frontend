@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 import VoterSlip from '../components/VoterSlip';
 import PrintModal from '../components/PrintModal';
@@ -30,6 +30,7 @@ function Option1() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pagesCount, setPagesCount] = useState(1);
+  const [cardsPerPage, setCardsPerPage] = useState(8);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
@@ -152,7 +153,8 @@ function Option1() {
             baseData={formData}
             pageNumber={printState.currentPage}
             totalPages={pagesCount}
-            startSerialNo={parseInt(formData.serialNo || 1) + ((printState.currentPage - 1) * 8)}
+            startSerialNo={parseInt(formData.serialNo || 1) + ((printState.currentPage - 1) * cardsPerPage)}
+            cardsPerPage={cardsPerPage}
           />
         </div>
       )}
@@ -166,6 +168,8 @@ function Option1() {
         progress={progress}
         pagesCount={pagesCount}
         setPagesCount={setPagesCount}
+        cardsPerPage={cardsPerPage}
+        setCardsPerPage={setCardsPerPage}
       />
 
       {/* Enlarge Preview Modal */}
