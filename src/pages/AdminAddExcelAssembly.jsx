@@ -6,6 +6,10 @@ function AdminAddExcelAssembly() {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
+  const [assembly, setAssembly] = useState('');
+  const [booth, setBooth] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   
@@ -45,6 +49,10 @@ function AdminAddExcelAssembly() {
     formData.append('excelFile', selectedFile);
     formData.append('fileName', fileName);
     formData.append('category', 'assembly');
+    if (state) formData.append('state', state);
+    if (district) formData.append('district', district);
+    if (assembly) formData.append('assembly', assembly);
+    if (booth) formData.append('booth', booth);
     
 
 
@@ -99,14 +107,34 @@ function AdminAddExcelAssembly() {
           </div>
 
           {selectedFile && (
-            <div className="mt-6 space-y-2">
-              <label className="text-sm font-semibold text-slate-700 block">File Name to Save As:</label>
-              <input 
-                type="text" 
-                value={fileName}
-                onChange={(e) => setFileName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200" 
-              />
+            <div className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 block">File Name to Save As:</label>
+                <input 
+                  type="text" 
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200" 
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">State:</label>
+                  <input type="text" value={state} onChange={(e) => setState(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Uttar Pradesh" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">District:</label>
+                  <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Lucknow" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Assembly:</label>
+                  <input type="text" value={assembly} onChange={(e) => setAssembly(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Lucknow Central" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Booth No:</label>
+                  <input type="text" value={booth} onChange={(e) => setBooth(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., 14" />
+                </div>
+              </div>
             </div>
           )}
 

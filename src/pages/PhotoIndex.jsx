@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import PhotoAssembly from './PhotoAssembly';
 import PhotoNagarNigam from './PhotoNagarNigam';
 import PhotoGramPanchayat from './PhotoGramPanchayat';
-import dashboardData from '../data.json';
+
 
 function PhotoIndex() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -132,87 +132,153 @@ function PhotoIndex() {
         <main className="flex-1 p-8 overflow-y-auto">
           {activeTab === 'overview' && (
             <div className="space-y-8 max-w-7xl mx-auto">
-              {/* Stats by Location */}
-              {dashboardData.locations.map(location => (
-                <div key={location.id} className="mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <h3 className="text-xl font-bold text-slate-800">{location.name} Overview</h3>
+              
+              {/* Header / Hero Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl shadow-slate-900/20 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                    <svg className="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Total Voters</p>
-                      <div className="text-4xl font-extrabold text-slate-800">
-                        {(location.stats.totalVoters || 0).toLocaleString()}
-                      </div>
-                      <p className="text-sm font-medium text-emerald-600 mt-2">In {location.name}</p>
-                    </div>
-                    
-                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Gender Demographics</p>
-                      <div className="text-xl font-extrabold text-slate-800 flex flex-col gap-1 mt-2">
-                        <span className="text-blue-600 flex items-center justify-between">
-                          <span>Male:</span> <span>{(location.stats.maleVoters || 0).toLocaleString()}</span>
-                        </span>
-                        <span className="text-pink-600 flex items-center justify-between">
-                          <span>Female:</span> <span>{(location.stats.femaleVoters || 0).toLocaleString()}</span>
-                        </span>
-                      </div>
-                    </div>
+                  <p className="text-slate-400 font-semibold tracking-widest text-sm uppercase mb-2">Total Electors</p>
+                  <h2 className="text-5xl font-black mb-1">
+                    {isLoadingAnalytics ? '...' : (analytics.totalVoters || 0).toLocaleString()}
+                  </h2>
+                  <p className="text-emerald-400 text-sm font-medium flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Fully Indexed & Verified
+                  </p>
+                </div>
+                
+                <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col justify-center">
+                  <p className="text-slate-500 font-bold tracking-widest text-xs uppercase mb-2">Directories Processed</p>
+                  <h2 className="text-4xl font-extrabold text-slate-800 mb-2">
+                    {isLoadingAnalytics ? '...' : (analytics.assemblyFiles + analytics.nagarNigamFiles + analytics.panchayatFiles)}
+                  </h2>
+                  <div className="flex gap-4 text-xs font-bold text-slate-400 mt-2">
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Assembly ({analytics.assemblyFiles})</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Nigam ({analytics.nagarNigamFiles})</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-violet-500"></div> Rural ({analytics.panchayatFiles})</div>
+                  </div>
+                </div>
 
-                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Average Age</p>
-                      <div className="text-4xl font-extrabold text-slate-800">
-                        {location.stats.averageAge || 0}
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:rotate-12 transition-transform duration-500">
+                    <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                  </div>
+                  <p className="text-blue-200 font-semibold tracking-widest text-sm uppercase mb-2">Total Printed Slips</p>
+                  <h2 className="text-5xl font-black mb-1">
+                    {isLoadingAnalytics ? '...' : (analytics.printsCount || 0).toLocaleString()}
+                  </h2>
+                  <p className="text-blue-100 text-sm font-medium">
+                    {analytics.lastPrintDate ? `Last print: ${new Date(analytics.lastPrintDate).toLocaleDateString()}` : 'No prints yet'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Demographics Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Gender Split */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+                  <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    Elector Gender Distribution
+                  </h3>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between items-end mb-2">
+                        <div>
+                          <p className="text-sm font-bold text-blue-600">Male Voters</p>
+                          <p className="text-2xl font-black text-slate-800">{(analytics.maleVoters || 0).toLocaleString()}</p>
+                        </div>
+                        <span className="text-sm font-bold text-slate-400">
+                          {analytics.totalVoters ? Math.round((analytics.maleVoters / analytics.totalVoters) * 100) : 0}%
+                        </span>
                       </div>
-                      <p className="text-sm font-medium text-slate-500 mt-2">Years old</p>
+                      <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" style={{ width: `${analytics.totalVoters ? (analytics.maleVoters / analytics.totalVoters) * 100 : 0}%` }}></div>
+                      </div>
                     </div>
                     
-                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Printed Slips & Dirs</p>
-                      <div className="flex flex-col gap-1 mt-2 text-lg font-bold text-slate-800">
-                        <span className="text-amber-600 flex justify-between">
-                          <span>Prints:</span> <span>{(location.stats.printsCount || 0).toLocaleString()}</span>
+                    <div>
+                      <div className="flex justify-between items-end mb-2">
+                        <div>
+                          <p className="text-sm font-bold text-pink-600">Female Voters</p>
+                          <p className="text-2xl font-black text-slate-800">{(analytics.femaleVoters || 0).toLocaleString()}</p>
+                        </div>
+                        <span className="text-sm font-bold text-slate-400">
+                          {analytics.totalVoters ? Math.round((analytics.femaleVoters / analytics.totalVoters) * 100) : 0}%
                         </span>
-                        <span className="text-violet-600 flex justify-between">
-                          <span>Indexed:</span> <span>{(location.stats.directoriesIndexed || 0).toLocaleString()}</span>
-                        </span>
+                      </div>
+                      <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-pink-500 to-pink-400 rounded-full" style={{ width: `${analytics.totalVoters ? (analytics.femaleVoters / analytics.totalVoters) * 100 : 0}%` }}></div>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
 
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-800">Quick Actions</h3>
+                {/* Age Brackets */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      Age Demographics
+                    </h3>
+                    <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
+                      Avg Age: {analytics.averageAge || 0}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:border-slate-300 transition-colors">
+                      <p className="text-xs font-bold text-slate-500 uppercase">Youth (18-25)</p>
+                      <p className="text-2xl font-black text-slate-800 mt-1">{analytics.ageBrackets?.youth?.toLocaleString() || 0}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:border-slate-300 transition-colors">
+                      <p className="text-xs font-bold text-slate-500 uppercase">Adult (26-40)</p>
+                      <p className="text-2xl font-black text-slate-800 mt-1">{analytics.ageBrackets?.adult?.toLocaleString() || 0}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:border-slate-300 transition-colors">
+                      <p className="text-xs font-bold text-slate-500 uppercase">Middle (41-60)</p>
+                      <p className="text-2xl font-black text-slate-800 mt-1">{analytics.ageBrackets?.middle?.toLocaleString() || 0}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:border-slate-300 transition-colors">
+                      <p className="text-xs font-bold text-slate-500 uppercase">Senior (60+)</p>
+                      <p className="text-2xl font-black text-slate-800 mt-1">{analytics.ageBrackets?.senior?.toLocaleString() || 0}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button onClick={() => handleTabChange('assembly')} className="p-4 rounded-xl border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-4 text-left group">
-                    <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center group-hover:scale-110 transition-transform shadow-md shadow-blue-500/20">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    Rapid Access Hub
+                  </h3>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <button onClick={() => handleTabChange('assembly')} className="p-6 rounded-2xl border border-blue-100 bg-gradient-to-b from-blue-50/50 to-blue-50 hover:to-blue-100 transition-all flex flex-col items-center text-center group">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-500 text-white flex items-center justify-center mb-4 group-hover:-translate-y-2 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-all">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-800">Assembly</p>
-                      <p className="text-xs text-slate-500 font-medium">Manage constituencies</p>
-                    </div>
+                    <p className="font-bold text-lg text-slate-800">Assembly</p>
+                    <p className="text-sm text-slate-500 mt-1">Manage state constituencies & polling booths</p>
                   </button>
-                  <button onClick={() => handleTabChange('nagar-nigam')} className="p-4 rounded-xl border border-emerald-100 bg-emerald-50 hover:bg-emerald-100 transition-colors flex items-center gap-4 text-left group">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center group-hover:scale-110 transition-transform shadow-md shadow-emerald-500/20">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                  <button onClick={() => handleTabChange('nagar-nigam')} className="p-6 rounded-2xl border border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-emerald-50 hover:to-emerald-100 transition-all flex flex-col items-center text-center group">
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-500 text-white flex items-center justify-center mb-4 group-hover:-translate-y-2 group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition-all">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-800">Nagar Nigam</p>
-                      <p className="text-xs text-slate-500 font-medium">Urban municipal records</p>
-                    </div>
+                    <p className="font-bold text-lg text-slate-800">Nagar Nigam</p>
+                    <p className="text-sm text-slate-500 mt-1">Access urban municipal corporation records</p>
                   </button>
-                  <button onClick={() => handleTabChange('gram-panchayat')} className="p-4 rounded-xl border border-violet-100 bg-violet-50 hover:bg-violet-100 transition-colors flex items-center gap-4 text-left group">
-                    <div className="w-12 h-12 rounded-full bg-violet-500 text-white flex items-center justify-center group-hover:scale-110 transition-transform shadow-md shadow-violet-500/20">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <button onClick={() => handleTabChange('gram-panchayat')} className="p-6 rounded-2xl border border-violet-100 bg-gradient-to-b from-violet-50/50 to-violet-50 hover:to-violet-100 transition-all flex flex-col items-center text-center group">
+                    <div className="w-16 h-16 rounded-2xl bg-violet-500 text-white flex items-center justify-center mb-4 group-hover:-translate-y-2 group-hover:shadow-lg group-hover:shadow-violet-500/30 transition-all">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-800">Gram Panchayat</p>
-                      <p className="text-xs text-slate-500 font-medium">Rural village records</p>
-                    </div>
+                    <p className="font-bold text-lg text-slate-800">Gram Panchayat</p>
+                    <p className="text-sm text-slate-500 mt-1">Navigate rural and village voter directories</p>
                   </button>
                 </div>
               </div>

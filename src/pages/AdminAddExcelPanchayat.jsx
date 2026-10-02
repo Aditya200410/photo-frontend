@@ -6,6 +6,12 @@ function AdminAddExcelPanchayat() {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
+  const [panchayat, setPanchayat] = useState('');
+  const [village, setVillage] = useState('');
+  const [ward, setWard] = useState('');
+  const [booth, setBooth] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -45,6 +51,12 @@ function AdminAddExcelPanchayat() {
     formData.append('excelFile', selectedFile);
     formData.append('fileName', fileName);
     formData.append('category', 'panchayat');
+    if (state) formData.append('state', state);
+    if (district) formData.append('district', district);
+    if (panchayat) formData.append('panchayat', panchayat);
+    if (village) formData.append('village', village);
+    if (ward) formData.append('ward', ward);
+    if (booth) formData.append('booth', booth);
 
 
 
@@ -98,14 +110,42 @@ function AdminAddExcelPanchayat() {
           </div>
 
           {selectedFile && (
-            <div className="mt-6 space-y-2">
-              <label className="text-sm font-semibold text-slate-700 block">File Name to Save As:</label>
-              <input 
-                type="text" 
-                value={fileName}
-                onChange={(e) => setFileName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200" 
-              />
+            <div className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 block">File Name to Save As:</label>
+                <input 
+                  type="text" 
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200" 
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">State:</label>
+                  <input type="text" value={state} onChange={(e) => setState(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Uttar Pradesh" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">District:</label>
+                  <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Lucknow" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Panchayat:</label>
+                  <input type="text" value={panchayat} onChange={(e) => setPanchayat(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Block A" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Village:</label>
+                  <input type="text" value={village} onChange={(e) => setVillage(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Village B" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Ward:</label>
+                  <input type="text" value={ward} onChange={(e) => setWard(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., 2" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Booth No:</label>
+                  <input type="text" value={booth} onChange={(e) => setBooth(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., 14" />
+                </div>
+              </div>
             </div>
           )}
 
