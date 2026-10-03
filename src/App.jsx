@@ -31,6 +31,7 @@ import AdminTerms from './pages/AdminTerms';
 
 // Auth Pages
 import Login from './pages/Login';
+import Account from './pages/Account';
 import Signup from './pages/Signup';
 import Payment from './pages/Payment';
 
@@ -46,6 +47,7 @@ function App() {
       
       {/* Protected User Routes */}
       <Route path="/" element={<UserProtectedRoute><PhotoIndex /></UserProtectedRoute>} />
+      <Route path="/account" element={<UserProtectedRoute><Account /></UserProtectedRoute>} />
       <Route path="/option/1" element={<UserProtectedRoute><Option1 /></UserProtectedRoute>} />
       <Route path="/option/2" element={<UserProtectedRoute><Option2 /></UserProtectedRoute>} />
       <Route path="/option/3" element={<UserProtectedRoute><Option3 /></UserProtectedRoute>} />
