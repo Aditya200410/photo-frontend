@@ -49,6 +49,23 @@ function AdminAddExcelPanchayat() {
     }
   };
 
+  const handleDeleteFile = async (fileId) => {
+    if (!window.confirm('Are you sure you want to completely delete this file? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/excel-files/${fileId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchFiles();
+      } else {
+        alert('Failed to delete file.');
+      }
+    } catch (err) {
+      console.error('Error deleting file:', err);
+      alert('Delete failed due to network error.');
+    }
+  };
+
   useEffect(() => {
     fetchFiles();
   }, []);
@@ -216,6 +233,12 @@ function AdminAddExcelPanchayat() {
                     className="text-sm font-semibold text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteFile(file.id)}
+                    className="text-sm font-semibold text-red-600 hover:text-red-800 px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    Delete
                   </button>
                   <a 
                     href={`${import.meta.env.VITE_API_URL}/api/uploads/${file.fileName}`}
