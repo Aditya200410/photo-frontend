@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { State, City } from 'country-state-city';
 import FileEditModal from '../components/FileEditModal';
 
 function AdminAddExcelNagarNigam() {
@@ -14,6 +15,10 @@ function AdminAddExcelNagarNigam() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   
+  const allStates = State.getStatesOfCountry('IN');
+  const selectedStateObj = allStates.find(s => s.name === state);
+  const allDistricts = selectedStateObj ? City.getCitiesOfState('IN', selectedStateObj.isoCode) : [];
+
   const [editingFile, setEditingFile] = useState(null);
 
 
@@ -121,36 +126,16 @@ function AdminAddExcelNagarNigam() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 block">State:</label>
-                  <select value={state} onChange={(e) => setState(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200">
+                  <select value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200">
                     <option value="">Select State</option>
-                    <option value="Uttar Pradesh">Uttar Pradesh</option>
-                    <option value="Rajasthan">Rajasthan</option>
-                    <option value="Maharashtra">Maharashtra</option>
-                    <option value="Madhya Pradesh">Madhya Pradesh</option>
-                    <option value="Bihar">Bihar</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Gujarat">Gujarat</option>
-                    <option value="Haryana">Haryana</option>
-                    <option value="Punjab">Punjab</option>
-                    <option value="West Bengal">West Bengal</option>
+                    {allStates.map(s => <option key={s.isoCode} value={s.name}>{s.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 block">District:</label>
-                  <select value={district} onChange={(e) => setDistrict(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200">
+                  <select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!state} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                     <option value="">Select District</option>
-                    <option value="Lucknow">Lucknow</option>
-                    <option value="Kanpur">Kanpur</option>
-                    <option value="Varanasi">Varanasi</option>
-                    <option value="Agra">Agra</option>
-                    <option value="Prayagraj">Prayagraj</option>
-                    <option value="Ghaziabad">Ghaziabad</option>
-                    <option value="Sriganganagar">Sriganganagar</option>
-                    <option value="Jaipur">Jaipur</option>
-                    <option value="New Delhi">New Delhi</option>
-                    <option value="Patna">Patna</option>
-                    <option value="Bhopal">Bhopal</option>
-                    <option value="Other">Other</option>
+                    {allDistricts.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
