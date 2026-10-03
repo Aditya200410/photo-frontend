@@ -189,7 +189,7 @@ function PhotoAssembly({ onBack }) {
       <div className="flex-1 flex items-center justify-center p-0 md:p-8 w-full">
         <div className="w-full max-w-2xl lg:max-w-5xl xl:max-w-6xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-          <div className="p-5 sm:p-8 md:p-12">
+          <div className="p-4 sm:p-8 md:p-12">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-0">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Assembly Details</h2>

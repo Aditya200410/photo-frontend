@@ -169,7 +169,7 @@ function PhotoIndex() {
         </header>
 
         {/* Dynamic View Content */}
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto w-full overflow-x-hidden">
           {activeTab === 'overview' && (
             <div className="space-y-8 max-w-7xl mx-auto">
               
