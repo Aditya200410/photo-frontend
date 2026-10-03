@@ -56,10 +56,10 @@ const Login = () => {
       <div className="absolute inset-0 z-0 bg-slate-900/40 backdrop-blur-[2px]"></div>
 
       {/* Main Glassmorphism Card */}
-      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden mt-4 mb-4">
         
         {/* Left Side - Marketing / Info */}
-        <div className="w-full lg:w-1/2 p-10 lg:p-14 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-white/10 relative overflow-hidden">
+        <div className="hidden lg:flex w-full lg:w-1/2 p-8 lg:p-14 flex-col justify-center border-r border-white/10 relative overflow-hidden">
           
           {/* Subtle glow behind text */}
           <div className="absolute -top-32 -left-32 w-64 h-64 bg-blue-500/30 rounded-full blur-3xl"></div>
@@ -100,7 +100,14 @@ const Login = () => {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 p-10 lg:p-14 bg-slate-900/60 backdrop-blur-2xl flex flex-col justify-center relative">
+        <div className="w-full lg:w-1/2 p-6 sm:p-10 lg:p-14 bg-slate-900/60 backdrop-blur-2xl flex flex-col justify-center relative">
+          
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-8 relative z-20">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/30 shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            </div>
+            <span className="text-xl font-extrabold text-white tracking-wide">Voter<span className="text-emerald-400">Directory</span></span>
+          </div>
           
           <div className="max-w-md w-full mx-auto relative z-20">
             <div className="mb-10 text-center lg:text-left">

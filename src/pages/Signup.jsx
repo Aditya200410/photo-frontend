@@ -47,10 +47,11 @@ const Signup = () => {
       <div className="absolute inset-0 z-0 bg-slate-900/40 backdrop-blur-[2px]"></div>
 
       {/* Main Glassmorphism Card */}
-      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row-reverse bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
+      {/* Main Glassmorphism Card */}
+      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row-reverse bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden mt-4 mb-4">
         
         {/* Right Side - Marketing / Info */}
-        <div className="w-full lg:w-1/2 p-10 lg:p-14 flex flex-col justify-center border-b lg:border-b-0 lg:border-l border-white/10 relative overflow-hidden">
+        <div className="hidden lg:flex w-full lg:w-1/2 p-8 lg:p-14 flex-col justify-center border-l border-white/10 relative overflow-hidden">
           
           <div className="absolute -top-32 -right-32 w-64 h-64 bg-emerald-500/30 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
@@ -86,7 +87,14 @@ const Signup = () => {
         </div>
 
         {/* Left Side - Signup Form */}
-        <div className="w-full lg:w-1/2 p-10 lg:p-14 bg-slate-900/60 backdrop-blur-2xl flex flex-col justify-center relative">
+        <div className="w-full lg:w-1/2 p-6 sm:p-10 lg:p-14 bg-slate-900/60 backdrop-blur-2xl flex flex-col justify-center relative">
+          
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-8 relative z-20">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/30 shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            </div>
+            <span className="text-xl font-extrabold text-white tracking-wide">Voter<span className="text-emerald-400">Directory</span></span>
+          </div>
           
           <div className="max-w-md w-full mx-auto relative z-20">
             <div className="mb-8 text-center lg:text-left">
