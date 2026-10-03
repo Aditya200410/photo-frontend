@@ -12,6 +12,7 @@ import AdminPrintData from './pages/AdminPrintData';
 import AdminPrintDataAssembly from './pages/AdminPrintDataAssembly';
 import AdminPrintDataNagarNigam from './pages/AdminPrintDataNagarNigam';
 import AdminPrintDataPanchayat from './pages/AdminPrintDataPanchayat';
+import AdminFetchData from './pages/AdminFetchData';
 import AdminSettings from './pages/AdminSettings';
 import AdminUsers from './pages/AdminUsers';
 import PhotoIndex from './pages/PhotoIndex';
@@ -64,6 +65,7 @@ function App() {
         <Route path="print-data/assembly" element={<AdminPrintDataAssembly />} />
         <Route path="print-data/nagar-nigam" element={<AdminPrintDataNagarNigam />} />
         <Route path="print-data/panchayat" element={<AdminPrintDataPanchayat />} />
+        <Route path="fetch-data" element={<AdminFetchData />} />
         <Route path="settings" element={<AdminSettings />} />
         <Route path="privacy-policy" element={<AdminPrivacyPolicy />} />
         <Route path="terms" element={<AdminTerms />} />

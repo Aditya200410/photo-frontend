@@ -165,7 +165,7 @@ function PhotoNagarNigam({ onBack }) {
       url.searchParams.append('ward', wardNumber);
       url.searchParams.append('booth', boothNumber);
 
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } });
       const data = await res.json();
 
       if (data.error) {
