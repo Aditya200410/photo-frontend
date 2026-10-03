@@ -6,12 +6,8 @@ const basePath = 'c:/Users/adity/Desktop/photo id/photo-frontend/src/pages';
 const configs = [
   { name: 'AdminPrintDataAssembly', title: 'Assembly Print Records', type: 'assembly' },
   { name: 'AdminPrintDataNagarNigam', title: 'Nagar Nigam Print Records', type: 'nagar-nigam' },
-  { name: 'AdminPrintDataPanchayat', title: 'Gram Panchayat Print Records', type: 'panchayat' } // maybe type is gram-panchayat? Let's filter on type
+  { name: 'AdminPrintDataPanchayat', title: 'Gram Panchayat Print Records', type: 'panchayat' }
 ];
-
-// In frontend, when creating prints, what is optionType?
-// In PhotoAssembly, optionType='assembly'. PhotoNagarNigam, optionType='nagar-nigam' or similar.
-// I will just use the correct filtering or just display all for the type.
 
 configs.forEach(conf => {
   const code = `import { useState, useEffect } from 'react';
@@ -30,8 +26,12 @@ function ${conf.name}() {
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          // Filter dynamically based on type (assembly, nagar-nigam, gram-panchayat/panchayat)
-          setRecords(data.filter(r => r.option_type && r.option_type.includes('${conf.type.split('-')[0]}')));
+          // Filter dynamically based on type, case-insensitive, AND include 'option' (Slip Prints)
+          setRecords(data.filter(r => {
+            if (!r.option_type) return false;
+            const type = r.option_type.toLowerCase();
+            return type.includes('${conf.type.split('-')[0]}') || type.includes('option');
+          }));
         }
       } catch (err) {
         console.error(err);
@@ -44,13 +44,13 @@ function ${conf.name}() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center p-4 md:p-8 font-sans">
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-blue-700"></div>
         <div className="p-8 md:p-12">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">${conf.title}</h2>
-              <p className="text-slate-500 mt-2">View all directory generation activities for this category</p>
+              <p className="text-slate-500 mt-2">View all directory and slip generation activities for this category</p>
             </div>
           </div>
 
@@ -58,7 +58,8 @@ function ${conf.name}() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm font-semibold uppercase tracking-wider">
-                  <th className="p-4 rounded-tl-lg">ID</th>
+                  <th className="p-4 rounded-tl-lg">ID / Type</th>
+                  <th className="p-4">Account</th>
                   <th className="p-4">Location Info</th>
                   <th className="p-4">Voter Name / Head</th>
                   <th className="p-4">Pages</th>
@@ -67,18 +68,26 @@ function ${conf.name}() {
               </thead>
               <tbody className="text-slate-700 divide-y divide-slate-100 bg-white">
                 {loading ? (
-                  <tr><td colSpan="5" className="p-4 text-center">Loading records...</td></tr>
+                  <tr><td colSpan="6" className="p-4 text-center">Loading records...</td></tr>
                 ) : records.length === 0 ? (
-                  <tr><td colSpan="5" className="p-4 text-center text-slate-500">No records found.</td></tr>
+                  <tr><td colSpan="6" className="p-4 text-center text-slate-500">No records found.</td></tr>
                 ) : (
                   records.map((r, i) => (
                     <tr key={r.id || i} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 text-sm text-slate-500">{r.id}</td>
+                      <td className="p-4">
+                        <div className="text-sm font-semibold text-slate-700">{r.id}</div>
+                        <div className="text-xs font-bold text-blue-600 uppercase mt-1">{r.option_type === 'Option 1' ? 'Slip Print' : 'Directory'}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className={\`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium \${r.account === 'Guest User' ? 'bg-slate-100 text-slate-800' : 'bg-purple-100 text-purple-800'}\`}>
+                          {r.account || 'Guest User'}
+                        </span>
+                      </td>
                       <td className="p-4">
                         <div className="text-sm">
-                          {r.ward_no ? <span className="mr-2">Ward {r.ward_no}</span> : null}
-                          {r.part_no ? <span>Booth {r.part_no}</span> : null}
-                          {!r.ward_no && !r.part_no ? 'N/A' : null}
+                          {r.ward_no && r.ward_no !== '-' ? <span className="mr-2">Ward {r.ward_no}</span> : null}
+                          {r.part_no && r.part_no !== '-' ? <span>Booth {r.part_no}</span> : null}
+                          {(!r.ward_no || r.ward_no === '-') && (!r.part_no || r.part_no === '-') ? 'N/A' : null}
                         </div>
                       </td>
                       <td className="p-4 font-medium">{r.voter_name || 'N/A'}</td>
