@@ -121,7 +121,7 @@ function Option1() {
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/api/prints`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || 'DUMMY'}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
         body: JSON.stringify({
           optionType: 'Option 1',
           wardNo: formData.wardNo,

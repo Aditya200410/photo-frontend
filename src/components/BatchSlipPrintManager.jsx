@@ -73,7 +73,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/api/prints`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || 'DUMMY'}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
         body: JSON.stringify({
           optionType: `Batch Slips Option ${selectedOption}`,
           wardNo: wardNo || '-',
