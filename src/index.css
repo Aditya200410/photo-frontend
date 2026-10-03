@@ -26,3 +26,11 @@ body {
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+
+/* Google Translate Overrides */
+body { top: 0 !important; }
+.skiptranslate iframe { display: none !important; }
+#goog-gt-tt { display: none !important; }
+.goog-te-banner-frame { display: none !important; }
+.goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
