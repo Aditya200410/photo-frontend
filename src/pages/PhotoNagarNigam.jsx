@@ -91,8 +91,7 @@ function PhotoNagarNigam({ onBack }) {
   };
 
   // Compute available options based on selections
-  const availableStateCodes = [...new Set(availableFiles.map(f => f.state).filter(Boolean))];
-  const availableStates = State.getStatesOfCountry('IN').filter(s => availableStateCodes.includes(s.isoCode));
+  const availableStates = [...new Set(availableFiles.map(f => f.state).filter(Boolean))];
 
   const stateFiles = availableFiles.filter(f => f.state === selectedState);
   const availableDistricts = [...new Set(stateFiles.map(f => f.district).filter(Boolean))];
@@ -224,7 +223,7 @@ function PhotoNagarNigam({ onBack }) {
                     >
                       <option value="">{availableStates.length === 0 ? 'No State Data Uploaded' : 'Select State'}</option>
                       {availableStates.map(state => (
-                        <option key={state.isoCode} value={state.isoCode}>{state.name}</option>
+                        <option key={state} value={state}>{state}</option>
                       ))}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
