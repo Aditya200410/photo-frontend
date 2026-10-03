@@ -202,21 +202,24 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                   className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium mb-4 bg-white"
                 >
                   <option value={1}>Option 1 (Top Banner Image)</option>
+                  <option value={2}>Option 2 (Standard Template)</option>
                   <option value={3}>Option 3 (Right Symbol Image)</option>
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  {selectedOption === 1 ? 'Top Banner Image (Optional)' : 'Symbol Image (Optional)'}
-                </label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleImageUpload} 
-                  className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                />
-              </div>
+              {selectedOption !== 2 && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    {selectedOption === 1 ? 'Top Banner Image (Optional)' : 'Symbol Image (Optional)'}
+                  </label>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleImageUpload} 
+                    className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                  />
+                </div>
+              )}
 
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8">
                 <button
