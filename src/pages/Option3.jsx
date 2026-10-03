@@ -122,7 +122,7 @@ function Option3() {
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/api/prints`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || 'DUMMY'}` },
         body: JSON.stringify({
           optionType: 'Option 3',
           wardNo: formData.wardNo,
