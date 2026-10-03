@@ -50,6 +50,27 @@ const AdminUsers = () => {
     }
   };
 
+  const handleRemove = async (userId) => {
+    if (!window.confirm('Are you sure you want to remove access for this user?')) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/remove-user`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer DUMMY'
+        },
+        body: JSON.stringify({ userId })
+      });
+      if (res.ok) {
+        setMessage('User access removed!');
+        fetchUsers();
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
   const pendingUsers = users.filter(u => u.status === 'pending_approval');
   const activeUsers = users.filter(u => u.status === 'active' && u.role !== 'admin');
 
@@ -103,6 +124,7 @@ const AdminUsers = () => {
                   <th className="p-3 border-b">Email</th>
                   <th className="p-3 border-b">Phone</th>
                   <th className="p-3 border-b">UTR</th>
+                  <th className="p-3 border-b">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,6 +134,9 @@ const AdminUsers = () => {
                     <td className="p-3 text-slate-600">{u.email}</td>
                     <td className="p-3 text-slate-600">{u.phone}</td>
                     <td className="p-3 font-mono text-blue-600 bg-blue-50 rounded px-2">{u.utr || '-'}</td>
+                    <td className="p-3">
+                      <button onClick={() => handleRemove(u.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded shadow-sm text-sm font-bold">Remove</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
