@@ -14,11 +14,26 @@ function AdminAddExcelAssembly() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   
-  const allStates = State.getStatesOfCountry('IN');
-  const selectedStateObj = allStates.find(s => s.name === state);
-  const allDistricts = selectedStateObj ? City.getCitiesOfState('IN', selectedStateObj.isoCode) : [];
-
+  const [allStates, setAllStates] = useState([]);
+  const [allDistricts, setAllDistricts] = useState([]);
   const [editingFile, setEditingFile] = useState(null);
+
+  useEffect(() => {
+    setAllStates(State.getStatesOfCountry('IN'));
+  }, []);
+
+  const handleStateChange = (e) => {
+    const selectedState = e.target.value;
+    setState(selectedState);
+    setDistrict('');
+    
+    const selectedStateObj = allStates.find(s => s.name === selectedState);
+    if (selectedStateObj) {
+      setAllDistricts(City.getCitiesOfState('IN', selectedStateObj.isoCode));
+    } else {
+      setAllDistricts([]);
+    }
+  };
 
 
 
@@ -125,7 +140,7 @@ function AdminAddExcelAssembly() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 block">State:</label>
-                  <select value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200">
+                  <select value={state} onChange={handleStateChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200">
                     <option value="">Select State</option>
                     {allStates.map(s => <option key={s.isoCode} value={s.name}>{s.name}</option>)}
                   </select>
