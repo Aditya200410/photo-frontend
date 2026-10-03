@@ -6,7 +6,7 @@ function AdminPrivacyPolicy() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/settings')
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`)
       .then(res => res.json())
       .then(data => {
         setText(data.privacyPolicyText || '');
@@ -21,7 +21,7 @@ function AdminPrivacyPolicy() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:5000/api/settings', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ privacyPolicyText: text })

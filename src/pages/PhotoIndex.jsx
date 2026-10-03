@@ -23,7 +23,7 @@ function PhotoIndex() {
   useEffect(() => {
     if (activeTab === 'overview') {
       setIsLoadingAnalytics(true);
-      fetch('http://localhost:5000/api/analytics')
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/analytics`)
         .then(res => res.json())
         .then(data => {
           setAnalytics(data);

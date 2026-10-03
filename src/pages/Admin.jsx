@@ -6,7 +6,7 @@ function Admin() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/analytics')
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/analytics`)
       .then(res => res.json())
       .then(data => {
         setAnalytics(data);
