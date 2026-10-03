@@ -127,17 +127,17 @@ function PhotoIndex() {
                 onChange={(e) => {
                   const lang = e.target.value;
                   if (lang) {
-                    document.cookie = \`googtrans=/en/\${lang}; path=/\`;
-                    document.cookie = \`googtrans=/en/\${lang}; domain=\${window.location.hostname}; path=/\`;
+                    document.cookie = `googtrans=/en/${lang}; path=/`;
+                    document.cookie = `googtrans=/en/${lang}; domain=${window.location.hostname}; path=/`;
                     window.location.reload();
                   } else {
                     document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                    document.cookie = \`googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=\${window.location.hostname}; path=/;\`;
+                    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${window.location.hostname}; path=/;`;
                     window.location.reload();
                   }
                 }}
                 defaultValue={(() => {
-                  const match = document.cookie.match(/googtrans=\\/en\\/([a-z]{2})/);
+                  const match = document.cookie.match(/googtrans=\/en\/([a-z]{2})/);
                   return match ? match[1] : "";
                 })()}
               >
