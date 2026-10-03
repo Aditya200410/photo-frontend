@@ -123,11 +123,41 @@ function AdminAddExcelPanchayat() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 block">State:</label>
-                  <input type="text" value={state} onChange={(e) => setState(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Uttar Pradesh" />
+                  <select value={state} onChange={(e) => setState(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200">
+                    <option value="">Select State</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Rajasthan">Rajasthan</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Gujarat">Gujarat</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Punjab">Punjab</option>
+                    <option value="West Bengal">West Bengal</option>
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 block">District:</label>
-                  <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="e.g., Lucknow" />
+                  <input 
+                    type="text" 
+                    list="district-options"
+                    value={district} 
+                    onChange={(e) => setDistrict(e.target.value)} 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200" 
+                    placeholder="Select or type district" 
+                  />
+                  <datalist id="district-options">
+                    <option value="Lucknow" />
+                    <option value="Kanpur" />
+                    <option value="Varanasi" />
+                    <option value="Agra" />
+                    <option value="Prayagraj" />
+                    <option value="Ghaziabad" />
+                    <option value="Sriganganagar" />
+                    <option value="Jaipur" />
+                    <option value="New Delhi" />
+                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 block">Panchayat:</label>
