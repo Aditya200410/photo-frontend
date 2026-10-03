@@ -102,6 +102,7 @@ const AdminUsers = () => {
                   <th className="p-3 border-b">Name</th>
                   <th className="p-3 border-b">Email</th>
                   <th className="p-3 border-b">Phone</th>
+                  <th className="p-3 border-b">UTR</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,6 +111,7 @@ const AdminUsers = () => {
                     <td className="p-3 font-medium text-slate-800">{u.name}</td>
                     <td className="p-3 text-slate-600">{u.email}</td>
                     <td className="p-3 text-slate-600">{u.phone}</td>
+                    <td className="p-3 font-mono text-blue-600 bg-blue-50 rounded px-2">{u.utr || '-'}</td>
                   </tr>
                 ))}
               </tbody>
