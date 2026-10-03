@@ -1,7 +1,23 @@
-import { useState, useEffect } from 'react';
+import fs from 'fs';
+import path from 'path';
+
+const basePath = 'c:/Users/adity/Desktop/photo id/photo-frontend/src/pages';
+
+const configs = [
+  { name: 'AdminPrintDataAssembly', title: 'Assembly Print Records', type: 'assembly' },
+  { name: 'AdminPrintDataNagarNigam', title: 'Nagar Nigam Print Records', type: 'nagar-nigam' },
+  { name: 'AdminPrintDataPanchayat', title: 'Gram Panchayat Print Records', type: 'panchayat' } // maybe type is gram-panchayat? Let's filter on type
+];
+
+// In frontend, when creating prints, what is optionType?
+// In PhotoAssembly, optionType='assembly'. PhotoNagarNigam, optionType='nagar-nigam' or similar.
+// I will just use the correct filtering or just display all for the type.
+
+configs.forEach(conf => {
+  const code = `import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-function AdminPrintDataAssembly() {
+function ${conf.name}() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -9,13 +25,13 @@ function AdminPrintDataAssembly() {
     const fetchRecords = async () => {
       try {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/prints`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch(\`\${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/prints\`, {
+          headers: { 'Authorization': \`Bearer \${token}\` }
         });
         const data = await res.json();
         if (Array.isArray(data)) {
           // Filter dynamically based on type (assembly, nagar-nigam, gram-panchayat/panchayat)
-          setRecords(data.filter(r => r.option_type && r.option_type.includes('assembly')));
+          setRecords(data.filter(r => r.option_type && r.option_type.includes('${conf.type.split('-')[0]}')));
         }
       } catch (err) {
         console.error(err);
@@ -33,7 +49,7 @@ function AdminPrintDataAssembly() {
         <div className="p-8 md:p-12">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Assembly Print Records</h2>
+              <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">${conf.title}</h2>
               <p className="text-slate-500 mt-2">View all directory generation activities for this category</p>
             </div>
           </div>
@@ -86,4 +102,9 @@ function AdminPrintDataAssembly() {
   );
 }
 
-export default AdminPrintDataAssembly;
+export default ${conf.name};
+`;
+
+  fs.writeFileSync(path.join(basePath, conf.name + '.jsx'), code);
+  console.log('Written', conf.name);
+});
