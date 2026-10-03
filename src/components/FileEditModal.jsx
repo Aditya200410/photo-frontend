@@ -40,7 +40,12 @@ export default function FileEditModal({ isOpen, onClose, file, onSave }) {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (name === 'state') {
-      setDistricts(City.getCitiesOfState('IN', value));
+      const selectedStateObj = states.find(s => s.name === value);
+      if (selectedStateObj) {
+        setDistricts(City.getCitiesOfState('IN', selectedStateObj.isoCode));
+      } else {
+        setDistricts([]);
+      }
       setFormData(prev => ({ ...prev, district: '' }));
     }
   };
@@ -102,7 +107,7 @@ export default function FileEditModal({ isOpen, onClose, file, onSave }) {
             <label className="text-sm font-semibold text-slate-700 block mb-1">State</label>
             <select name="state" value={formData.state} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2">
               <option value="">Select State</option>
-              {states.map(s => <option key={s.isoCode} value={s.isoCode}>{s.name}</option>)}
+              {states.map(s => <option key={s.isoCode} value={s.name}>{s.name}</option>)}
             </select>
           </div>
           <div>
