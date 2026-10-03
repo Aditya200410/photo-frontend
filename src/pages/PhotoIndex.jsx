@@ -117,53 +117,55 @@ function PhotoIndex() {
             </span>
           </div>
           
-          <div className="flex items-center gap-4">
-            <button className="text-slate-400 hover:text-blue-600 transition-colors">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+          <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+            <button className="text-slate-400 hover:text-blue-600 transition-colors hidden sm:block">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
             </button>
-                        <div className="flex items-center gap-2 relative group z-50">
+            <div className="flex items-center gap-1 sm:gap-2 relative group z-50">
               <select 
-                className="appearance-none bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-sm font-semibold rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer shadow-sm"
+                className="appearance-none bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-[10px] sm:text-sm font-semibold rounded-md sm:rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 pr-6 sm:pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer shadow-sm w-[80px] sm:w-auto truncate"
                 onChange={(e) => {
                   const lang = e.target.value;
                   if (lang) {
-                    document.cookie = `googtrans=/en/${lang}; path=/`;
-                    document.cookie = `googtrans=/en/${lang}; domain=${window.location.hostname}; path=/`;
+                    document.cookie = \`googtrans=/en/\${lang}; path=/\`;
+                    document.cookie = \`googtrans=/en/\${lang}; domain=\${window.location.hostname}; path=/\`;
                     window.location.reload();
                   } else {
                     document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${window.location.hostname}; path=/;`;
+                    document.cookie = \`googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=\${window.location.hostname}; path=/;\`;
                     window.location.reload();
                   }
                 }}
                 defaultValue={(() => {
-                  const match = document.cookie.match(/googtrans=\/en\/([a-z]{2})/);
+                  const match = document.cookie.match(/googtrans=\\/en\\/([a-z]{2})/);
                   return match ? match[1] : "";
                 })()}
               >
-                <option value="">English (EN)</option>
-                <option value="hi">Hindi (हिन्दी)</option>
-                <option value="bn">Bengali (বাংলা)</option>
-                <option value="te">Telugu (తెలుగు)</option>
-                <option value="mr">Marathi (मराठी)</option>
-                <option value="ta">Tamil (தமிழ்)</option>
-                <option value="ur">Urdu (اردو)</option>
-                <option value="gu">Gujarati (ગુજરાતી)</option>
-                <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                <option value="">EN</option>
+                <option value="hi">HI</option>
+                <option value="bn">BN</option>
+                <option value="te">TE</option>
+                <option value="mr">MR</option>
+                <option value="ta">TA</option>
+                <option value="ur">UR</option>
+                <option value="gu">GU</option>
+                <option value="kn">KN</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 sm:px-2 text-slate-500">
+                <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </div>
             </div>
-            <div className="h-6 w-px bg-slate-300 mx-1"></div>
-            <Link to="/account" className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="My Account">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <div className="h-4 sm:h-6 w-px bg-slate-300 mx-0.5 sm:mx-1"></div>
+            <Link to="/account" className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="My Account">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             </Link>
             <button 
               onClick={() => { localStorage.removeItem('userToken'); window.location.href = '/login'; }} 
-              className="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors"
+              className="text-xs sm:text-sm font-semibold text-red-500 hover:text-red-700 transition-colors p-1"
+              title="Logout"
             >
-              Logout
+              <span className="hidden sm:inline">Logout</span>
+              <svg className="w-5 h-5 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </button>
           </div>
         </header>
