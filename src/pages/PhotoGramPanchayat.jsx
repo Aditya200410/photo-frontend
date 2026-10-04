@@ -231,14 +231,31 @@ function PhotoGramPanchayat({ onBack }) {
 
   // Active Zilla & Samiti Numbers
   const currentZillaNo = useMemo(() => {
-    const file = districtFiles.find(f => f.zillaParishadNo);
-    return file?.zillaParishadNo || '';
-  }, [districtFiles]);
+    if (panchayatName) {
+      for (const f of panchayatMatchedFiles) {
+        if (f.hierarchy && f.hierarchy[panchayatName]?.zillaNo) {
+          return String(f.hierarchy[panchayatName].zillaNo);
+        }
+      }
+    }
+    if (selectedDistrict) {
+      const file = districtFiles.find(f => f.zillaParishadNo);
+      return file?.zillaParishadNo || '';
+    }
+    return '';
+  }, [panchayatMatchedFiles, panchayatName, selectedDistrict, districtFiles]);
 
   const currentSamitiNo = useMemo(() => {
+    if (panchayatName) {
+      for (const f of panchayatMatchedFiles) {
+        if (f.hierarchy && f.hierarchy[panchayatName]?.samitiNo) {
+          return String(f.hierarchy[panchayatName].samitiNo);
+        }
+      }
+    }
     const found = availableSamitis.find(s => s.name === selectedSamiti);
     return found?.no || '';
-  }, [availableSamitis, selectedSamiti]);
+  }, [panchayatMatchedFiles, panchayatName, availableSamitis, selectedSamiti]);
 
   // --- Handlers for Cascade ---
   const handleStateChange = (e) => {
@@ -269,10 +286,29 @@ function PhotoGramPanchayat({ onBack }) {
   };
 
   const handlePanchayatChange = (e) => {
-    setPanchayatName(e.target.value);
+    const val = e.target.value;
+    setPanchayatName(val);
     setVillageName('');
     setWardNumber('');
     setBoothNumber('');
+
+    // If user selects a panchayat directly, auto-populate its State, Zilla, and Samiti!
+    if (val) {
+      for (const f of availableFiles) {
+        if (f.hierarchy && f.hierarchy[val]) {
+          const info = f.hierarchy[val];
+          if (f.state && !selectedState) setSelectedState(f.state);
+          if (info.zilla && !selectedDistrict) setSelectedDistrict(info.zilla);
+          if (info.samiti && !selectedSamiti) setSelectedSamiti(info.samiti);
+          break;
+        } else if (f.panchayats?.includes(val) || f.panchayat === val) {
+          if (f.state && !selectedState) setSelectedState(f.state);
+          if ((f.zillaParishad || f.district) && !selectedDistrict) setSelectedDistrict(f.zillaParishad || f.district);
+          if ((f.panchayatSamiti || f.city) && !selectedSamiti) setSelectedSamiti(f.panchayatSamiti || f.city);
+          break;
+        }
+      }
+    }
   };
 
   const handleVillageChange = (e) => {
@@ -288,8 +324,8 @@ function PhotoGramPanchayat({ onBack }) {
 
   // --- Fetch Voters from Backend ---
   const fetchVoters = async () => {
-    if (!selectedDistrict && !panchayatName) {
-      alert("Please select District and Gram Panchayat to fetch data.");
+    if (!panchayatName && !selectedDistrict && !selectedSamiti) {
+      alert("Please select Gram Panchayat to fetch data.");
       return;
     }
 
@@ -301,8 +337,6 @@ function PhotoGramPanchayat({ onBack }) {
       if (selectedState) url.searchParams.append('state', selectedState);
       if (selectedDistrict) url.searchParams.append('district', selectedDistrict);
       if (selectedSamiti) url.searchParams.append('panchayatSamiti', selectedSamiti);
-      if (currentSamitiNo) url.searchParams.append('panchayatSamitiNo', currentSamitiNo);
-      if (currentZillaNo) url.searchParams.append('zillaParishadNo', currentZillaNo);
       if (panchayatName) url.searchParams.append('panchayat', panchayatName);
       if (villageName) url.searchParams.append('village', villageName);
       if (wardNumber) url.searchParams.append('ward', wardNumber);
