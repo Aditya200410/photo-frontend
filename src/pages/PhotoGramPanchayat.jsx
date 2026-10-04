@@ -1,73 +1,250 @@
 import { useState, useEffect, useMemo } from 'react';
-import { State, City } from 'country-state-city';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import TemplateSelectorModal from '../components/TemplateSelectorModal';
 import SlipPrintManager from '../components/SlipPrintManager';
 import BatchSlipPrintManager from '../components/BatchSlipPrintManager';
 
 function PhotoGramPanchayat({ onBack }) {
+  const [availableFiles, setAvailableFiles] = useState([]);
+  
+  // Cascade Selection States
   const [selectedState, setSelectedState] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
-
+  const [selectedSamiti, setSelectedSamiti] = useState('');
   const [panchayatName, setPanchayatName] = useState('');
   const [villageName, setVillageName] = useState('');
   const [wardNumber, setWardNumber] = useState('');
   const [boothNumber, setBoothNumber] = useState('');
 
+  // Voter data & filters
   const [voters, setVoters] = useState([]);
-  const [filters, setFilters] = useState({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
+  const [filters, setFilters] = useState({
+    id: '',
+    name: '',
+    relativeName: '',
+    houseNo: '',
+    age: '',
+    minAge: '',
+    maxAge: '',
+    sex: '',
+    ward: '',
+    village: ''
+  });
   const [displayedVoters, setDisplayedVoters] = useState([]);
   const [pageCount, setPageCount] = useState(1);
-  const itemsPerPage = 10;
-
-  const filteredVoters = useMemo(() => {
-    return voters.filter(v => {
-      const idMatch = !filters.id || (v.IDCARD || '').toString().toLowerCase().includes(filters.id.toLowerCase());
-      const nameMatch = !filters.name || (v.V_FNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || (v.V_FNAME_HI || '').toString().includes(filters.name) || (v.V_LNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase());
-      const houseMatch = !filters.houseNo || (v.HOUSE_NO || '').toString().toLowerCase().includes(filters.houseNo.toLowerCase());
-
-      const vAge = parseInt(v.AGE) || 0;
-      const ageMatch = !filters.age || vAge === parseInt(filters.age);
-      const minAgeMatch = !filters.minAge || vAge >= parseInt(filters.minAge);
-      const maxAgeMatch = !filters.maxAge || vAge <= parseInt(filters.maxAge);
-      
-      let sexMatch = true;
-      if (filters.sex) {
-        const vSex = (v.SEX || '').toUpperCase();
-        if (filters.sex === 'M') {
-          sexMatch = vSex === 'M' || vSex === 'पुरुष';
-        } else if (filters.sex === 'F') {
-          sexMatch = vSex === 'F' || vSex === 'स्त्री';
-        }
-      }
-
-      return idMatch && nameMatch && houseMatch && ageMatch && minAgeMatch && maxAgeMatch && sexMatch;
-    });
-  }, [voters, filters]);
-
-  useEffect(() => {
-    setDisplayedVoters(filteredVoters.slice(0, pageCount * itemsPerPage));
-  }, [filteredVoters, pageCount, itemsPerPage]);
+  const itemsPerPage = 15;
 
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [fetchSuccess, setFetchSuccess] = useState(false);
 
-  const [availableFiles, setAvailableFiles] = useState([]);
+  // Modal State for Slip Printing & Details
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [selectedVoter, setSelectedVoter] = useState(null);
+  const [detailModalVoter, setDetailModalVoter] = useState(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isBatchPrintModalOpen, setIsBatchPrintModalOpen] = useState(false);
+  const [selectedOptionTemplate, setSelectedOptionTemplate] = useState(1);
+  const [mappedVoterData, setMappedVoterData] = useState({});
 
+  // Fetch available Panchayat files on mount
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/panchayat`)
       .then(res => res.json())
-      .then(data => setAvailableFiles(data))
-      .catch(err => console.error(err));
+      .then(data => {
+        setAvailableFiles(data);
+        if (data.length > 0) {
+          // Preselect first state if only one
+          const states = [...new Set(data.map(f => f.state).filter(Boolean))];
+          if (states.length === 1) setSelectedState(states[0]);
+        }
+      })
+      .catch(err => console.error('Error fetching panchayat files:', err));
   }, []);
 
+  // --- Dynamic Option Derivation ---
+  // 1. Available States
+  const availableStates = useMemo(() => {
+    return [...new Set(availableFiles.map(f => f.state).filter(Boolean))];
+  }, [availableFiles]);
+
+  // 2. Files for selected state
+  const stateFiles = useMemo(() => {
+    if (!selectedState) return availableFiles;
+    return availableFiles.filter(f => f.state === selectedState);
+  }, [availableFiles, selectedState]);
+
+  // 3. Available Districts / Zilla Parishads
+  const availableDistricts = useMemo(() => {
+    const list = new Set();
+    stateFiles.forEach(f => {
+      if (f.zillaParishad) list.add(f.zillaParishad);
+      else if (f.district) list.add(f.district);
+      if (f.zillaParishads) f.zillaParishads.forEach(z => list.add(z));
+    });
+    return Array.from(list);
+  }, [stateFiles]);
+
+  // Auto-select district if only 1
+  useEffect(() => {
+    if (availableDistricts.length === 1 && !selectedDistrict) {
+      setSelectedDistrict(availableDistricts[0]);
+    }
+  }, [availableDistricts, selectedDistrict]);
+
+  // 4. Files for selected District
+  const districtFiles = useMemo(() => {
+    if (!selectedDistrict) return stateFiles;
+    return stateFiles.filter(f => 
+      f.district === selectedDistrict || 
+      f.zillaParishad === selectedDistrict || 
+      (f.zillaParishads && f.zillaParishads.includes(selectedDistrict))
+    );
+  }, [stateFiles, selectedDistrict]);
+
+  // 5. Available Panchayat Samitis (Blocks/Cities)
+  const availableSamitis = useMemo(() => {
+    const map = new Map();
+    districtFiles.forEach(f => {
+      const samitiName = f.panchayatSamiti || f.city;
+      const samitiNo = f.panchayatSamitiNo || '';
+      if (samitiName) {
+        map.set(samitiName, samitiNo);
+      }
+      if (f.panchayatSamitis) {
+        f.panchayatSamitis.forEach((s, idx) => {
+          map.set(s, f.panchayatSamitiNos?.[idx] || '');
+        });
+      }
+    });
+    return Array.from(map.entries()).map(([name, no]) => ({ name, no }));
+  }, [districtFiles]);
+
+  // Auto-select samiti if only 1
+  useEffect(() => {
+    if (availableSamitis.length === 1 && !selectedSamiti) {
+      setSelectedSamiti(availableSamitis[0].name);
+    }
+  }, [availableSamitis, selectedSamiti]);
+
+  // 6. Files for selected Samiti
+  const samitiFiles = useMemo(() => {
+    if (!selectedSamiti) return districtFiles;
+    return districtFiles.filter(f => 
+      f.panchayatSamiti === selectedSamiti || 
+      f.city === selectedSamiti || 
+      (f.panchayatSamitis && f.panchayatSamitis.includes(selectedSamiti))
+    );
+  }, [districtFiles, selectedSamiti]);
+
+  // 7. Available Gram Panchayats
+  const availablePanchayats = useMemo(() => {
+    const list = new Set();
+    samitiFiles.forEach(f => {
+      if (f.hierarchy && Object.keys(f.hierarchy).length > 0) {
+        Object.entries(f.hierarchy).forEach(([pName, info]) => {
+          if (!selectedSamiti || !info.samiti || info.samiti.trim().toLowerCase() === selectedSamiti.trim().toLowerCase()) {
+            list.add(pName);
+          }
+        });
+      } else if (f.panchayats && f.panchayats.length > 0) {
+        f.panchayats.forEach(p => list.add(p));
+      } else if (f.panchayat) {
+        list.add(f.panchayat);
+      }
+    });
+    return Array.from(list);
+  }, [samitiFiles, selectedSamiti]);
+
+  // Auto-select panchayat if only 1
+  useEffect(() => {
+    if (availablePanchayats.length === 1 && !panchayatName) {
+      setPanchayatName(availablePanchayats[0]);
+    }
+  }, [availablePanchayats, panchayatName]);
+
+  // 8. Files for selected Panchayat
+  const panchayatMatchedFiles = useMemo(() => {
+    if (!panchayatName) return samitiFiles;
+    return samitiFiles.filter(f => 
+      f.panchayat === panchayatName || 
+      (f.panchayats && f.panchayats.includes(panchayatName))
+    );
+  }, [samitiFiles, panchayatName]);
+
+  // 9. Available Villages (under selected Panchayat)
+  const availableVillages = useMemo(() => {
+    const list = new Set();
+    panchayatMatchedFiles.forEach(f => {
+      if (f.hierarchy && f.hierarchy[panchayatName]) {
+        f.hierarchy[panchayatName].villages.forEach(v => list.add(v));
+      } else if (f.villages) {
+        f.villages.forEach(v => list.add(v));
+      } else if (f.village) {
+        list.add(f.village);
+      }
+    });
+    return Array.from(list);
+  }, [panchayatMatchedFiles, panchayatName]);
+
+  // 10. Available Wards (Automatically extracted from Excel!)
+  const availableWards = useMemo(() => {
+    const set = new Set();
+    panchayatMatchedFiles.forEach(f => {
+      if (villageName && f.villageHierarchy && f.villageHierarchy[villageName]) {
+        f.villageHierarchy[villageName].wards.forEach(w => set.add(String(w)));
+      } else if (f.hierarchy && f.hierarchy[panchayatName]) {
+        f.hierarchy[panchayatName].wards.forEach(w => set.add(String(w)));
+      } else if (f.wards && f.wards.length > 0) {
+        f.wards.forEach(w => set.add(String(w)));
+      } else if (f.ward) {
+        set.add(String(f.ward));
+      }
+    });
+    return Array.from(set).sort((a, b) => {
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [panchayatMatchedFiles, panchayatName, villageName]);
+
+  // 11. Available Booths (under selected ward/panchayat)
+  const availableBooths = useMemo(() => {
+    const set = new Set();
+    panchayatMatchedFiles.forEach(f => {
+      if (wardNumber && f.hierarchy && f.hierarchy[panchayatName]) {
+        f.hierarchy[panchayatName].booths.forEach(b => set.add(String(b)));
+      } else if (f.booths && f.booths.length > 0) {
+        f.booths.forEach(b => set.add(String(b)));
+      } else if (f.booth) {
+        set.add(String(f.booth));
+      }
+    });
+    return Array.from(set).sort((a, b) => {
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [panchayatMatchedFiles, panchayatName, wardNumber]);
+
+  // Active Zilla & Samiti Numbers
+  const currentZillaNo = useMemo(() => {
+    const file = districtFiles.find(f => f.zillaParishadNo);
+    return file?.zillaParishadNo || '';
+  }, [districtFiles]);
+
+  const currentSamitiNo = useMemo(() => {
+    const found = availableSamitis.find(s => s.name === selectedSamiti);
+    return found?.no || '';
+  }, [availableSamitis, selectedSamiti]);
+
+  // --- Handlers for Cascade ---
   const handleStateChange = (e) => {
-    const stateCode = e.target.value;
-    setSelectedState(stateCode);
+    setSelectedState(e.target.value);
     setSelectedDistrict('');
+    setSelectedSamiti('');
     setPanchayatName('');
     setVillageName('');
     setWardNumber('');
@@ -76,6 +253,15 @@ function PhotoGramPanchayat({ onBack }) {
 
   const handleDistrictChange = (e) => {
     setSelectedDistrict(e.target.value);
+    setSelectedSamiti('');
+    setPanchayatName('');
+    setVillageName('');
+    setWardNumber('');
+    setBoothNumber('');
+  };
+
+  const handleSamitiChange = (e) => {
+    setSelectedSamiti(e.target.value);
     setPanchayatName('');
     setVillageName('');
     setWardNumber('');
@@ -100,32 +286,105 @@ function PhotoGramPanchayat({ onBack }) {
     setBoothNumber('');
   };
 
-  // Compute available options based on selections
-  const availableStates = [...new Set(availableFiles.map(f => f.state).filter(Boolean))];
+  // --- Fetch Voters from Backend ---
+  const fetchVoters = async () => {
+    if (!selectedDistrict && !panchayatName) {
+      alert("Please select District and Gram Panchayat to fetch data.");
+      return;
+    }
 
-  const stateFiles = availableFiles.filter(f => f.state === selectedState);
-  const availableDistricts = [...new Set(stateFiles.map(f => f.district).filter(Boolean))];
+    setIsLoading(true);
+    setError(null);
+    try {
+      const url = new URL(`${import.meta.env.VITE_API_URL}/api/voters`);
+      url.searchParams.append('category', 'panchayat');
+      if (selectedState) url.searchParams.append('state', selectedState);
+      if (selectedDistrict) url.searchParams.append('district', selectedDistrict);
+      if (selectedSamiti) url.searchParams.append('panchayatSamiti', selectedSamiti);
+      if (currentSamitiNo) url.searchParams.append('panchayatSamitiNo', currentSamitiNo);
+      if (currentZillaNo) url.searchParams.append('zillaParishadNo', currentZillaNo);
+      if (panchayatName) url.searchParams.append('panchayat', panchayatName);
+      if (villageName) url.searchParams.append('village', villageName);
+      if (wardNumber) url.searchParams.append('ward', wardNumber);
+      if (boothNumber) url.searchParams.append('booth', boothNumber);
 
-  const validFiles = stateFiles.filter(f => f.district === selectedDistrict);
-  const availablePanchayats = [...new Set(validFiles.map(f => f.panchayat).filter(Boolean))];
+      const res = await fetch(url, { 
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } 
+      });
+      const data = await res.json();
 
-  const villageFiles = validFiles.filter(f => f.panchayat === panchayatName);
-  const availableVillages = [...new Set(villageFiles.map(f => f.village).filter(Boolean))];
+      if (data.error) {
+        setError(data.error);
+        setVoters([]);
+        setDisplayedVoters([]);
+      } else {
+        const fetched = data.voters || [];
+        setVoters(fetched);
+        setPageCount(1);
+        if (fetched.length === 0) {
+          setError('No voters found for the selected parameters.');
+        } else {
+          setFetchSuccess(true);
+          setTimeout(() => setFetchSuccess(false), 3000);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch data due to network error.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const wardFiles = villageFiles.filter(f => f.village === villageName);
-  const availableWards = [...new Set(wardFiles.map(f => f.ward).filter(Boolean))];
+  // --- Client-side Filtered Voters ---
+  const filteredVoters = useMemo(() => {
+    return voters.filter(v => {
+      const idMatch = !filters.id || (v.IDCARD || '').toString().toLowerCase().includes(filters.id.toLowerCase());
+      const nameMatch = !filters.name || 
+        (v.V_FNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || 
+        (v.V_LNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || 
+        (v.V_FNAME_HI || '').toString().includes(filters.name) || 
+        (v.V_LNAME_HI || '').toString().includes(filters.name);
+      
+      const relMatch = !filters.relativeName || 
+        (v.VR_FNAME_EN || '').toString().toLowerCase().includes(filters.relativeName.toLowerCase()) || 
+        (v.VR_LNAME_EN || '').toString().toLowerCase().includes(filters.relativeName.toLowerCase()) || 
+        (v.VR_FNAME_HI || '').toString().includes(filters.relativeName) || 
+        (v.VR_LNAME_HI || '').toString().includes(filters.relativeName);
 
-  const boothFiles = wardFiles.filter(f => f.ward === wardNumber);
-  const availableBooths = [...new Set(boothFiles.map(f => f.booth).filter(Boolean))];
+      const houseMatch = !filters.houseNo || (v.HOUSE_NO || '').toString().toLowerCase().includes(filters.houseNo.toLowerCase());
 
-  // Modal State for Slip Printing
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-  const [selectedVoter, setSelectedVoter] = useState(null);
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [isBatchPrintModalOpen, setIsBatchPrintModalOpen] = useState(false);
-  const [selectedOptionTemplate, setSelectedOptionTemplate] = useState(1);
-  const [mappedVoterData, setMappedVoterData] = useState({});
+      const vAge = parseInt(v.AGE) || 0;
+      const ageMatch = !filters.age || vAge === parseInt(filters.age);
+      const minAgeMatch = !filters.minAge || vAge >= parseInt(filters.minAge);
+      const maxAgeMatch = !filters.maxAge || vAge <= parseInt(filters.maxAge);
+      
+      let sexMatch = true;
+      if (filters.sex) {
+        const vSex = (v.SEX || '').toUpperCase();
+        if (filters.sex === 'M') {
+          sexMatch = vSex === 'M' || vSex === 'पुरुष';
+        } else if (filters.sex === 'F') {
+          sexMatch = vSex === 'F' || vSex === 'स्त्री' || vSex === 'महिला';
+        }
+      }
 
+      const wardMatch = !filters.ward || String(v.WARDNO || v['PANCHAYAT WARD NO'] || '').trim() === filters.ward.trim();
+      const villageMatch = !filters.village || String(v.VILLAGE || '').toLowerCase().includes(filters.village.toLowerCase());
+
+      return idMatch && nameMatch && relMatch && houseMatch && ageMatch && minAgeMatch && maxAgeMatch && sexMatch && wardMatch && villageMatch;
+    });
+  }, [voters, filters]);
+
+  useEffect(() => {
+    setDisplayedVoters(filteredVoters.slice(0, pageCount * itemsPerPage));
+  }, [filteredVoters, pageCount]);
+
+  const loadMore = () => {
+    setPageCount(prev => prev + 1);
+  };
+
+  // --- Slip Printing Handler ---
   const handlePrintSlip = (voter) => {
     setSelectedVoter(voter);
     setIsTemplateModalOpen(true);
@@ -136,16 +395,16 @@ function PhotoGramPanchayat({ onBack }) {
     if (!selectedVoter) return;
 
     const mappedData = {
-      wardNo: wardNumber,
-      partNo: boothNumber,
-      serialNo: selectedVoter.IDCARD || '1',
+      wardNo: selectedVoter.WARDNO || selectedVoter['PANCHAYAT WARD NO'] || wardNumber || '-',
+      partNo: selectedVoter.BOOTH_NO || selectedVoter.PARTNO || boothNumber || '-',
+      serialNo: selectedVoter.SERIAL_NO || selectedVoter.IDCARD || '1',
       idNumber: selectedVoter.IDCARD || '-',
-      voterName: selectedVoter.V_FNAME_EN ? `${selectedVoter.V_FNAME_EN} ${selectedVoter.V_LNAME_EN || ''}` : '-',
-      fatherHusbandName: selectedVoter.VR_FNAME_EN ? `${selectedVoter.VR_FNAME_EN} ${selectedVoter.VR_LNAME_EN || ''}` : '-',
+      voterName: selectedVoter.V_FNAME_EN ? `${selectedVoter.V_FNAME_EN} ${selectedVoter.V_LNAME_EN || ''}`.trim() : (selectedVoter.V_FNAME_HI || '-'),
+      fatherHusbandName: selectedVoter.VR_FNAME_EN ? `${selectedVoter.VR_FNAME_EN} ${selectedVoter.VR_LNAME_EN || ''}`.trim() : (selectedVoter.VR_FNAME_HI || '-'),
       houseNo: selectedVoter.HOUSE_NO || '0',
       gender: selectedVoter.SEX === 'M' || selectedVoter.SEX === 'पुरुष' ? 'पुरुष' : (selectedVoter.SEX === 'F' || selectedVoter.SEX === 'स्त्री' ? 'स्त्री' : selectedVoter.SEX),
       age: selectedVoter.AGE || '18',
-      pollingStation: `${panchayatName} - Ward ${wardNumber} - Booth ${boothNumber}`,
+      pollingStation: selectedVoter.PS_HI || selectedVoter.PS_EN || `${selectedVoter['PANCHAYAT NAME'] || panchayatName} - Ward ${selectedVoter.WARDNO || wardNumber}`,
       topImage: null,
       symbolImage: null,
       symbolName: 'कमल का फूल'
@@ -161,372 +420,603 @@ function PhotoGramPanchayat({ onBack }) {
     setIsBatchPrintModalOpen(true);
   };
 
-  const fetchVoters = async () => {
-    if (!selectedState || !selectedDistrict || !panchayatName || !villageName || !wardNumber || !boothNumber) {
-      alert("Please fill all fields first");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const url = new URL(`${import.meta.env.VITE_API_URL}/api/voters`);
-      url.searchParams.append('category', 'panchayat');
-      url.searchParams.append('state', selectedState);
-      url.searchParams.append('district', selectedDistrict);
-      url.searchParams.append('panchayat', panchayatName);
-      url.searchParams.append('village', villageName);
-      url.searchParams.append('ward', wardNumber);
-      url.searchParams.append('booth', boothNumber);
-
-      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } });
-      const data = await res.json();
-
-      if (data.error) {
-        setError(data.error);
-        setVoters([]);
-        setDisplayedVoters([]);
-      } else {
-        setVoters(data.voters || []);
-        setPageCount(1);
-        if (data.voters.length === 0) {
-          setError('No voters found for this location');
-        } else {
-          setFetchSuccess(true);
-          setTimeout(() => setFetchSuccess(false), 3000);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Failed to fetch data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadMore = () => {
-    const nextPage = pageCount + 1;
-    setPageCount(nextPage);
-  };
-
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-0 md:p-8 w-full">
-        <div className="w-full max-w-2xl lg:max-w-6xl xl:max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-gradient-to-r from-violet-500 to-purple-500"></div>
-          <div className="p-5 sm:p-8 md:p-12">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-0">
+      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full">
+        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600"></div>
+          
+          <div className="p-4 sm:p-6 md:p-10">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-6 border-b border-slate-100 gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Gram Panchayat Details</h2>
-                <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base">Generate PDF based on Booth Number</p>
+                <div className="flex items-center gap-2">
+                  <span className="bg-violet-100 text-violet-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    Gram Panchayat Portal
+                  </span>
+                  {currentZillaNo && (
+                    <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                      Zilla Parishad No: {currentZillaNo}
+                    </span>
+                  )}
+                  {currentSamitiNo && (
+                    <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                      Samiti No: {currentSamitiNo}
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight mt-2">
+                  Gram Panchayat Voter List & Slip Generator
+                </h2>
+                <p className="text-slate-500 mt-1 text-sm">
+                  Select parameters or upload a single Excel for your city to automatically separate wards and generate slips
+                </p>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 shadow-inner shrink-0">
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-violet-500/30 shrink-0">
+                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
             </div>
 
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 block">State</label>
-                  <div className="relative">
-                    <select
-                      value={selectedState}
-                      onChange={handleStateChange}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer"
-                    >
-                      <option value="">{availableStates.length === 0 ? 'No State Data Uploaded' : 'Select State'}</option>
-                      {availableStates.map(state => (
-                        <option key={state} value={state}>{state}</option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                  </div>
+            {/* Parameter Selection Form */}
+            <form className="space-y-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                  <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                  Location & Panchayat Parameters
+                </h3>
+                {availableWards.length > 0 && (
+                  <span className="text-xs bg-violet-600 text-white font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+                    {availableWards.length} Wards Detected in Excel
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+                {/* 1. State */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">State</label>
+                  <select
+                    value={selectedState}
+                    onChange={handleStateChange}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 font-medium"
+                  >
+                    <option value="">{availableStates.length === 0 ? 'No State Data' : 'Select State'}</option>
+                    {availableStates.map(state => <option key={state} value={state}>{state}</option>)}
+                  </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 block">District</label>
-                  <div className="relative">
-                    <select
-                      value={selectedDistrict}
-                      onChange={handleDistrictChange}
-                      disabled={!selectedState || availableDistricts.length === 0}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{availableDistricts.length === 0 && selectedState ? 'No District Data Uploaded' : 'Select District'}</option>
-                      {availableDistricts.map(district => (
-                        <option key={district} value={district}>{district}</option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                  </div>
+                {/* 2. District / Zilla Parishad */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Zilla Parishad {currentZillaNo ? `(No. ${currentZillaNo})` : ''}
+                  </label>
+                  <select
+                    value={selectedDistrict}
+                    onChange={handleDistrictChange}
+                    disabled={availableDistricts.length === 0}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                  >
+                    <option value="">Select Zilla Parishad</option>
+                    {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 block">Gram Panchayat</label>
-                  <div className="relative">
-                    <select
-                      value={panchayatName}
-                      onChange={handlePanchayatChange}
-                      disabled={!selectedDistrict || availablePanchayats.length === 0}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{availablePanchayats.length === 0 && selectedDistrict ? 'No Panchayat Data' : 'Select Panchayat'}</option>
-                      {availablePanchayats.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                  </div>
+                {/* 3. Panchayat Samiti (City / Block) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Panchayat Samiti {currentSamitiNo ? `(No. ${currentSamitiNo})` : ''}
+                  </label>
+                  <select
+                    value={selectedSamiti}
+                    onChange={handleSamitiChange}
+                    disabled={availableSamitis.length === 0}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                  >
+                    <option value="">All Samitis ({availableSamitis.length})</option>
+                    {availableSamitis.map(s => (
+                      <option key={s.name} value={s.name}>
+                        {s.name} {s.no ? `(No. ${s.no})` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 block">Village</label>
-                  <div className="relative">
-                    <select
-                      value={villageName}
-                      onChange={handleVillageChange}
-                      disabled={!panchayatName || availableVillages.length === 0}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{availableVillages.length === 0 && panchayatName ? 'No Village Data' : 'Select Village'}</option>
-                      {availableVillages.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                  </div>
+                {/* 4. Gram Panchayat Name */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Panchayat Name</label>
+                  <select
+                    value={panchayatName}
+                    onChange={handlePanchayatChange}
+                    disabled={availablePanchayats.length === 0}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                  >
+                    <option value="">Select Panchayat</option>
+                    {availablePanchayats.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 block">Ward Number</label>
-                  <div className="relative">
-                    <select
-                      value={wardNumber}
-                      onChange={handleWardChange}
-                      disabled={!villageName || availableWards.length === 0}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{availableWards.length === 0 && villageName ? 'No Ward Data' : 'Select Ward Number'}</option>
-                      {availableWards.map(w => <option key={w} value={w}>{w}</option>)}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                  </div>
+                {/* 5. Village */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Village</label>
+                  <select
+                    value={villageName}
+                    onChange={handleVillageChange}
+                    disabled={!panchayatName || availableVillages.length === 0}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                  >
+                    <option value="">All Villages ({availableVillages.length})</option>
+                    {availableVillages.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 block">Booth Number</label>
-                  <div className="relative">
-                    <select
-                      value={boothNumber}
-                      onChange={(e) => setBoothNumber(e.target.value)}
-                      disabled={!wardNumber || availableBooths.length === 0}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 appearance-none focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{availableBooths.length === 0 && wardNumber ? 'No Booth Data' : 'Select Booth Number'}</option>
-                      {availableBooths.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                  </div>
+                {/* 6. Ward Number (Automatically extracted from Excel!) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Ward Number</label>
+                  <select
+                    value={wardNumber}
+                    onChange={handleWardChange}
+                    disabled={!panchayatName || availableWards.length === 0}
+                    className="w-full bg-white border border-violet-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50 font-bold"
+                  >
+                    <option value="">All Wards ({availableWards.length} Wards)</option>
+                    {availableWards.map(w => <option key={w} value={w}>Ward {w}</option>)}
+                  </select>
+                </div>
+
+                {/* 7. Booth / Part Number */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Booth / Part No</label>
+                  <select
+                    value={boothNumber}
+                    onChange={(e) => setBoothNumber(e.target.value)}
+                    disabled={!panchayatName || availableBooths.length === 0}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                  >
+                    <option value="">All Booths ({availableBooths.length})</option>
+                    {availableBooths.map(b => <option key={b} value={b}>Booth {b}</option>)}
+                  </select>
                 </div>
               </div>
 
-              <div className="pt-4 sm:pt-6 flex justify-center lg:justify-end gap-4 flex-wrap">
+              {/* Action Buttons */}
+              <div className="pt-2 flex justify-between items-center flex-wrap gap-4">
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                  {availableWards.length > 0 && (
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <span className="text-slate-700 font-bold">Wards in File:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {availableWards.map(w => (
+                          <button
+                            key={w}
+                            type="button"
+                            onClick={() => setWardNumber(w === wardNumber ? '' : w)}
+                            className={`px-2 py-0.5 rounded text-xs transition-colors ${wardNumber === w ? 'bg-violet-600 text-white font-bold' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                          >
+                            {w}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={fetchVoters}
                   disabled={isLoading}
-                  className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl px-6 sm:px-10 py-3 sm:py-4 font-bold shadow-lg shadow-violet-500/30 transform hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl px-8 py-3 font-bold shadow-lg shadow-violet-500/25 transform hover:-translate-y-0.5 transition-all duration-200 text-sm flex items-center justify-center gap-2 disabled:opacity-70"
                 >
                   {isLoading ? (
-                    <span>Loading Data...</span>
+                    <span>Fetching Data...</span>
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                       Fetch Voter Data
                     </>
                   )}
                 </button>
-
               </div>
             </form>
 
-            {error && <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 font-medium">{error}</div>}
-            {fetchSuccess && <div className="mt-6 p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 font-medium flex items-center gap-2"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Data fetched successfully!</div>}
+            {error && <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 font-medium text-sm">{error}</div>}
+            {fetchSuccess && <div className="mt-4 p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 font-medium text-sm flex items-center gap-2"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Data fetched successfully! Showing all extracted fields below.</div>}
 
+            {/* Voter Results Section */}
             {voters.length > 0 && (
-              <div className="mt-10 pt-8 border-t border-slate-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-800">Panchayat Voters ({filteredVoters.length} entries)</h3>
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-800">
+                      Voter Records ({filteredVoters.length} total)
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Displaying all standard columns from Panchayat Excel (Personal, Panchayat, Ward, Samiti, Zilla Parishad)
+                    </p>
+                  </div>
                   <button
                     onClick={generatePDF}
                     disabled={isGenerating || filteredVoters.length === 0}
-                    className="w-full sm:w-auto bg-violet-600 hover:bg-violet-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-violet-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 text-sm sm:text-base"
+                    className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-violet-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 text-sm"
                   >
-                    {isGenerating ? 'Generating...' : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        Generate PDF
-                      </>
-                    )}
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    Print Slips / Batch PDF ({filteredVoters.length})
                   </button>
                 </div>
 
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6 shadow-sm">
-                  <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-                    Filter Data
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* In-Page Quick Filters */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">ID / VID</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">ID / VID Card</label>
                       <input 
                         type="text" 
-                        placeholder="Search by ID..." 
+                        placeholder="Search ID..." 
                         value={filters.id} 
                         onChange={e => { setFilters(prev => ({...prev, id: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Voter Name</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Voter Name</label>
                       <input 
                         type="text" 
-                        placeholder="Search by Name..." 
+                        placeholder="Name (EN/HI)..." 
                         value={filters.name} 
                         onChange={e => { setFilters(prev => ({...prev, name: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">House No</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Relative Name</label>
                       <input 
                         type="text" 
-                        placeholder="Search by House No..." 
+                        placeholder="Father/Husband..." 
+                        value={filters.relativeName} 
+                        onChange={e => { setFilters(prev => ({...prev, relativeName: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">House No</label>
+                      <input 
+                        type="text" 
+                        placeholder="House No..." 
                         value={filters.houseNo} 
                         onChange={e => { setFilters(prev => ({...prev, houseNo: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
                       />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Exact Age</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter Ward</label>
                       <input 
-                        type="number" 
-                        placeholder="Age..." 
-                        value={filters.age} 
-                        onChange={e => { setFilters(prev => ({...prev, age: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        type="text" 
+                        placeholder="Ward..." 
+                        value={filters.ward} 
+                        onChange={e => { setFilters(prev => ({...prev, ward: e.target.value})); setPageCount(1); }} 
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Min Age</label>
-                      <input 
-                        type="number" 
-                        placeholder="Min Age..." 
-                        value={filters.minAge} 
-                        onChange={e => { setFilters(prev => ({...prev, minAge: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Max Age</label>
-                      <input 
-                        type="number" 
-                        placeholder="Max Age..." 
-                        value={filters.maxAge} 
-                        onChange={e => { setFilters(prev => ({...prev, maxAge: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sex</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Gender</label>
                       <select 
                         value={filters.sex} 
                         onChange={e => { setFilters(prev => ({...prev, sex: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
                       >
                         <option value="">All</option>
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
+                        <option value="M">Male (पुरुष)</option>
+                        <option value="F">Female (महिला)</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Age Range</label>
+                      <div className="flex gap-1">
+                        <input 
+                          type="number" 
+                          placeholder="Min" 
+                          value={filters.minAge} 
+                          onChange={e => { setFilters(prev => ({...prev, minAge: e.target.value})); setPageCount(1); }} 
+                          className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+                        />
+                        <input 
+                          type="number" 
+                          placeholder="Max" 
+                          value={filters.maxAge} 
+                          onChange={e => { setFilters(prev => ({...prev, maxAge: e.target.value})); setPageCount(1); }} 
+                          className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                  <table className="w-full text-left border-collapse">
+                {/* Comprehensive All-Columns Voter Table */}
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+                  <table className="w-full text-left border-collapse min-w-[1400px]">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm font-semibold uppercase tracking-wider">
-                        <th className="p-4 rounded-tl-lg">IDCARD</th>
-                        <th className="p-4">Name (EN/HI)</th>
-                        <th className="p-4">Relation (EN/HI)</th>
-                        <th className="p-4">Age / Sex</th>
-                        <th className="p-4">House No</th>
-                        <th className="p-4 rounded-tr-lg">Action</th>
+                      <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                        <th className="p-3">S.No / Booth</th>
+                        <th className="p-3">IDCARD (EPIC)</th>
+                        <th className="p-3">Voter Name (EN / HI)</th>
+                        <th className="p-3">Relative Name (EN / HI)</th>
+                        <th className="p-3">Relation</th>
+                        <th className="p-3">Age / Sex</th>
+                        <th className="p-3">House No</th>
+                        <th className="p-3">Ward No</th>
+                        <th className="p-3">Village & Section</th>
+                        <th className="p-3">Gram Panchayat</th>
+                        <th className="p-3">Panchayat Samiti</th>
+                        <th className="p-3">Zilla Parishad</th>
+                        <th className="p-3">Polling Station (PS)</th>
+                        <th className="p-3">PC Name</th>
+                        <th className="p-3 text-center">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="text-slate-700 divide-y divide-slate-100 bg-white">
+                    <tbody className="text-slate-700 divide-y divide-slate-100 text-xs">
                       {displayedVoters.map((v, i) => (
-                        <tr key={i} className="hover:bg-slate-50 transition-colors">
-                          <td className="p-4 text-sm font-medium text-slate-800">{v.IDCARD || '-'}</td>
-                          <td className="p-4 font-medium text-slate-800">
-                            {v.V_FNAME_EN || ''} {v.V_LNAME_EN || ''}<br />
-                            <span className="text-slate-500 text-sm font-normal">{v.V_FNAME_HI || ''} {v.V_LNAME_HI || ''}</span>
+                        <tr key={i} className="hover:bg-violet-50/40 transition-colors">
+                          <td className="p-3 font-semibold text-slate-800 whitespace-nowrap">
+                            <span className="text-violet-700">#{v.SERIAL_NO || (i + 1)}</span>
+                            <span className="block text-[11px] text-slate-400">B: {v.BOOTH_NO || v.PARTNO || '-'}</span>
                           </td>
-                          <td className="p-4">
-                            {v.VR_FNAME_EN || ''} {v.VR_LNAME_EN || ''}<br />
-                            <span className="text-slate-500 text-sm">{v.VR_FNAME_HI || ''} {v.VR_LNAME_HI || ''}</span>
+                          <td className="p-3 font-mono font-bold text-indigo-700 whitespace-nowrap">
+                            {v.IDCARD || '-'}
                           </td>
-                          <td className="p-4 text-slate-600">
-                            {v.AGE || '-'} Y / {v.SEX === 'M' || v.SEX === 'पुरुष' ? 'Male' : (v.SEX === 'F' || v.SEX === 'स्त्री' ? 'Female' : v.SEX)}
+                          <td className="p-3">
+                            <div className="font-bold text-slate-800">
+                              {v.V_FNAME_EN || ''} {v.V_LNAME_EN || ''}
+                            </div>
+                            {(v.V_FNAME_HI || v.V_LNAME_HI) && (
+                              <div className="text-slate-500 font-normal mt-0.5">
+                                {v.V_FNAME_HI || ''} {v.V_LNAME_HI || ''}
+                              </div>
+                            )}
                           </td>
-                          <td className="p-4 text-slate-600">{v.HOUSE_NO || '-'}</td>
-                          <td className="p-4">
-                            <button
-                              onClick={() => handlePrintSlip(v)}
-                              className="bg-violet-100 text-violet-600 hover:bg-violet-600 hover:text-white px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm"
-                            >
-                              Print Slip
-                            </button>
+                          <td className="p-3">
+                            <div className="font-medium text-slate-700">
+                              {v.VR_FNAME_EN || ''} {v.VR_LNAME_EN || ''}
+                            </div>
+                            {(v.VR_FNAME_HI || v.VR_LNAME_HI) && (
+                              <div className="text-slate-400 text-[11px] mt-0.5">
+                                {v.VR_FNAME_HI || ''} {v.VR_LNAME_HI || ''}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[11px]">
+                              {v.RELATION || 'Relative'}
+                            </span>
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="font-semibold text-slate-700">{v.AGE || '-'} Y</span> / {' '}
+                            <span className={`font-medium ${v.SEX === 'M' || v.SEX === 'पुरुष' ? 'text-blue-600' : 'text-pink-600'}`}>
+                              {v.SEX === 'M' || v.SEX === 'पुरुष' ? 'M' : (v.SEX === 'F' || v.SEX === 'स्त्री' || v.SEX === 'महिला' ? 'F' : v.SEX)}
+                            </span>
+                          </td>
+                          <td className="p-3 font-mono text-slate-700 whitespace-nowrap">
+                            {v.HOUSE_NO || '-'}
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="bg-violet-100 text-violet-800 font-bold px-2.5 py-0.5 rounded-full text-xs">
+                              Ward {v.WARDNO || v['PANCHAYAT WARD NO'] || '-'}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="font-semibold text-slate-800">{v.VILLAGE || '-'}</div>
+                            {v.SECTION && <div className="text-slate-400 text-[11px]">Sec: {v.SECTION}</div>}
+                          </td>
+                          <td className="p-3 font-semibold text-slate-800 whitespace-nowrap">
+                            {v['PANCHAYAT NAME'] || panchayatName || '-'}
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <div className="font-semibold text-slate-800">
+                              {v['PANCHAYAT SAMITI NAME'] || selectedSamiti || '-'}
+                            </div>
+                            {v['PANCHAYAT SAMITI NO'] && (
+                              <span className="text-[10px] text-emerald-700 font-bold">No. {v['PANCHAYAT SAMITI NO']}</span>
+                            )}
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <div className="font-semibold text-slate-800">
+                              {v['ZILLA PARISHAD NAME'] || selectedDistrict || '-'}
+                            </div>
+                            {v['ZILLA PARISHAD NO'] && (
+                              <span className="text-[10px] text-blue-700 font-bold">No. {v['ZILLA PARISHAD NO']}</span>
+                            )}
+                          </td>
+                          <td className="p-3 max-w-[200px] truncate" title={v.PS_HI || v.PS_EN}>
+                            <div className="truncate text-slate-800">{v.PS_EN || v.PS_HI || '-'}</div>
+                            {v.PS_HI && <div className="truncate text-slate-400 text-[11px]">{v.PS_HI}</div>}
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="text-slate-600 font-medium">{v['PC NAME'] || '-'}</span>
+                            {v['PC NO'] && <span className="text-[10px] text-slate-400 ml-1">({v['PC NO']})</span>}
+                          </td>
+                          <td className="p-3 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handlePrintSlip(v)}
+                                className="bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                Slip
+                              </button>
+                              <button
+                                onClick={() => setDetailModalVoter(v)}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                                title="View All Columns"
+                              >
+                                Details
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination load more */}
                 {filteredVoters.length > displayedVoters.length && (
                   <div className="mt-6 flex justify-center">
                     <button
                       onClick={loadMore}
-                      className="bg-white border border-slate-200 text-violet-600 hover:bg-violet-50 px-6 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
+                      className="bg-white border-2 border-violet-200 hover:border-violet-600 text-violet-700 hover:bg-violet-50 px-8 py-2.5 rounded-xl font-bold transition-all shadow-sm text-sm"
                     >
-                      Load More Entries
+                      Load More Voters ({displayedVoters.length} of {filteredVoters.length})
                     </button>
-                  </div>
-                )}
-                {filteredVoters.length === 0 && (
-                  <div className="text-center py-10 text-slate-500 font-medium">
-                    No voters match the current filters.
                   </div>
                 )}
               </div>
             )}
 
           </div>
-
-
         </div>
       </div>
+
+      {/* Voter Full Profile Details Modal */}
+      {detailModalVoter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
+            <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4 flex items-center justify-between text-white shrink-0">
+              <div>
+                <h3 className="text-lg font-bold">Voter Complete Profile</h3>
+                <p className="text-violet-200 text-xs">All fields matching Excel data</p>
+              </div>
+              <button 
+                onClick={() => setDetailModalVoter(null)}
+                className="p-1.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
+              {/* Personal Info */}
+              <div>
+                <h4 className="font-bold text-slate-700 uppercase tracking-wider mb-2.5 text-xs">Personal Details</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">IDCARD / EPIC</span>
+                    <span className="font-bold text-slate-800 text-sm font-mono">{detailModalVoter.IDCARD || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Voter Name (EN)</span>
+                    <span className="font-bold text-slate-800">{detailModalVoter.V_FNAME_EN} {detailModalVoter.V_LNAME_EN}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Voter Name (HI)</span>
+                    <span className="font-bold text-slate-800">{detailModalVoter.V_FNAME_HI} {detailModalVoter.V_LNAME_HI || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Relative Name (EN)</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.VR_FNAME_EN} {detailModalVoter.VR_LNAME_EN}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Relative Name (HI)</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.VR_FNAME_HI} {detailModalVoter.VR_LNAME_HI || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Relation</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.RELATION || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Age & Gender</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.AGE} Y / {detailModalVoter.SEX}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">House No</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.HOUSE_NO || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Mobile / Pincode</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.MOBILE_1 || detailModalVoter.MOBILE_NO || '—'} / {detailModalVoter.PINCODE || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panchayat & Ward Info */}
+              <div>
+                <h4 className="font-bold text-slate-700 uppercase tracking-wider mb-2.5 text-xs">Panchayat & Ward Details</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="bg-violet-50/70 p-3 rounded-xl border border-violet-100">
+                    <span className="text-violet-600 block text-[11px] font-bold">Ward Number</span>
+                    <span className="font-extrabold text-violet-900 text-sm">Ward {detailModalVoter.WARDNO || detailModalVoter['PANCHAYAT WARD NO']}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Booth / Part No</span>
+                    <span className="font-bold text-slate-800">Booth {detailModalVoter.BOOTH_NO || detailModalVoter.PARTNO}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Serial No</span>
+                    <span className="font-bold text-slate-800">#{detailModalVoter.SERIAL_NO || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Gram Panchayat</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter['PANCHAYAT NAME'] || panchayatName}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Village</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.VILLAGE || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Section</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter.SECTION || '—'}</span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Panchayat Samiti</span>
+                    <span className="font-semibold text-slate-800">
+                      {detailModalVoter['PANCHAYAT SAMITI NAME'] || selectedSamiti}
+                      {detailModalVoter['PANCHAYAT SAMITI NO'] && ` (No. ${detailModalVoter['PANCHAYAT SAMITI NO']})`}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">Zilla Parishad</span>
+                    <span className="font-semibold text-slate-800">
+                      {detailModalVoter['ZILLA PARISHAD NAME'] || selectedDistrict}
+                      {detailModalVoter['ZILLA PARISHAD NO'] && ` (No. ${detailModalVoter['ZILLA PARISHAD NO']})`}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="text-slate-400 block text-[11px]">PC Name & No</span>
+                    <span className="font-semibold text-slate-800">{detailModalVoter['PC NAME'] || '—'} ({detailModalVoter['PC NO'] || '—'})</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Polling Station */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[11px] font-bold uppercase mb-1">Polling Station</span>
+                <p className="font-bold text-slate-800">{detailModalVoter.PS_EN || '—'}</p>
+                {detailModalVoter.PS_HI && <p className="text-slate-600 mt-1">{detailModalVoter.PS_HI}</p>}
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
+              <button
+                onClick={() => {
+                  const v = detailModalVoter;
+                  setDetailModalVoter(null);
+                  handlePrintSlip(v);
+                }}
+                className="bg-violet-600 hover:bg-violet-700 text-white font-bold px-6 py-2 rounded-xl shadow-md transition-colors"
+              >
+                Print Slip for this Voter
+              </button>
+              <button 
+                onClick={() => setDetailModalVoter(null)}
+                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-5 py-2 rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Slip Print Modal Elements */}
       <TemplateSelectorModal
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
@@ -543,8 +1033,8 @@ function PhotoGramPanchayat({ onBack }) {
         onClose={() => setIsBatchPrintModalOpen(false)}
         voters={filteredVoters}
         assemblyName={panchayatName}
-        wardNo={wardNumber}
-        boothNumber={boothNumber}
+        wardNo={wardNumber || 'All'}
+        boothNumber={boothNumber || 'All'}
       />
     </>
   );
