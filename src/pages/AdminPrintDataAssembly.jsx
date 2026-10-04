@@ -68,9 +68,17 @@ function AdminPrintDataAssembly() {
                         <div className="text-xs font-bold text-blue-600 uppercase mt-1">{r.option_type.includes('Option') ? 'Slip Print' : 'Directory'}</div>
                       </td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${r.account === 'Guest User' ? 'bg-slate-100 text-slate-800' : 'bg-purple-100 text-purple-800'}`}>
-                          {r.account || 'Guest User'}
-                        </span>
+                        {r.accountName ? (
+                          <div>
+                            <div className="font-semibold text-slate-800 text-sm">{r.accountName}</div>
+                            <div className="text-xs text-purple-700 font-medium">{r.account}</div>
+                            {r.accountPhone && <div className="text-[11px] text-slate-400 font-mono mt-0.5">{r.accountPhone}</div>}
+                          </div>
+                        ) : (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${r.account === 'Guest User' ? 'bg-slate-100 text-slate-800' : 'bg-purple-100 text-purple-800'}`}>
+                            {r.account || 'Guest User'}
+                          </span>
+                        )}
                       </td>
                       <td className="p-4">
                         <div className="text-sm">
@@ -107,51 +115,94 @@ function AdminPrintDataAssembly() {
 
       {selectedRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden">
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Print Record Details</h3>
-              <button onClick={() => setSelectedRecord(null)} className="text-slate-400 hover:text-slate-600">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex justify-between items-center shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-white">Print Record Details</h3>
+                <p className="text-blue-200 text-xs mt-0.5">ID: {selectedRecord.id}</p>
+              </div>
+              <button onClick={() => setSelectedRecord(null)} className="text-white/70 hover:text-white bg-white/10 rounded-lg p-1.5 transition">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <div><span className="block text-slate-500 font-semibold mb-1">Record ID</span><span className="font-medium text-slate-800">{selectedRecord.id}</span></div>
-                <div><span className="block text-slate-500 font-semibold mb-1">Timestamp</span><span className="font-medium text-slate-800">{new Date(selectedRecord.timestamp).toLocaleString()}</span></div>
-                
-                <div><span className="block text-slate-500 font-semibold mb-1">Account Info</span>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedRecord.account === 'Guest User' ? 'bg-slate-100 text-slate-800' : 'bg-purple-100 text-purple-800'}`}>
-                    {selectedRecord.account || 'Guest User'}
-                  </span>
-                </div>
-                <div><span className="block text-slate-500 font-semibold mb-1">Print Type</span><span className="font-medium text-blue-600 uppercase text-xs font-bold">{selectedRecord.option_type.includes('Option') ? 'Slip Print' : 'Directory'}</span></div>
+            <div className="p-6 overflow-y-auto space-y-5 text-sm">
 
-                <div className="col-span-2 border-t border-slate-100 pt-4 mt-2">
-                  <h4 className="text-base font-bold text-slate-800 mb-3">Location Data</h4>
+              {/* Account Details */}
+              <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
+                <h4 className="text-xs font-bold text-purple-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  Account Details
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Full Name</span>
+                    <span className="font-semibold text-slate-800">{selectedRecord.accountName || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Email</span>
+                    <span className="font-semibold text-slate-800">{selectedRecord.account || 'Guest User'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Phone</span>
+                    <span className="font-semibold text-slate-800">{selectedRecord.accountPhone || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">UTR / Payment Ref</span>
+                    <span className="font-semibold text-slate-800 font-mono">{selectedRecord.accountUtr || '—'}</span>
+                  </div>
                 </div>
-                
-                {selectedRecord.state && <div><span className="block text-slate-500 font-semibold mb-1">State</span><span className="font-medium text-slate-800">{selectedRecord.state}</span></div>}
-                {selectedRecord.district && <div><span className="block text-slate-500 font-semibold mb-1">District</span><span className="font-medium text-slate-800">{selectedRecord.district}</span></div>}
-                {selectedRecord.assembly && <div><span className="block text-slate-500 font-semibold mb-1">Assembly</span><span className="font-medium text-slate-800">{selectedRecord.assembly}</span></div>}
-                {selectedRecord.city && <div><span className="block text-slate-500 font-semibold mb-1">City</span><span className="font-medium text-slate-800">{selectedRecord.city}</span></div>}
-                {selectedRecord.panchayat && <div><span className="block text-slate-500 font-semibold mb-1">Panchayat</span><span className="font-medium text-slate-800">{selectedRecord.panchayat}</span></div>}
-                
-                <div><span className="block text-slate-500 font-semibold mb-1">Ward Number</span><span className="font-medium text-slate-800">{selectedRecord.ward_no || 'N/A'}</span></div>
-                <div><span className="block text-slate-500 font-semibold mb-1">Booth / Part No</span><span className="font-medium text-slate-800">{selectedRecord.part_no || 'N/A'}</span></div>
-                
-                <div className="col-span-2 border-t border-slate-100 pt-4 mt-2">
-                  <h4 className="text-base font-bold text-slate-800 mb-3">Target Details</h4>
-                </div>
-                
-                <div><span className="block text-slate-500 font-semibold mb-1">Target Name</span><span className="font-medium text-slate-800">{selectedRecord.voter_name || 'N/A'}</span></div>
-                <div><span className="block text-slate-500 font-semibold mb-1">Target Serial No</span><span className="font-medium text-slate-800">{selectedRecord.serial_no || 'ALL'}</span></div>
-                <div><span className="block text-slate-500 font-semibold mb-1">Pages Generated</span><span className="font-medium text-slate-800">{selectedRecord.pages_count} Pages</span></div>
               </div>
+
+              {/* Record Meta */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <span className="block text-slate-400 text-xs font-semibold mb-0.5">Timestamp</span>
+                  <span className="font-semibold text-slate-800">{new Date(selectedRecord.timestamp).toLocaleString()}</span>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <span className="block text-slate-400 text-xs font-semibold mb-0.5">Print Type</span>
+                  <span className="font-bold text-blue-600 uppercase text-xs">{selectedRecord.option_type?.includes('Option') ? 'Slip Print' : 'Directory'}</span>
+                </div>
+              </div>
+
+              {/* Location Data */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Location Data</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {selectedRecord.state && <div className="bg-slate-50 rounded-xl p-3 border border-slate-100"><span className="block text-slate-400 text-xs font-semibold mb-0.5">State</span><span className="font-semibold text-slate-800">{selectedRecord.state}</span></div>}
+                  {selectedRecord.district && <div className="bg-slate-50 rounded-xl p-3 border border-slate-100"><span className="block text-slate-400 text-xs font-semibold mb-0.5">District</span><span className="font-semibold text-slate-800">{selectedRecord.district}</span></div>}
+                  {selectedRecord.assembly && <div className="bg-slate-50 rounded-xl p-3 border border-slate-100"><span className="block text-slate-400 text-xs font-semibold mb-0.5">Assembly</span><span className="font-semibold text-slate-800">{selectedRecord.assembly}</span></div>}
+                  {selectedRecord.city && <div className="bg-slate-50 rounded-xl p-3 border border-slate-100"><span className="block text-slate-400 text-xs font-semibold mb-0.5">City</span><span className="font-semibold text-slate-800">{selectedRecord.city}</span></div>}
+                  {selectedRecord.panchayat && <div className="bg-slate-50 rounded-xl p-3 border border-slate-100"><span className="block text-slate-400 text-xs font-semibold mb-0.5">Panchayat</span><span className="font-semibold text-slate-800">{selectedRecord.panchayat}</span></div>}
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100"><span className="block text-slate-400 text-xs font-semibold mb-0.5">Ward Number</span><span className="font-semibold text-slate-800">{selectedRecord.ward_no || '—'}</span></div>
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100"><span className="block text-slate-400 text-xs font-semibold mb-0.5">Booth / Part No</span><span className="font-semibold text-slate-800">{selectedRecord.part_no || '—'}</span></div>
+                </div>
+              </div>
+
+              {/* Target Details */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Target Details</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 col-span-1">
+                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Target Name</span>
+                    <span className="font-semibold text-slate-800">{selectedRecord.voter_name || 'Batch Print'}</span>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Serial No</span>
+                    <span className="font-semibold text-slate-800">{selectedRecord.serial_no || 'ALL'}</span>
+                  </div>
+                  <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                    <span className="block text-emerald-500 text-xs font-semibold mb-0.5">Pages Generated</span>
+                    <span className="font-bold text-emerald-700 text-lg">{selectedRecord.pages_count}</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
-            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end">
-              <button 
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end shrink-0">
+              <button
                 onClick={() => setSelectedRecord(null)}
-                className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl transition-colors"
+                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-colors"
               >
                 Close
               </button>

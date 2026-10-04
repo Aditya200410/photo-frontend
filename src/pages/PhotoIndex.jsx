@@ -9,7 +9,18 @@ function PhotoIndex() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('view') || 'overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [analytics, setAnalytics] = useState({ excelFilesCount: 0, printsCount: 0, lastPrintDate: null });
+  const [analytics, setAnalytics] = useState({
+    assemblyFiles: 0,
+    nagarNigamFiles: 0,
+    panchayatFiles: 0,
+    totalVoters: 0,
+    maleVoters: 0,
+    femaleVoters: 0,
+    averageAge: 0,
+    ageBrackets: { youth: 0, adult: 0, middle: 0, senior: 0 },
+    printsCount: 0,
+    lastPrintDate: null
+  });
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
 
   useEffect(() => {
@@ -20,20 +31,36 @@ function PhotoIndex() {
     }
   }, [searchParams]);
 
+  const fetchAnalytics = (showLoader = false) => {
+    if (showLoader) setIsLoadingAnalytics(true);
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/analytics`)
+      .then(res => res.json())
+      .then(data => {
+        setAnalytics(prev => ({ ...prev, ...data }));
+        setIsLoadingAnalytics(false);
+      })
+      .catch(err => {
+        console.error("Failed to load analytics:", err);
+        setIsLoadingAnalytics(false);
+      });
+  };
+
+  // Fetch on mount and whenever the overview tab becomes active
+  useEffect(() => {
+    fetchAnalytics(true);
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'overview') {
-      setIsLoadingAnalytics(true);
-      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/analytics`)
-        .then(res => res.json())
-        .then(data => {
-          setAnalytics(data);
-          setIsLoadingAnalytics(false);
-        })
-        .catch(err => {
-          console.error("Failed to load analytics:", err);
-          setIsLoadingAnalytics(false);
-        });
+      fetchAnalytics(false);
     }
+  }, [activeTab]);
+
+  // Auto-refresh analytics every 30 seconds when on overview
+  useEffect(() => {
+    if (activeTab !== 'overview') return;
+    const interval = setInterval(() => fetchAnalytics(false), 30000);
+    return () => clearInterval(interval);
   }, [activeTab]);
 
   const handleTabChange = (tab) => {

@@ -27,8 +27,8 @@ function Admin() {
         if (usersRes.ok) {
           const usersData = await usersRes.json();
           if (Array.isArray(usersData)) {
-            // Filter out admins so it only shows actual client users
-            const clientUsers = usersData.filter(u => u.role !== 'admin');
+            // Only count actual client users (role must explicitly be 'user')
+            const clientUsers = usersData.filter(u => u.role === 'user' && u.id);
             setUsersCount(clientUsers.length);
           }
         }
