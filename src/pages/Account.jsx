@@ -34,7 +34,7 @@ const Account = () => {
 
     try {
       // 1. Fetch user profile
-      const userRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/me`, {
+      const userRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -52,7 +52,7 @@ const Account = () => {
       setUser(userData);
 
       // 2. Fetch user's print history and credit transactions
-      const historyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/user/print-history`, {
+      const historyRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/user/print-history`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -66,7 +66,7 @@ const Account = () => {
       }
 
       // 3. Fetch user's credit recharge requests
-      const reqRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/user/credit-requests`, {
+      const reqRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/user/credit-requests`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (reqRes.ok) {
@@ -75,7 +75,7 @@ const Account = () => {
       }
 
       // 4. Fetch system settings for UPI and QR Code
-      const settingsRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`);
+      const settingsRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`);
       if (settingsRes.ok) {
         const setts = await settingsRes.json();
         setSettings(prev => ({ ...prev, ...setts }));
@@ -127,7 +127,7 @@ const Account = () => {
     const token = localStorage.getItem('userToken');
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/user/credit-request`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/user/credit-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

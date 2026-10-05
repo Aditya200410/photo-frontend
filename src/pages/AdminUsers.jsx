@@ -26,7 +26,7 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/users`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/users`, {
         headers: { 'Authorization': 'Bearer DUMMY' }
       });
       const data = await res.json();
@@ -41,7 +41,7 @@ const AdminUsers = () => {
 
   const fetchCreditRequests = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/credit-requests`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/credit-requests`, {
         headers: { 'Authorization': 'Bearer DUMMY' }
       });
       const data = await res.json();
@@ -79,7 +79,7 @@ const AdminUsers = () => {
 
     setIsApproving(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/approve-user`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/approve-user`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ const AdminUsers = () => {
 
     setIsUpdatingCredit(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/update-credits`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/update-credits`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ const AdminUsers = () => {
   const handleRemove = async (userId) => {
     if (!window.confirm('Are you sure you want to remove access for this user?')) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/remove-user`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/remove-user`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -191,7 +191,7 @@ const AdminUsers = () => {
 
     setIsProcessingRequest(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/approve-credit-request`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/approve-credit-request`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -225,7 +225,7 @@ const AdminUsers = () => {
     if (reason === null) return; // user cancelled
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/reject-credit-request`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/reject-credit-request`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

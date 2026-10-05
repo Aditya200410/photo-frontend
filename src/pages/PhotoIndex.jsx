@@ -30,7 +30,7 @@ function PhotoIndex() {
   });
 
   const fetchSiteSettings = () => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`)
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`)
       .then(res => res.json())
       .then(data => {
         if (data && !data.error) {
@@ -43,7 +43,7 @@ function PhotoIndex() {
   const fetchCurrentUser = () => {
     const token = localStorage.getItem('userToken');
     if (!token) return;
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/me`, {
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -76,7 +76,7 @@ function PhotoIndex() {
 
   const fetchAnalytics = (showLoader = false) => {
     if (showLoader) setIsLoadingAnalytics(true);
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/analytics`)
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/analytics`)
       .then(res => res.json())
       .then(data => {
         setAnalytics(prev => ({ ...prev, ...data }));

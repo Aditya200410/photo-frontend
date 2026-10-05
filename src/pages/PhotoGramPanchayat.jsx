@@ -49,7 +49,7 @@ function PhotoGramPanchayat({ onBack }) {
 
   // Fetch available Panchayat files on mount
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/panchayat`)
+    fetch(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/excel-files/panchayat`)
       .then(res => res.json())
       .then(data => {
         setAvailableFiles(data);
@@ -332,7 +332,7 @@ function PhotoGramPanchayat({ onBack }) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL(`${import.meta.env.VITE_API_URL}/api/voters`);
+      const url = new URL(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/voters`);
       url.searchParams.append('category', 'panchayat');
       if (selectedState) url.searchParams.append('state', selectedState);
       if (selectedDistrict) url.searchParams.append('district', selectedDistrict);

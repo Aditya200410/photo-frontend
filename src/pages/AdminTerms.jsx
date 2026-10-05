@@ -6,7 +6,7 @@ function AdminTerms() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`)
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`)
       .then(res => res.json())
       .then(data => {
         setText(data.termsOfServiceText || '');
@@ -21,7 +21,7 @@ function AdminTerms() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ termsOfServiceText: text })

@@ -7,7 +7,7 @@ function TermsOfService() {
   const [content, setContent] = useState('Loading...');
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`)
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`)
       .then(res => res.json())
       .then(data => {
         if (data.termsOfServiceText) {

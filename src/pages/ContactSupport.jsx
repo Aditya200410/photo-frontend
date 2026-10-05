@@ -22,7 +22,7 @@ function ContactSupport() {
   useEffect(() => {
     const token = localStorage.getItem('userToken');
     if (!token) return;
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/me`, {
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())

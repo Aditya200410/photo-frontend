@@ -10,7 +10,7 @@ function AdminFetchData() {
     const fetchRecords = async () => {
       try {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/fetches`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/fetches`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();

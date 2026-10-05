@@ -40,7 +40,7 @@ function AdminAddExcelPanchayat() {
 
   const fetchFiles = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/panchayat`);
+      const res = await fetch(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/excel-files/panchayat`);
       const data = await res.json();
       setFiles(data);
     } catch (err) {
@@ -51,7 +51,7 @@ function AdminAddExcelPanchayat() {
   const handleDeleteFile = async (fileId) => {
     if (!window.confirm('Are you sure you want to completely delete this file? This cannot be undone.')) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/excel-files/${fileId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/excel-files/${fileId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -82,6 +82,12 @@ function AdminAddExcelPanchayat() {
     if (!selectedFile) return alert('Please select an Excel file first.');
     if (!fileName) return alert('Please enter a file name.');
     
+    // Check file size (500MB limit)
+    const MAX_SIZE = 500 * 1024 * 1024;
+    if (selectedFile.size > MAX_SIZE) {
+      return alert(`Selected file (${(selectedFile.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 500MB limit. Please select a file under 500MB.`);
+    }
+
     setIsUploading(true);
     const formData = new FormData();
     formData.append('excelFile', selectedFile);
@@ -96,10 +102,11 @@ function AdminAddExcelPanchayat() {
     if (booth) formData.append('booth', booth);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-excel`, {
+      const res = await fetch(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/upload-excel`, {
         method: 'POST',
         body: formData,
       });
+      const data = await res.json().catch(() => null);
       if (res.ok) {
         alert('Excel file uploaded and all parameters (Wards, Booths, Samiti, Zilla Parishad) automatically extracted!');
         setSelectedFile(null);
@@ -107,11 +114,11 @@ function AdminAddExcelPanchayat() {
         if (fileInputRef.current) fileInputRef.current.value = '';
         fetchFiles();
       } else {
-        alert('Upload failed.');
+        alert(data?.error || 'Upload failed.');
       }
     } catch (err) {
       console.error(err);
-      alert('Upload failed due to network error.');
+      alert('Upload failed due to network error. Large files (up to 500MB) may take several minutes to upload and process.');
     } finally {
       setIsUploading(false);
     }
@@ -218,7 +225,7 @@ function AdminAddExcelPanchayat() {
                disabled={!selectedFile || isUploading}
                className={`px-8 py-3 rounded-xl font-bold shadow-lg transition-all duration-300 text-sm ${!selectedFile || isUploading ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-violet-500/25'}`}
              >
-               {isUploading ? 'Extracting & Uploading...' : 'Upload & Process Excel'}
+               {isUploading ? 'Uploading & Processing (up to 500MB, please wait)...' : 'Upload & Process Excel'}
              </button>
           </div>
         </div>
@@ -323,7 +330,7 @@ function AdminAddExcelPanchayat() {
                     Delete
                   </button>
                   <a 
-                    href={`${import.meta.env.VITE_API_URL}/api/uploads/${file.fileName}`}
+                    href={`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/uploads/${file.fileName}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs font-semibold text-violet-600 hover:text-violet-800 px-3 py-1.5 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors"
@@ -331,7 +338,7 @@ function AdminAddExcelPanchayat() {
                     Open
                   </a>
                   <a 
-                    href={`${import.meta.env.VITE_API_URL}/api/download/${file.fileName}`}
+                    href={`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/download/${file.fileName}`}
                     className="text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>

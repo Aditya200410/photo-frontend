@@ -57,7 +57,7 @@ function PhotoNagarNigam({ onBack }) {
   const [availableFiles, setAvailableFiles] = useState([]);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/excel-files/nagar-nigam`)
+    fetch(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/excel-files/nagar-nigam`)
       .then(res => res.json())
       .then(data => setAvailableFiles(data))
       .catch(err => console.error(err));
@@ -157,7 +157,7 @@ function PhotoNagarNigam({ onBack }) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL(`${import.meta.env.VITE_API_URL}/api/voters`);
+      const url = new URL(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/voters`);
       url.searchParams.append('category', 'nagar-nigam');
       url.searchParams.append('state', selectedState);
       url.searchParams.append('district', selectedDistrict);
