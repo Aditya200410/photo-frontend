@@ -119,8 +119,11 @@ function Option3() {
       }
     }
 
+    const hasImage = Boolean(formData.symbolImage);
+    const totalSlips = pagesCount * 8;
+
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/prints`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/prints`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
         body: JSON.stringify({
@@ -129,9 +132,15 @@ function Option3() {
           partNo: formData.partNo,
           serialNo: formData.serialNo,
           voterName: formData.voterName,
-          pagesCount: pagesCount
+          pagesCount: pagesCount,
+          cardsPerPage: 8,
+          slipsCount: totalSlips,
+          hasImage: hasImage
         })
       });
+      if (res.ok) {
+        window.dispatchEvent(new Event('user-credits-updated'));
+      }
     } catch (err) {
       console.error('Failed to log print to backend:', err);
     }

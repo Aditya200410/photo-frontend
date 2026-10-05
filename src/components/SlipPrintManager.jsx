@@ -55,8 +55,11 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
       }
     }
 
+    const hasImage = Boolean((optionNumber === 1 && voterData?.topImage) || (optionNumber === 3 && voterData?.symbolImage));
+    const totalSlips = pagesCount * cardsPerPage;
+
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/prints`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/prints`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
         body: JSON.stringify({
@@ -65,9 +68,15 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
           partNo: voterData.partNo || '-',
           serialNo: voterData.serialNo || '1',
           voterName: voterData.voterName || '-',
-          pagesCount: pagesCount
+          pagesCount: pagesCount,
+          cardsPerPage: cardsPerPage,
+          slipsCount: totalSlips,
+          hasImage: hasImage
         })
       });
+      if (res.ok) {
+        window.dispatchEvent(new Event('user-credits-updated'));
+      }
     } catch (err) {
       console.error('Failed to log print to backend:', err);
     }

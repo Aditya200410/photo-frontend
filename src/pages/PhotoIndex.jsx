@@ -22,6 +22,49 @@ function PhotoIndex() {
     lastPrintDate: null
   });
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [siteSettings, setSiteSettings] = useState({
+    assemblyImage: "https://images.unsplash.com/photo-1575517111478-7f6afd0973db?q=80&w=2070&auto=format&fit=crop",
+    nagarNigamImage: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop",
+    gramPanchayatImage: "https://images.unsplash.com/photo-1592659762303-90081d34b277?q=80&w=2073&auto=format&fit=crop"
+  });
+
+  const fetchSiteSettings = () => {
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          setSiteSettings(prev => ({ ...prev, ...data }));
+        }
+      })
+      .catch(err => console.error("Failed to load site settings:", err));
+  };
+
+  const fetchCurrentUser = () => {
+    const token = localStorage.getItem('userToken');
+    if (!token) return;
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          setCurrentUser(data);
+        }
+      })
+      .catch(err => console.error("Failed to load user:", err));
+  };
+
+  useEffect(() => {
+    fetchCurrentUser();
+    fetchSiteSettings();
+    const handleCreditsUpdate = () => {
+      fetchCurrentUser();
+      fetchAnalytics(false);
+    };
+    window.addEventListener('user-credits-updated', handleCreditsUpdate);
+    return () => window.removeEventListener('user-credits-updated', handleCreditsUpdate);
+  }, []);
 
   useEffect(() => {
     // Sync state with URL params if they change
@@ -183,6 +226,20 @@ function PhotoIndex() {
               </div>
             </div>
             <div className="h-4 sm:h-6 w-px bg-slate-300 mx-0.5 sm:mx-1"></div>
+            
+            {/* Wallet Credit Badge */}
+            {currentUser && currentUser.role !== 'admin' && (
+              <Link 
+                to="/account" 
+                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-bold shadow-sm transition-all"
+                title="Wallet Balance & History"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                <span className="text-emerald-700 hidden sm:inline">Credits:</span>
+                <span className="font-black font-mono text-emerald-900">₹{(Number(currentUser.credits) || 0).toFixed(2)}</span>
+              </Link>
+            )}
+
             <Link to="/account" className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="My Account">
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             </Link>
@@ -203,43 +260,76 @@ function PhotoIndex() {
             <div className="space-y-8 max-w-7xl mx-auto">
               
               {/* Header / Hero Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl shadow-slate-900/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                    <svg className="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                  </div>
-                  <p className="text-slate-400 font-semibold tracking-widest text-sm uppercase mb-2">Total Electors</p>
-                  <h2 className="text-5xl font-black mb-1">
-                    {isLoadingAnalytics ? '...' : (analytics.totalVoters || 0).toLocaleString()}
-                  </h2>
-                  <p className="text-emerald-400 text-sm font-medium flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Fully Indexed & Verified
-                  </p>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col justify-center">
-                  <p className="text-slate-500 font-bold tracking-widest text-xs uppercase mb-2">Directories Processed</p>
-                  <h2 className="text-4xl font-extrabold text-slate-800 mb-2">
-                    {isLoadingAnalytics ? '...' : (analytics.assemblyFiles + analytics.nagarNigamFiles + analytics.panchayatFiles)}
-                  </h2>
-                  <div className="flex gap-4 text-xs font-bold text-slate-400 mt-2">
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Assembly ({analytics.assemblyFiles})</div>
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Nigam ({analytics.nagarNigamFiles})</div>
-                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-violet-500"></div> Rural ({analytics.panchayatFiles})</div>
+                {/* Wallet Balance & Credits Card */}
+                <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-7 text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden group flex flex-col justify-between">
+                  <div className="absolute top-0 right-0 p-5 opacity-20 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                    <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-emerald-200 font-bold tracking-widest text-xs uppercase">Wallet Balance</p>
+                      <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">Active</span>
+                    </div>
+                    <h2 className="text-4xl font-black mb-1 font-mono tracking-tight">
+                      ₹{(Number(currentUser?.credits) || 0).toFixed(2)}
+                    </h2>
+                  </div>
+                  <div className="pt-3 border-t border-white/20 flex items-center justify-between mt-4">
+                    <div className="text-[11px] text-emerald-100 font-medium leading-tight">
+                      Rates: 10p / 12p per page
+                    </div>
+                    <Link to="/account" className="text-xs font-bold text-white underline hover:text-emerald-200 transition-colors">
+                      History →
+                    </Link>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden group">
-                   <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:rotate-12 transition-transform duration-500">
+                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-7 text-white shadow-xl shadow-slate-900/20 relative overflow-hidden group flex flex-col justify-between">
+                  <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                    <svg className="w-28 h-28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 font-bold tracking-widest text-xs uppercase mb-2">Total Electors</p>
+                    <h2 className="text-4xl font-black mb-1">
+                      {isLoadingAnalytics ? '...' : (analytics.totalVoters || 0).toLocaleString()}
+                    </h2>
+                  </div>
+                  <p className="text-emerald-400 text-xs font-medium flex items-center gap-1 pt-3 border-t border-slate-700/60 mt-4">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Indexed & Verified
+                  </p>
+                </div>
+                
+                <div className="bg-white rounded-3xl p-7 border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                  <div>
+                    <p className="text-slate-500 font-bold tracking-widest text-xs uppercase mb-2">Directories</p>
+                    <h2 className="text-4xl font-black text-slate-800 mb-1">
+                      {isLoadingAnalytics ? '...' : (analytics.assemblyFiles + analytics.nagarNigamFiles + analytics.panchayatFiles)}
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-[11px] font-bold text-slate-400 pt-3 border-t border-slate-100 mt-4">
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Asmb ({analytics.assemblyFiles})</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Ngm ({analytics.nagarNigamFiles})</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-violet-500"></div> Rurl ({analytics.panchayatFiles})</div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl p-7 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden group flex flex-col justify-between">
+                   <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:rotate-12 transition-transform duration-500 pointer-events-none">
                     <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                   </div>
-                  <p className="text-blue-200 font-semibold tracking-widest text-sm uppercase mb-2">Total Printed Slips</p>
-                  <h2 className="text-5xl font-black mb-1">
-                    {isLoadingAnalytics ? '...' : (analytics.printsCount || 0).toLocaleString()}
-                  </h2>
-                  <p className="text-blue-100 text-sm font-medium">
-                    {analytics.lastPrintDate ? `Last print: ${new Date(analytics.lastPrintDate).toLocaleDateString()}` : 'No prints yet'}
+                  <div>
+                    <p className="text-blue-200 font-bold tracking-widest text-xs uppercase mb-2">Total Prints</p>
+                    <h2 className="text-4xl font-black mb-1">
+                      {isLoadingAnalytics ? '...' : (analytics.printsCount || 0).toLocaleString()}
+                    </h2>
+                  </div>
+                  <p className="text-blue-100 text-xs font-medium pt-3 border-t border-white/20 mt-4 truncate">
+                    {analytics.lastPrintDate ? `Last: ${new Date(analytics.lastPrintDate).toLocaleDateString()}` : 'No prints yet'}
                   </p>
                 </div>
               </div>
@@ -319,35 +409,121 @@ function PhotoIndex() {
                 </div>
               </div>
 
-              {/* Quick Actions */}
+              {/* Rapid Access Hub with Images from Site Settings */}
               <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                    Rapid Access Hub
-                  </h3>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Rapid Access Hub
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Quickly jump into regional voter directories</p>
+                  </div>
                 </div>
+
                 <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <button onClick={() => handleTabChange('assembly')} className="p-6 rounded-2xl border border-blue-100 bg-gradient-to-b from-blue-50/50 to-blue-50 hover:to-blue-100 transition-all flex flex-col items-center text-center group">
-                    <div className="w-16 h-16 rounded-2xl bg-blue-500 text-white flex items-center justify-center mb-4 group-hover:-translate-y-2 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-all">
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                  {/* Assembly Card */}
+                  <button 
+                    onClick={() => handleTabChange('assembly')} 
+                    className="group rounded-3xl border border-slate-200/90 bg-white hover:border-blue-400 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col text-left active:scale-[0.98]"
+                  >
+                    <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                      <img 
+                        src={siteSettings.assemblyImage || "https://images.unsplash.com/photo-1575517111478-7f6afd0973db?q=80&w=2070&auto=format&fit=crop"} 
+                        alt="Assembly" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                      <div className="absolute top-3 right-3 bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                        Constituencies
+                      </div>
+                      <div className="absolute bottom-3 left-4 flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-lg">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <h4 className="text-xl font-black text-white tracking-tight drop-shadow-md">Assembly</h4>
+                      </div>
                     </div>
-                    <p className="font-bold text-lg text-slate-800">Assembly</p>
-                    <p className="text-sm text-slate-500 mt-1">Manage state constituencies & polling booths</p>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <p className="text-xs text-slate-500 leading-relaxed font-medium">Manage state constituencies & polling booths</p>
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
+                        <span>Open Directory</span>
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      </div>
+                    </div>
                   </button>
-                  <button onClick={() => handleTabChange('nagar-nigam')} className="p-6 rounded-2xl border border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-emerald-50 hover:to-emerald-100 transition-all flex flex-col items-center text-center group">
-                    <div className="w-16 h-16 rounded-2xl bg-emerald-500 text-white flex items-center justify-center mb-4 group-hover:-translate-y-2 group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition-all">
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+
+                  {/* Nagar Nigam Card */}
+                  <button 
+                    onClick={() => handleTabChange('nagar-nigam')} 
+                    className="group rounded-3xl border border-slate-200/90 bg-white hover:border-emerald-400 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col text-left active:scale-[0.98]"
+                  >
+                    <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                      <img 
+                        src={siteSettings.nagarNigamImage || "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070&auto=format&fit=crop"} 
+                        alt="Nagar Nigam" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                      <div className="absolute top-3 right-3 bg-emerald-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                        Urban Municipal
+                      </div>
+                      <div className="absolute bottom-3 left-4 flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          </svg>
+                        </div>
+                        <h4 className="text-xl font-black text-white tracking-tight drop-shadow-md">Nagar Nigam</h4>
+                      </div>
                     </div>
-                    <p className="font-bold text-lg text-slate-800">Nagar Nigam</p>
-                    <p className="text-sm text-slate-500 mt-1">Access urban municipal corporation records</p>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <p className="text-xs text-slate-500 leading-relaxed font-medium">Access urban municipal corporation records</p>
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-600 group-hover:text-emerald-700">
+                        <span>Open Directory</span>
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      </div>
+                    </div>
                   </button>
-                  <button onClick={() => handleTabChange('gram-panchayat')} className="p-6 rounded-2xl border border-violet-100 bg-gradient-to-b from-violet-50/50 to-violet-50 hover:to-violet-100 transition-all flex flex-col items-center text-center group">
-                    <div className="w-16 h-16 rounded-2xl bg-violet-500 text-white flex items-center justify-center mb-4 group-hover:-translate-y-2 group-hover:shadow-lg group-hover:shadow-violet-500/30 transition-all">
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+
+                  {/* Gram Panchayat Card */}
+                  <button 
+                    onClick={() => handleTabChange('gram-panchayat')} 
+                    className="group rounded-3xl border border-slate-200/90 bg-white hover:border-violet-400 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col text-left active:scale-[0.98]"
+                  >
+                    <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                      <img 
+                        src={siteSettings.gramPanchayatImage || "https://images.unsplash.com/photo-1592659762303-90081d34b277?q=80&w=2073&auto=format&fit=crop"} 
+                        alt="Gram Panchayat" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                      <div className="absolute top-3 right-3 bg-violet-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                        Rural & Village
+                      </div>
+                      <div className="absolute bottom-3 left-4 flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-violet-500 text-white flex items-center justify-center shadow-lg">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-xl font-black text-white tracking-tight drop-shadow-md">Gram Panchayat</h4>
+                      </div>
                     </div>
-                    <p className="font-bold text-lg text-slate-800">Gram Panchayat</p>
-                    <p className="text-sm text-slate-500 mt-1">Navigate rural and village voter directories</p>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <p className="text-xs text-slate-500 leading-relaxed font-medium">Navigate rural and village voter directories</p>
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-violet-600 group-hover:text-violet-700">
+                        <span>Open Directory</span>
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      </div>
+                    </div>
                   </button>
                 </div>
               </div>

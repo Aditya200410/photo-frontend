@@ -165,6 +165,49 @@ function AdminSettings() {
             </div>
           </div>
           
+          {/* UPI Payment & QR Code Settings */}
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <h2 className="text-xl font-bold text-slate-700 mb-2">UPI Recharge QR & Payment Settings</h2>
+            <p className="text-xs text-slate-500 mb-4">Set the UPI ID and QR code shown to users when they request a credit recharge or payment.</p>
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="w-full md:w-1/2 flex flex-col items-center p-4 bg-white rounded-xl border border-slate-200">
+                <img src={settings.qrCodeImage || 'https://via.placeholder.com/200?text=Scan+QR+Code'} alt="UPI QR Code" className="w-48 h-48 object-contain rounded-lg border border-slate-200" />
+                <span className="text-xs text-slate-400 mt-2">Active QR Code Preview</span>
+              </div>
+              <div className="w-full md:w-1/2 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">UPI ID (e.g. mobile@upi or name@bank)</label>
+                  <input 
+                    type="text" 
+                    value={settings.upiId || ''} 
+                    onChange={(e) => setSettings({...settings, upiId: e.target.value})}
+                    placeholder="e.g. yourname@upi"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 font-mono text-sm outline-none bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Upload Custom QR Code Image</label>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => handleImageUpload(e, 'qrCodeImage')}
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Or enter QR Image URL</label>
+                  <input 
+                    type="text" 
+                    value={settings.qrCodeImage || ''} 
+                    onChange={(e) => setSettings({...settings, qrCodeImage: e.target.value})}
+                    placeholder="https://..."
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-xs font-mono bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <div className="flex justify-end pt-6 border-t border-slate-200">
             <button 
               onClick={saveUrlSettings}
