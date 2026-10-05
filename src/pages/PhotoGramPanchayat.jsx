@@ -458,35 +458,37 @@ function PhotoGramPanchayat({ onBack }) {
     <>
       <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full">
         <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600"></div>
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600"></div>
           
-          <div className="p-4 sm:p-6 md:p-10">
+          <div className="p-4 sm:p-8 md:p-10">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-6 border-b border-slate-100 gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-violet-100 text-violet-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                    Gram Panchayat Portal
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="bg-violet-50 text-violet-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-violet-200/60 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
+                    Gram Panchayat Directory
                   </span>
                   {currentZillaNo && (
-                    <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                    <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-blue-200">
                       Zilla Parishad No: {currentZillaNo}
                     </span>
                   )}
                   {currentSamitiNo && (
-                    <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                    <span className="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200">
                       Samiti No: {currentSamitiNo}
                     </span>
                   )}
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight mt-2">
-                  Gram Panchayat Voter List & Slip Generator
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+                  Gram Panchayat Details & Voter Directory
                 </h2>
-                <p className="text-slate-500 mt-1 text-sm">
-                  Select parameters or upload a single Excel for your city to automatically separate wards and generate slips
+                <p className="text-slate-500 mt-1 text-sm sm:text-base">
+                  Select parameters or upload village Excel data to automatically separate wards and generate slips.
                 </p>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-violet-500/30 shrink-0">
+
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-violet-500/25 shrink-0">
                 <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -494,27 +496,29 @@ function PhotoGramPanchayat({ onBack }) {
             </div>
 
             {/* Parameter Selection Form */}
-            <form className="space-y-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                  <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            <form className="space-y-6 bg-slate-50/70 p-4 sm:p-6 rounded-3xl border border-slate-200/80">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                <h3 className="text-xs sm:text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                  <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
                   Location & Panchayat Parameters
                 </h3>
                 {availableWards.length > 0 && (
-                  <span className="text-xs bg-violet-600 text-white font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+                  <span className="text-xs bg-violet-600 text-white font-bold px-3 py-1 rounded-full shadow-sm">
                     {availableWards.length} Wards Detected in Excel
                   </span>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3.5">
                 {/* 1. State */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 block">State</label>
                   <select
                     value={selectedState}
                     onChange={handleStateChange}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 font-medium"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
                   >
                     <option value="">{availableStates.length === 0 ? 'No State Data' : 'Select State'}</option>
                     {availableStates.map(state => <option key={state} value={state}>{state}</option>)}
@@ -523,14 +527,14 @@ function PhotoGramPanchayat({ onBack }) {
 
                 {/* 2. District / Zilla Parishad */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">
+                  <label className="text-xs font-bold text-slate-700 block truncate">
                     Zilla Parishad {currentZillaNo ? `(No. ${currentZillaNo})` : ''}
                   </label>
                   <select
                     value={selectedDistrict}
                     onChange={handleDistrictChange}
                     disabled={availableDistricts.length === 0}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">Select Zilla Parishad</option>
                     {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -539,14 +543,14 @@ function PhotoGramPanchayat({ onBack }) {
 
                 {/* 3. Panchayat Samiti (City / Block) */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">
-                    Panchayat Samiti {currentSamitiNo ? `(No. ${currentSamitiNo})` : ''}
+                  <label className="text-xs font-bold text-slate-700 block truncate">
+                    Samiti {currentSamitiNo ? `(No. ${currentSamitiNo})` : ''}
                   </label>
                   <select
                     value={selectedSamiti}
                     onChange={handleSamitiChange}
                     disabled={availableSamitis.length === 0}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">All Samitis ({availableSamitis.length})</option>
                     {availableSamitis.map(s => (
@@ -559,12 +563,12 @@ function PhotoGramPanchayat({ onBack }) {
 
                 {/* 4. Gram Panchayat Name */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Panchayat Name</label>
+                  <label className="text-xs font-bold text-slate-700 block truncate">Panchayat Name</label>
                   <select
                     value={panchayatName}
                     onChange={handlePanchayatChange}
                     disabled={availablePanchayats.length === 0}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">Select Panchayat</option>
                     {availablePanchayats.map(p => <option key={p} value={p}>{p}</option>)}
@@ -573,40 +577,40 @@ function PhotoGramPanchayat({ onBack }) {
 
                 {/* 5. Village */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Village</label>
+                  <label className="text-xs font-bold text-slate-700 block truncate">Village</label>
                   <select
                     value={villageName}
                     onChange={handleVillageChange}
                     disabled={!panchayatName || availableVillages.length === 0}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">All Villages ({availableVillages.length})</option>
                     {availableVillages.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
 
-                {/* 6. Ward Number (Automatically extracted from Excel!) */}
+                {/* 6. Ward Number */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Ward Number</label>
+                  <label className="text-xs font-bold text-slate-700 block truncate">Ward Number</label>
                   <select
                     value={wardNumber}
                     onChange={handleWardChange}
                     disabled={!panchayatName || availableWards.length === 0}
-                    className="w-full bg-white border border-violet-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50 font-bold"
+                    className="w-full bg-white border border-violet-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-bold focus:outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-500/30 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
-                    <option value="">All Wards ({availableWards.length} Wards)</option>
+                    <option value="">All Wards ({availableWards.length})</option>
                     {availableWards.map(w => <option key={w} value={w}>Ward {w}</option>)}
                   </select>
                 </div>
 
                 {/* 7. Booth / Part Number */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Booth / Part No</label>
+                  <label className="text-xs font-bold text-slate-700 block truncate">Booth / Part No</label>
                   <select
                     value={boothNumber}
                     onChange={(e) => setBoothNumber(e.target.value)}
                     disabled={!panchayatName || availableBooths.length === 0}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50 font-medium"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">All Booths ({availableBooths.length})</option>
                     {availableBooths.map(b => <option key={b} value={b}>Booth {b}</option>)}
@@ -618,15 +622,19 @@ function PhotoGramPanchayat({ onBack }) {
               <div className="pt-2 flex justify-between items-center flex-wrap gap-4">
                 <div className="flex items-center gap-3 text-xs text-slate-500">
                   {availableWards.length > 0 && (
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <span className="text-slate-700 font-bold">Wards in File:</span>
+                    <div className="flex items-center gap-1.5 font-medium flex-wrap">
+                      <span className="text-slate-700 font-bold">Quick Wards:</span>
                       <div className="flex flex-wrap gap-1">
                         {availableWards.map(w => (
                           <button
                             key={w}
                             type="button"
                             onClick={() => setWardNumber(w === wardNumber ? '' : w)}
-                            className={`px-2 py-0.5 rounded text-xs transition-colors ${wardNumber === w ? 'bg-violet-600 text-white font-bold' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                            className={`px-2 py-0.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                              wardNumber === w 
+                                ? 'bg-violet-600 text-white font-bold shadow-sm' 
+                                : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
+                            }`}
                           >
                             {w}
                           </button>
@@ -640,13 +648,18 @@ function PhotoGramPanchayat({ onBack }) {
                   type="button"
                   onClick={fetchVoters}
                   disabled={isLoading}
-                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl px-8 py-3 font-bold shadow-lg shadow-violet-500/25 transform hover:-translate-y-0.5 transition-all duration-200 text-sm flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="w-full sm:w-auto bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-xl px-8 py-3.5 font-bold shadow-lg shadow-violet-500/30 active:scale-[0.98] transition-all duration-200 text-sm sm:text-base flex items-center justify-center gap-2.5 disabled:opacity-50 cursor-pointer"
                 >
                   {isLoading ? (
-                    <span>Fetching Data...</span>
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Retrieving Records...</span>
+                    </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
                       Fetch Voter Data
                     </>
                   )}
@@ -654,112 +667,153 @@ function PhotoGramPanchayat({ onBack }) {
               </div>
             </form>
 
-            {error && <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 font-medium text-sm">{error}</div>}
-            {fetchSuccess && <div className="mt-4 p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 font-medium text-sm flex items-center gap-2"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Data fetched successfully! Showing all extracted fields below.</div>}
+            {error && (
+              <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-2xl border border-red-200 font-medium flex items-center gap-2.5 text-sm">
+                <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {error}
+              </div>
+            )}
+            {fetchSuccess && (
+              <div className="mt-6 p-4 bg-emerald-50 text-emerald-800 rounded-2xl border border-emerald-200 font-medium flex items-center gap-2.5 text-sm">
+                <svg className="w-5 h-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Voter records loaded successfully!
+              </div>
+            )}
 
             {/* Voter Results Section */}
             {voters.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-slate-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+              <div className="mt-10 pt-8 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                   <div>
-                    <h3 className="text-xl font-bold text-slate-800">
-                      Voter Records ({filteredVoters.length} total)
+                    <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                      <span>Voter Records</span>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
+                        {filteredVoters.length} {filteredVoters.length === 1 ? 'elector' : 'electors'}
+                      </span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Displaying all standard columns from Panchayat Excel (Personal, Panchayat, Ward, Samiti, Zilla Parishad)
+                      Displaying verified parameters from Panchayat Directory
                     </p>
                   </div>
                   <button
                     onClick={generatePDF}
                     disabled={isGenerating || filteredVoters.length === 0}
-                    className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-violet-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 text-sm"
+                    className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
                     Print Slips / Batch PDF ({filteredVoters.length})
                   </button>
                 </div>
 
                 {/* In-Page Quick Filters */}
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6">
+                <div className="bg-slate-50/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl border border-slate-200/80 mb-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-200/60">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                      <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                      </svg>
+                      Filter & Search Electors
+                    </span>
+                    {(filters.id || filters.name || filters.relativeName || filters.houseNo || filters.ward || filters.sex || filters.minAge || filters.maxAge) && (
+                      <button
+                        onClick={() => {
+                          setFilters({ id: '', name: '', relativeName: '', houseNo: '', ward: '', sex: '', minAge: '', maxAge: '' });
+                          setPageCount(1);
+                        }}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Clear Filters
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">ID / VID Card</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID / VID Card</label>
                       <input 
                         type="text" 
                         placeholder="Search ID..." 
                         value={filters.id} 
                         onChange={e => { setFilters(prev => ({...prev, id: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Voter Name</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Voter Name</label>
                       <input 
                         type="text" 
                         placeholder="Name (EN/HI)..." 
                         value={filters.name} 
                         onChange={e => { setFilters(prev => ({...prev, name: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Relative Name</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Relative Name</label>
                       <input 
                         type="text" 
                         placeholder="Father/Husband..." 
                         value={filters.relativeName} 
                         onChange={e => { setFilters(prev => ({...prev, relativeName: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">House No</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">House No</label>
                       <input 
                         type="text" 
                         placeholder="House No..." 
                         value={filters.houseNo} 
                         onChange={e => { setFilters(prev => ({...prev, houseNo: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter Ward</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Ward</label>
                       <input 
                         type="text" 
                         placeholder="Ward..." 
                         value={filters.ward} 
                         onChange={e => { setFilters(prev => ({...prev, ward: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Gender</label>
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Gender</label>
                       <select 
                         value={filters.sex} 
                         onChange={e => { setFilters(prev => ({...prev, sex: e.target.value})); setPageCount(1); }} 
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-violet-500"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm cursor-pointer"
                       >
-                        <option value="">All</option>
+                        <option value="">All Genders</option>
                         <option value="M">Male (पुरुष)</option>
                         <option value="F">Female (महिला)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Age Range</label>
-                      <div className="flex gap-1">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Age Range</label>
+                      <div className="flex gap-1.5">
                         <input 
                           type="number" 
                           placeholder="Min" 
                           value={filters.minAge} 
                           onChange={e => { setFilters(prev => ({...prev, minAge: e.target.value})); setPageCount(1); }} 
-                          className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+                          className="w-1/2 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                         />
                         <input 
                           type="number" 
                           placeholder="Max" 
                           value={filters.maxAge} 
                           onChange={e => { setFilters(prev => ({...prev, maxAge: e.target.value})); setPageCount(1); }} 
-                          className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+                          className="w-1/2 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                         />
                       </div>
                     </div>
