@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../config';
 
 const AdminProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -6,22 +7,53 @@ const AdminProtectedRoute = ({ children }) => {
   );
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-    
-    if (!adminPassword) {
-      setError('Admin password not configured in environment.');
+    setError('');
+    const clientAdminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+
+    // 1. Check if client-side environment variable matches
+    if (clientAdminPassword && password === clientAdminPassword) {
+      sessionStorage.setItem('isAdmin', 'true');
+      setIsAuthenticated(true);
       return;
     }
 
-    if (password === adminPassword) {
-      sessionStorage.setItem('isAdmin', 'true');
-      setIsAuthenticated(true);
-      setError('');
-    } else {
-      setError('Invalid password');
+    // 2. Otherwise verify directly against the backend ADMIN_PASSWORD environment variable
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/verify-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data?.success) {
+        sessionStorage.setItem('isAdmin', 'true');
+        if (data.token) {
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('userToken', data.token);
+        }
+        setIsAuthenticated(true);
+      } else {
+        if (!clientAdminPassword && data?.error && data.error.includes('not configured')) {
+          setError('Admin password not configured in environment. Please set ADMIN_PASSWORD in your backend .env or VITE_ADMIN_PASSWORD in frontend .env.');
+        } else {
+          setError(data?.error || 'Invalid password');
+        }
+      }
+    } catch (err) {
+      console.error('Admin login error:', err);
+      if (!clientAdminPassword) {
+        setError('Admin password not configured in frontend and could not connect to backend.');
+      } else {
+        setError('Invalid password');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -51,9 +83,10 @@ const AdminProtectedRoute = ({ children }) => {
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
+            disabled={isLoading}
+            className={`w-full text-white font-bold py-2 px-4 rounded transition duration-200 ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
           >
-            Login
+            {isLoading ? 'Verifying...' : 'Login'}
           </button>
         </form>
       </div>
