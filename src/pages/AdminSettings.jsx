@@ -194,16 +194,6 @@ function AdminSettings() {
                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Or enter QR Image URL</label>
-                  <input 
-                    type="text" 
-                    value={settings.qrCodeImage || ''} 
-                    onChange={(e) => setSettings({...settings, qrCodeImage: e.target.value})}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-xs font-mono bg-white"
-                  />
-                </div>
               </div>
             </div>
           </div>

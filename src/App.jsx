@@ -1,5 +1,4 @@
-import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
-import Home from './pages/Home';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Option1 from './pages/Option1';
 import Option2 from './pages/Option2';
 import Option3 from './pages/Option3';
@@ -16,9 +15,6 @@ import AdminFetchData from './pages/AdminFetchData';
 import AdminSettings from './pages/AdminSettings';
 import AdminUsers from './pages/AdminUsers';
 import PhotoIndex from './pages/PhotoIndex';
-import PhotoAssembly from './pages/PhotoAssembly';
-import PhotoNagarNigam from './pages/PhotoNagarNigam';
-import PhotoGramPanchayat from './pages/PhotoGramPanchayat';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import ContactSupport from './pages/ContactSupport';
@@ -52,7 +48,7 @@ function App() {
       <Route path="/option/1" element={<UserProtectedRoute><Option1 /></UserProtectedRoute>} />
       <Route path="/option/2" element={<UserProtectedRoute><Option2 /></UserProtectedRoute>} />
       <Route path="/option/3" element={<UserProtectedRoute><Option3 /></UserProtectedRoute>} />
-      <Route path="/photo" element={<UserProtectedRoute><Home /></UserProtectedRoute>} />
+      <Route path="/photo" element={<Navigate to="/" replace />} />
       
       <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
         <Route index element={<Admin />} />
@@ -74,6 +70,7 @@ function App() {
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/contact-support" element={<ContactSupport />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

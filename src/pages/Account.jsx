@@ -196,10 +196,8 @@ const Account = () => {
     );
   });
 
-  // Dynamic QR Code link
   const currentUpiId = settings.upiId || 'elections@upi';
   const qrAmount = parseFloat(rechargeAmount) > 0 ? parseFloat(rechargeAmount) : '100';
-  const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${currentUpiId}&pn=Voter%20Directory&am=${qrAmount}&cu=INR`)}`;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 relative flex flex-col font-sans">
@@ -442,17 +440,12 @@ const Account = () => {
                   </div>
 
                   {/* QR Code Display */}
-                  <div className="p-3 bg-white rounded-2xl shadow-xl border border-slate-200 mb-4 relative group">
+                  <div className="p-3 bg-white rounded-2xl shadow-xl border border-slate-200 mb-4 relative group flex justify-center items-center min-h-[200px]">
                     <img 
-                      src={settings.qrCodeImage && !rechargeAmount ? settings.qrCodeImage : upiQrUrl} 
+                      src={settings.qrCodeImage || 'https://via.placeholder.com/200?text=Scan+QR+Code'} 
                       alt="Payment UPI QR" 
                       className="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-lg"
                     />
-                    <div className="absolute inset-x-0 bottom-2 text-center">
-                      <span className="bg-slate-900/90 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-full shadow">
-                        Amount: ₹{qrAmount}
-                      </span>
-                    </div>
                   </div>
 
                   {/* UPI ID with 1-click Copy */}

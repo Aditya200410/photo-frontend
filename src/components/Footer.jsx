@@ -23,7 +23,7 @@ const Footer = () => {
             <li><Link to="/?view=assembly" className="hover:text-blue-400 transition-colors">Assembly Directories</Link></li>
             <li><Link to="/?view=nagar-nigam" className="hover:text-emerald-400 transition-colors">Nagar Nigam Directories</Link></li>
             <li><Link to="/?view=gram-panchayat" className="hover:text-violet-400 transition-colors">Panchayat Directories</Link></li>
-            <li><Link to="/photo" className="hover:text-white transition-colors">Print Voter Slips</Link></li>
+            <li><Link to="/option/1" className="hover:text-white transition-colors">Print Voter Slips</Link></li>
           </ul>
         </div>
 

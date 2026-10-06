@@ -7,12 +7,17 @@ const Payment = () => {
   const [utr, setUtr] = useState('');
   const [status, setStatus] = useState('pending'); // pending, success, error
   const [message, setMessage] = useState('');
+  const [settings, setSettings] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!userId) {
       navigate('/login');
     }
+    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`)
+      .then(res => res.json())
+      .then(data => setSettings(data))
+      .catch(err => console.error(err));
   }, [userId, navigate]);
 
   const handleSubmit = async (e) => {
@@ -58,8 +63,8 @@ const Payment = () => {
           <p className="mt-2 text-sm text-gray-600">Scan the QR code below to make a payment and submit your UTR (Transaction Reference No.)</p>
         </div>
         
-        <div className="flex justify-center p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=pay%3A%2F%2Fplaceholder" alt="Payment QR" className="rounded-lg shadow-sm w-48 h-48" />
+        <div className="flex justify-center p-4 bg-slate-50 rounded-lg border border-slate-200 min-h-[200px] items-center">
+          <img src={settings.qrCodeImage || 'https://via.placeholder.com/200?text=Scan+QR+Code'} alt="Payment QR" className="rounded-lg shadow-sm w-48 h-48 object-contain" />
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

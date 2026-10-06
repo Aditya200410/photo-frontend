@@ -8,7 +8,9 @@ function AdminLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/photo');
+    localStorage.removeItem('adminToken');
+    sessionStorage.removeItem('isAdmin');
+    navigate('/');
   };
 
   const closeSidebar = () => setIsSidebarOpen(false);

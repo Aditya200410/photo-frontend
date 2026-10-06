@@ -204,7 +204,7 @@ function Option3() {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 py-10 px-4 md:px-10 text-white font-sans overflow-x-hidden relative">
       <div className="max-w-7xl mx-auto">
-        <Link to="/photo" className="inline-flex items-center text-indigo-300 hover:text-white mb-8 font-medium transition-colors">
+        <Link to="/" className="inline-flex items-center text-indigo-300 hover:text-white mb-8 font-medium transition-colors">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
           Back to Home
         </Link>
