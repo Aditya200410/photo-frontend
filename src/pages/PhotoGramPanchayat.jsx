@@ -409,7 +409,30 @@ function PhotoGramPanchayat({ onBack }) {
 
       return idMatch && nameMatch && relMatch && houseMatch && ageMatch && minAgeMatch && maxAgeMatch && sexMatch && wardMatch && villageMatch;
     });
-  }, [voters, filters]);
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let valA = a[sortConfig.key] || '';
+        let valB = b[sortConfig.key] || '';
+        
+        // Handle numeric fields
+        if (sortConfig.key === 'AGE' || sortConfig.key === 'SNO' || sortConfig.key === 'SLNOINPART') {
+          valA = parseFloat(valA) || 0;
+          valB = parseFloat(valB) || 0;
+          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        }
+        
+        // String comparison
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [voters, filters, sortConfig]);
 
   useEffect(() => {
     setDisplayedVoters(filteredVoters.slice(0, pageCount * itemsPerPage));
@@ -800,25 +823,54 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* Comprehensive All-Columns Voter Table */}
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
-                  <table className="w-full text-left border-collapse min-w-[1400px]">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white relative">
+                  <div className="absolute top-2 right-4 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-md border border-violet-100 hidden sm:block">
+                    💡 Tap any column header to sort ascending or descending
+                  </div>
+                  <table className="w-full text-left border-collapse min-w-[1400px] mt-2">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                        <th className="p-3">S.No / Booth</th>
-                        <th className="p-3">IDCARD (EPIC)</th>
-                        <th className="p-3">Voter Name (EN / HI)</th>
-                        <th className="p-3">Relative Name (EN / HI)</th>
-                        <th className="p-3">Relation</th>
-                        <th className="p-3">Age / Sex</th>
-                        <th className="p-3">House No</th>
-                        <th className="p-3">Ward No</th>
-                        <th className="p-3">Village & Section</th>
-                        <th className="p-3">Gram Panchayat</th>
-                        <th className="p-3">Panchayat Samiti</th>
-                        <th className="p-3">Zilla Parishad</th>
-                        <th className="p-3">Polling Station (PS)</th>
-                        <th className="p-3">PC Name</th>
-                        <th className="p-3 text-center">Action</th>
+                        {(() => {
+                          const renderSortableHeader = (label, key) => (
+                            <th 
+                              className="p-3 cursor-pointer hover:bg-slate-200/60 transition-colors group select-none"
+                              onClick={() => {
+                                let direction = 'asc';
+                                if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+                                setSortConfig({ key, direction });
+                                setPageCount(1);
+                              }}
+                              title={`Tap to sort by ${label}`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>{label}</span>
+                                <span className="text-slate-300 group-hover:text-violet-400 flex flex-col -space-y-1">
+                                  <svg className={`w-2.5 h-2.5 ${sortConfig.key === key && sortConfig.direction === 'asc' ? 'text-violet-600' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
+                                  <svg className={`w-2.5 h-2.5 ${sortConfig.key === key && sortConfig.direction === 'desc' ? 'text-violet-600' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                </span>
+                              </div>
+                            </th>
+                          );
+                          return (
+                            <>
+                              {renderSortableHeader('S.No / Booth', 'SERIAL_NO')}
+                              {renderSortableHeader('IDCARD (EPIC)', 'IDCARD')}
+                              {renderSortableHeader('Voter Name (EN / HI)', 'V_FNAME_EN')}
+                              {renderSortableHeader('Relative Name (EN / HI)', 'VR_FNAME_EN')}
+                              {renderSortableHeader('Relation', 'RELATION')}
+                              {renderSortableHeader('Age / Sex', 'AGE')}
+                              {renderSortableHeader('House No', 'HOUSE_NO')}
+                              {renderSortableHeader('Ward No', 'WARDNO')}
+                              {renderSortableHeader('Village & Section', 'VILLAGE')}
+                              {renderSortableHeader('Gram Panchayat', 'GRAM_PANCHAYAT')}
+                              {renderSortableHeader('Panchayat Samiti', 'PANCHAYAT_SAMITI')}
+                              {renderSortableHeader('Zilla Parishad', 'ZILLA_PARISHAD')}
+                              {renderSortableHeader('Polling Station (PS)', 'PARTNO')}
+                              {renderSortableHeader('PC Name', 'PC_NAME')}
+                              <th className="p-3 text-center">Action</th>
+                            </>
+                          );
+                        })()}
                       </tr>
                     </thead>
                     <tbody className="text-slate-700 divide-y divide-slate-100 text-xs">
