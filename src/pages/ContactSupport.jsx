@@ -4,7 +4,20 @@ import { Link, useNavigate } from 'react-router-dom';
 function ContactSupport() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [settings, setSettings] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`);
+        if (res.ok) setSettings(await res.json());
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -68,7 +81,7 @@ function ContactSupport() {
   const faqs = [
     {
       q: 'How are printing credits calculated?',
-      a: 'Credits are deducted strictly on a per-page basis: ₹0.10 (10 paisa) per page for text-only slips without photo, and ₹0.12 (12 paisa) per page for verified photo-inclusive slips. Your live balance is displayed in your top bar and Account tab.'
+      a: `Credits are deducted strictly on a per-page basis: ₹${Number(settings?.rateWithoutImage ?? 0.10).toFixed(2)} (${Math.round((settings?.rateWithoutImage ?? 0.10) * 100)} paisa) per page for text-only slips without photo, and ₹${Number(settings?.rateWithImage ?? 0.12).toFixed(2)} (${Math.round((settings?.rateWithImage ?? 0.12) * 100)} paisa) per page for verified photo-inclusive slips. Your live balance is displayed in your top bar and Account tab.`
     },
     {
       q: 'How do I recharge my wallet credits via UPI?',
@@ -589,13 +602,13 @@ function ContactSupport() {
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
                       <p className="text-[11px] text-slate-300 font-medium">Without Image</p>
-                      <p className="text-xl font-black text-white font-mono mt-0.5">₹0.10</p>
-                      <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">10 paisa / page</p>
+                      <p className="text-xl font-black text-white font-mono mt-0.5">₹{Number(settings?.rateWithoutImage ?? 0.10).toFixed(2)}</p>
+                      <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">{Math.round((settings?.rateWithoutImage ?? 0.10) * 100)} paisa / page</p>
                     </div>
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
                       <p className="text-[11px] text-slate-300 font-medium">With Photo</p>
-                      <p className="text-xl font-black text-white font-mono mt-0.5">₹0.12</p>
-                      <p className="text-[10px] text-purple-300 font-semibold mt-0.5">12 paisa / page</p>
+                      <p className="text-xl font-black text-white font-mono mt-0.5">₹{Number(settings?.rateWithImage ?? 0.12).toFixed(2)}</p>
+                      <p className="text-[10px] text-purple-300 font-semibold mt-0.5">{Math.round((settings?.rateWithImage ?? 0.12) * 100)} paisa / page</p>
                     </div>
                   </div>
                 </div>

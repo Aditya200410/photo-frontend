@@ -269,51 +269,95 @@ function AdminAddExcelPanchayat() {
                     </div>
                     <div>
                       <span className="font-bold text-slate-700">Panchayat Samiti:</span>{' '}
-                      {file.panchayatSamitis?.length > 2 
-                        ? `${file.panchayatSamitis.length} Samitis (${file.panchayatSamitis.slice(0, 2).join(', ')}...)`
-                        : (file.panchayatSamiti || file.city || 'N/A')}{' '}
+                      <span className="max-h-20 overflow-y-auto inline-block align-top max-w-[200px] text-[11px]">
+                        {file.panchayatSamitis?.length > 0 
+                          ? file.panchayatSamitis.join(', ')
+                          : (file.panchayatSamiti || file.city || 'N/A')}
+                      </span>{' '}
                       {file.panchayatSamitiNo ? `(No. ${file.panchayatSamitiNo})` : ''}
                     </div>
                     <div>
                       <span className="font-bold text-slate-700">Gram Panchayat:</span>{' '}
-                      {file.panchayats?.length > 3 
-                        ? `${file.panchayats.length} Panchayats (${file.panchayats.slice(0, 3).join(', ')}...)` 
-                        : (file.panchayats?.length > 0 ? file.panchayats.join(', ') : (file.panchayat || 'N/A'))}
+                      <span className="max-h-20 overflow-y-auto inline-block align-top max-w-[200px] text-[11px]">
+                        {file.panchayats?.length > 0 
+                          ? file.panchayats.join(', ') 
+                          : (file.panchayat || 'N/A')}
+                      </span>
                     </div>
                     <div>
                       <span className="font-bold text-slate-700">Villages:</span>{' '}
-                      {file.villages?.length ? `${file.villages.length} Villages` : (file.village || 'N/A')}
+                      <span className="max-h-20 overflow-y-auto inline-block align-top max-w-[200px] text-[11px]">
+                        {file.villages?.length > 0 ? file.villages.join(', ') : (file.village || 'N/A')}
+                      </span>
                     </div>
                   </div>
 
                   {/* Wards and Booths details */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-slate-700">Wards Extracted:</span>
+                  <div className="flex flex-col gap-2 pt-2 text-xs">
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-slate-700 whitespace-nowrap mt-0.5">Wards Extracted:</span>
                       {file.wards && file.wards.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          <span className="bg-violet-100 text-violet-800 font-bold px-2 py-0.5 rounded text-[11px]">
-                            {file.wards.length > 15 
-                              ? `${file.wards.length} Wards (${file.wards[0]} to ${file.wards[file.wards.length - 1]})`
-                              : `${file.wards.length} Wards: ${file.wards.join(', ')}`}
+                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar">
+                          <span className="bg-violet-100 text-violet-800 font-bold px-2 py-0.5 rounded text-[11px] leading-relaxed break-words">
+                            {file.wards.join(', ')}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-slate-400">Ward {file.ward || '1'}</span>
+                        <span className="text-slate-400 mt-0.5">Ward {file.ward || '1'}</span>
                       )}
                     </div>
 
                     {file.booths && file.booths.length > 0 && (
-                      <div className="flex items-center gap-1 ml-2">
-                        <span className="font-bold text-slate-700">Booths:</span>
-                        <span className="bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded text-[11px]">
-                          {file.booths.length > 10 ? `${file.booths.length} Booths` : file.booths.join(', ')}
-                        </span>
+                      <div className="flex items-start gap-1">
+                        <span className="font-bold text-slate-700 whitespace-nowrap mt-0.5">Booths:</span>
+                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar">
+                          <span className="bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded text-[11px] leading-relaxed break-words">
+                            {file.booths.join(', ')}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
 
                   <p className="text-[11px] text-slate-400">Uploaded at: {new Date(file.timestamp).toLocaleString()}</p>
+                  
+                  {file.stats && (
+                    <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                      <h4 className="text-xs font-bold text-slate-800 mb-2 border-b border-slate-200 pb-1">Data Analysis</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs mb-3">
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Total Voters</span>
+                          <span className="text-emerald-700 font-bold text-sm">{file.stats.totalVoters?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Gender Split</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.maleVoters?.toLocaleString()} M / {file.stats.femaleVoters?.toLocaleString()} F</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Avg Age</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.averageAge} yrs</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs border-t border-slate-200 pt-3">
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Youth (18-25)</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.ageBrackets?.youth?.toLocaleString() || 0}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Adult (26-40)</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.ageBrackets?.adult?.toLocaleString() || 0}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Middle (41-60)</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.ageBrackets?.middle?.toLocaleString() || 0}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Senior (60+)</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.ageBrackets?.senior?.toLocaleString() || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 shrink-0">

@@ -49,6 +49,11 @@ const Account = () => {
       }
 
       const userData = await userRes.json();
+      if (userData.status === 'blocked') {
+        return navigate('/payment?userId=' + userData.id + '&status=blocked');
+      } else if (userData.status === 'pending_payment') {
+        return navigate('/payment?userId=' + userData.id);
+      }
       setUser(userData);
 
       // 2. Fetch user's print history and credit transactions
@@ -328,11 +333,11 @@ const Account = () => {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-black/20 backdrop-blur-sm rounded-xl p-2.5 border border-white/10">
                   <span className="text-emerald-200 block text-[10px]">Without Image:</span>
-                  <span className="font-extrabold text-white text-sm font-mono">10 Paisa <span className="text-[10px] font-normal text-emerald-200">(₹0.10 / page)</span></span>
+                  <span className="font-extrabold text-white text-sm font-mono">{Math.round((settings?.rateWithoutImage ?? 0.10) * 100)} Paisa <span className="text-[10px] font-normal text-emerald-200">(₹{Number(settings?.rateWithoutImage ?? 0.10).toFixed(2)} / page)</span></span>
                 </div>
                 <div className="bg-black/20 backdrop-blur-sm rounded-xl p-2.5 border border-white/10">
                   <span className="text-emerald-200 block text-[10px]">With Image:</span>
-                  <span className="font-extrabold text-white text-sm font-mono">12 Paisa <span className="text-[10px] font-normal text-emerald-200">(₹0.12 / page)</span></span>
+                  <span className="font-extrabold text-white text-sm font-mono">{Math.round((settings?.rateWithImage ?? 0.12) * 100)} Paisa <span className="text-[10px] font-normal text-emerald-200">(₹{Number(settings?.rateWithImage ?? 0.12).toFixed(2)} / page)</span></span>
                 </div>
               </div>
             </div>
@@ -704,7 +709,7 @@ const Account = () => {
                         const hasImg = Boolean(p.has_image);
                         const rate = p.rate_per_page !== undefined 
                           ? Number(p.rate_per_page) 
-                          : (p.rate_per_slip !== undefined ? Number(p.rate_per_slip) : (hasImg ? 0.12 : 0.10));
+                          : (p.rate_per_slip !== undefined ? Number(p.rate_per_slip) : (hasImg ? (settings?.rateWithImage ?? 0.12) : (settings?.rateWithoutImage ?? 0.10)));
                         const cost = p.cost !== undefined ? Number(p.cost) : Math.round(pages * rate * 100) / 100;
                         const dateObj = new Date(p.timestamp);
 
@@ -731,11 +736,11 @@ const Account = () => {
                             <td className="p-3.5 whitespace-nowrap">
                               {hasImg ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
-                                  🖼️ Photo (12p/pg)
+                                  🖼️ Photo ({Math.round((settings?.rateWithImage ?? 0.12) * 100)}p/pg)
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/10 border border-slate-500/30 text-slate-300">
-                                  📄 Text (10p/pg)
+                                  📄 Text ({Math.round((settings?.rateWithoutImage ?? 0.10) * 100)}p/pg)
                                 </span>
                               )}
                             </td>

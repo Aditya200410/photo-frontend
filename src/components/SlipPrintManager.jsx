@@ -18,7 +18,7 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
     setLocalVoterData(voterData);
   }, [voterData]);
   
-  const printLayoutRef = useRef(null);
+  const printLayoutRef = useRef([]);
   
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -31,12 +31,13 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    for (let i = 1; i <= pagesCount; i++) {
-      setPrintState({ active: true, currentPage: i });
-      await delay(500); 
+    setPrintState({ active: true });
+    await delay(100); 
 
-      if (printLayoutRef.current) {
-        const canvas = await html2canvas(printLayoutRef.current, {
+    for (let i = 0; i < pagesCount; i++) {
+      const pageEl = printLayoutRef.current[i];
+      if (pageEl) {
+        const canvas = await html2canvas(pageEl, {
           scale: 1.5,
           backgroundColor: '#ffffff',
           logging: false,
@@ -47,11 +48,11 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
         });
 
         const imgData = canvas.toDataURL('image/jpeg', 0.75);
-        if (i > 1) {
+        if (i > 0) {
           pdf.addPage();
         }
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-        setProgress((i / pagesCount) * 100);
+        setProgress(((i + 1) / pagesCount) * 100);
       }
     }
 
@@ -94,17 +95,23 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -10, width: '1240px', height: '1754px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -10, width: '1240px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
         {printState.active && (
-          <A4PrintLayout 
-            ref={printLayoutRef}
-            baseData={localVoterData}
-            pageNumber={printState.currentPage}
-            totalPages={pagesCount}
-            startSerialNo={parseInt(voterData.serialNo || 1) + ((printState.currentPage - 1) * cardsPerPage)}
-            cardsPerPage={cardsPerPage}
-            SlipComponent={SlipComp}
-          />
+          Array.from({ length: pagesCount }).map((_, i) => (
+            <A4PrintLayout 
+              key={i}
+              ref={el => {
+                if (!printLayoutRef.current) printLayoutRef.current = [];
+                printLayoutRef.current[i] = el;
+              }}
+              baseData={localVoterData}
+              pageNumber={i + 1}
+              totalPages={pagesCount}
+              startSerialNo={parseInt(voterData.serialNo || 1) + (i * cardsPerPage)}
+              cardsPerPage={cardsPerPage}
+              SlipComponent={SlipComp}
+            />
+          ))
         )}
       </div>
 
@@ -121,6 +128,16 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
         setVoterData={setLocalVoterData}
         cardsPerPage={cardsPerPage}
         setCardsPerPage={setCardsPerPage}
+        previewNode={
+          <A4PrintLayout 
+            baseData={localVoterData}
+            pageNumber={1}
+            totalPages={pagesCount}
+            startSerialNo={parseInt(voterData.serialNo || 1)}
+            cardsPerPage={cardsPerPage}
+            SlipComponent={SlipComp}
+          />
+        }
       />
     </>
   );

@@ -5,7 +5,7 @@ import BatchSlipPrintManager from '../components/BatchSlipPrintManager';
 
 function PhotoGramPanchayat({ onBack }) {
   const [availableFiles, setAvailableFiles] = useState([]);
-  
+
   // Cascade Selection States
   const [selectedState, setSelectedState] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
@@ -95,9 +95,9 @@ function PhotoGramPanchayat({ onBack }) {
   // 4. Files for selected District
   const districtFiles = useMemo(() => {
     if (!selectedDistrict) return stateFiles;
-    return stateFiles.filter(f => 
-      f.district === selectedDistrict || 
-      f.zillaParishad === selectedDistrict || 
+    return stateFiles.filter(f =>
+      f.district === selectedDistrict ||
+      f.zillaParishad === selectedDistrict ||
       (f.zillaParishads && f.zillaParishads.includes(selectedDistrict))
     );
   }, [stateFiles, selectedDistrict]);
@@ -130,9 +130,9 @@ function PhotoGramPanchayat({ onBack }) {
   // 6. Files for selected Samiti
   const samitiFiles = useMemo(() => {
     if (!selectedSamiti) return districtFiles;
-    return districtFiles.filter(f => 
-      f.panchayatSamiti === selectedSamiti || 
-      f.city === selectedSamiti || 
+    return districtFiles.filter(f =>
+      f.panchayatSamiti === selectedSamiti ||
+      f.city === selectedSamiti ||
       (f.panchayatSamitis && f.panchayatSamitis.includes(selectedSamiti))
     );
   }, [districtFiles, selectedSamiti]);
@@ -166,8 +166,8 @@ function PhotoGramPanchayat({ onBack }) {
   // 8. Files for selected Panchayat
   const panchayatMatchedFiles = useMemo(() => {
     if (!panchayatName) return samitiFiles;
-    return samitiFiles.filter(f => 
-      f.panchayat === panchayatName || 
+    return samitiFiles.filter(f =>
+      f.panchayat === panchayatName ||
       (f.panchayats && f.panchayats.includes(panchayatName))
     );
   }, [samitiFiles, panchayatName]);
@@ -342,8 +342,8 @@ function PhotoGramPanchayat({ onBack }) {
       if (wardNumber) url.searchParams.append('ward', wardNumber);
       if (boothNumber) url.searchParams.append('booth', boothNumber);
 
-      const res = await fetch(url, { 
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } 
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` }
       });
       const data = await res.json();
 
@@ -374,16 +374,16 @@ function PhotoGramPanchayat({ onBack }) {
   const filteredVoters = useMemo(() => {
     return voters.filter(v => {
       const idMatch = !filters.id || (v.IDCARD || '').toString().toLowerCase().includes(filters.id.toLowerCase());
-      const nameMatch = !filters.name || 
-        (v.V_FNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || 
-        (v.V_LNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || 
-        (v.V_FNAME_HI || '').toString().includes(filters.name) || 
+      const nameMatch = !filters.name ||
+        (v.V_FNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) ||
+        (v.V_LNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) ||
+        (v.V_FNAME_HI || '').toString().includes(filters.name) ||
         (v.V_LNAME_HI || '').toString().includes(filters.name);
-      
-      const relMatch = !filters.relativeName || 
-        (v.VR_FNAME_EN || '').toString().toLowerCase().includes(filters.relativeName.toLowerCase()) || 
-        (v.VR_LNAME_EN || '').toString().toLowerCase().includes(filters.relativeName.toLowerCase()) || 
-        (v.VR_FNAME_HI || '').toString().includes(filters.relativeName) || 
+
+      const relMatch = !filters.relativeName ||
+        (v.VR_FNAME_EN || '').toString().toLowerCase().includes(filters.relativeName.toLowerCase()) ||
+        (v.VR_LNAME_EN || '').toString().toLowerCase().includes(filters.relativeName.toLowerCase()) ||
+        (v.VR_FNAME_HI || '').toString().includes(filters.relativeName) ||
         (v.VR_LNAME_HI || '').toString().includes(filters.relativeName);
 
       const houseMatch = !filters.houseNo || (v.HOUSE_NO || '').toString().toLowerCase().includes(filters.houseNo.toLowerCase());
@@ -392,7 +392,7 @@ function PhotoGramPanchayat({ onBack }) {
       const ageMatch = !filters.age || vAge === parseInt(filters.age);
       const minAgeMatch = !filters.minAge || vAge >= parseInt(filters.minAge);
       const maxAgeMatch = !filters.maxAge || vAge <= parseInt(filters.maxAge);
-      
+
       let sexMatch = true;
       if (filters.sex) {
         const vSex = (v.SEX || '').toUpperCase();
@@ -459,7 +459,7 @@ function PhotoGramPanchayat({ onBack }) {
       <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full">
         <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600"></div>
-          
+
           <div className="p-4 sm:p-8 md:p-10">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
@@ -533,10 +533,10 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={selectedDistrict}
                     onChange={handleDistrictChange}
-                    disabled={availableDistricts.length === 0}
+                    disabled={!selectedState || availableDistricts.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
-                    <option value="">Select Zilla Parishad</option>
+                    <option value="">{!selectedState ? 'Select State first' : 'Select Zilla Parishad'}</option>
                     {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
@@ -549,10 +549,10 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={selectedSamiti}
                     onChange={handleSamitiChange}
-                    disabled={availableSamitis.length === 0}
+                    disabled={!selectedDistrict || availableSamitis.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
-                    <option value="">All Samitis ({availableSamitis.length})</option>
+                    <option value="">{!selectedDistrict ? 'Select Zilla first' : `All Samitis (${availableSamitis.length})`}</option>
                     {availableSamitis.map(s => (
                       <option key={s.name} value={s.name}>
                         {s.name} {s.no ? `(No. ${s.no})` : ''}
@@ -567,10 +567,10 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={panchayatName}
                     onChange={handlePanchayatChange}
-                    disabled={availablePanchayats.length === 0}
+                    disabled={!selectedSamiti || availablePanchayats.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
-                    <option value="">Select Panchayat</option>
+                    <option value="">{!selectedSamiti ? 'Select Samiti first' : 'Select Panchayat'}</option>
                     {availablePanchayats.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
@@ -584,7 +584,7 @@ function PhotoGramPanchayat({ onBack }) {
                     disabled={!panchayatName || availableVillages.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
-                    <option value="">All Villages ({availableVillages.length})</option>
+                    <option value="">{!panchayatName ? 'Select Panchayat first' : `All Villages (${availableVillages.length})`}</option>
                     {availableVillages.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
@@ -598,7 +598,7 @@ function PhotoGramPanchayat({ onBack }) {
                     disabled={!panchayatName || availableWards.length === 0}
                     className="w-full bg-white border border-violet-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-bold focus:outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-500/30 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
-                    <option value="">All Wards ({availableWards.length})</option>
+                    <option value="">{!panchayatName ? 'Select Panchayat first' : `All Wards (${availableWards.length})`}</option>
                     {availableWards.map(w => <option key={w} value={w}>Ward {w}</option>)}
                   </select>
                 </div>
@@ -612,7 +612,7 @@ function PhotoGramPanchayat({ onBack }) {
                     disabled={!panchayatName || availableBooths.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
-                    <option value="">All Booths ({availableBooths.length})</option>
+                    <option value="">{!panchayatName ? 'Select Panchayat first' : `All Booths (${availableBooths.length})`}</option>
                     {availableBooths.map(b => <option key={b} value={b}>Booth {b}</option>)}
                   </select>
                 </div>
@@ -620,29 +620,7 @@ function PhotoGramPanchayat({ onBack }) {
 
               {/* Action Buttons */}
               <div className="pt-2 flex justify-between items-center flex-wrap gap-4">
-                <div className="flex items-center gap-3 text-xs text-slate-500">
-                  {availableWards.length > 0 && (
-                    <div className="flex items-center gap-1.5 font-medium flex-wrap">
-                      <span className="text-slate-700 font-bold">Quick Wards:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {availableWards.map(w => (
-                          <button
-                            key={w}
-                            type="button"
-                            onClick={() => setWardNumber(w === wardNumber ? '' : w)}
-                            className={`px-2 py-0.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                              wardNumber === w 
-                                ? 'bg-violet-600 text-white font-bold shadow-sm' 
-                                : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
-                            }`}
-                          >
-                            {w}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+
 
                 <button
                   type="button"
@@ -738,59 +716,59 @@ function PhotoGramPanchayat({ onBack }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID / VID Card</label>
-                      <input 
-                        type="text" 
-                        placeholder="Search ID..." 
-                        value={filters.id} 
-                        onChange={e => { setFilters(prev => ({...prev, id: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="Search ID..."
+                        value={filters.id}
+                        onChange={e => { setFilters(prev => ({ ...prev, id: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Voter Name</label>
-                      <input 
-                        type="text" 
-                        placeholder="Name (EN/HI)..." 
-                        value={filters.name} 
-                        onChange={e => { setFilters(prev => ({...prev, name: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="Name (EN/HI)..."
+                        value={filters.name}
+                        onChange={e => { setFilters(prev => ({ ...prev, name: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Relative Name</label>
-                      <input 
-                        type="text" 
-                        placeholder="Father/Husband..." 
-                        value={filters.relativeName} 
-                        onChange={e => { setFilters(prev => ({...prev, relativeName: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="Father/Husband..."
+                        value={filters.relativeName}
+                        onChange={e => { setFilters(prev => ({ ...prev, relativeName: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">House No</label>
-                      <input 
-                        type="text" 
-                        placeholder="House No..." 
-                        value={filters.houseNo} 
-                        onChange={e => { setFilters(prev => ({...prev, houseNo: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="House No..."
+                        value={filters.houseNo}
+                        onChange={e => { setFilters(prev => ({ ...prev, houseNo: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Ward</label>
-                      <input 
-                        type="text" 
-                        placeholder="Ward..." 
-                        value={filters.ward} 
-                        onChange={e => { setFilters(prev => ({...prev, ward: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="Ward..."
+                        value={filters.ward}
+                        onChange={e => { setFilters(prev => ({ ...prev, ward: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Gender</label>
-                      <select 
-                        value={filters.sex} 
-                        onChange={e => { setFilters(prev => ({...prev, sex: e.target.value})); setPageCount(1); }} 
+                      <select
+                        value={filters.sex}
+                        onChange={e => { setFilters(prev => ({ ...prev, sex: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm cursor-pointer"
                       >
                         <option value="">All Genders</option>
@@ -801,18 +779,18 @@ function PhotoGramPanchayat({ onBack }) {
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Age Range</label>
                       <div className="flex gap-1.5">
-                        <input 
-                          type="number" 
-                          placeholder="Min" 
-                          value={filters.minAge} 
-                          onChange={e => { setFilters(prev => ({...prev, minAge: e.target.value})); setPageCount(1); }} 
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={filters.minAge}
+                          onChange={e => { setFilters(prev => ({ ...prev, minAge: e.target.value })); setPageCount(1); }}
                           className="w-1/2 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                         />
-                        <input 
-                          type="number" 
-                          placeholder="Max" 
-                          value={filters.maxAge} 
-                          onChange={e => { setFilters(prev => ({...prev, maxAge: e.target.value})); setPageCount(1); }} 
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={filters.maxAge}
+                          onChange={e => { setFilters(prev => ({ ...prev, maxAge: e.target.value })); setPageCount(1); }}
                           className="w-1/2 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                         />
                       </div>
@@ -973,7 +951,7 @@ function PhotoGramPanchayat({ onBack }) {
                 <h3 className="text-lg font-bold">Voter Complete Profile</h3>
                 <p className="text-violet-200 text-xs">All fields matching Excel data</p>
               </div>
-              <button 
+              <button
                 onClick={() => setDetailModalVoter(null)}
                 className="p-1.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
               >
@@ -1093,7 +1071,7 @@ function PhotoGramPanchayat({ onBack }) {
               >
                 Print Slip for this Voter
               </button>
-              <button 
+              <button
                 onClick={() => setDetailModalVoter(null)}
                 className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-5 py-2 rounded-xl transition-colors"
               >

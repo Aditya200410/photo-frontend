@@ -5,6 +5,15 @@ function AdminFetchData() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [filterLetter, setFilterLetter] = useState('');
+
+  const alphabets = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+  const filteredRecords = records.filter(record => {
+    if (!filterLetter) return true;
+    const name = record.accountName || record.account || '';
+    return name.toUpperCase().startsWith(filterLetter);
+  });
 
   useEffect(() => {
     const fetchRecords = async () => {
@@ -41,6 +50,27 @@ function AdminFetchData() {
             </div>
           </div>
 
+          {/* Alphabetical Filter */}
+          <div className="mb-6 overflow-x-auto custom-scrollbar pb-2">
+            <div className="flex items-center gap-1.5 min-w-max">
+              <button
+                onClick={() => setFilterLetter('')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${!filterLetter ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+              >
+                ALL
+              </button>
+              {alphabets.map(letter => (
+                <button
+                  key={letter}
+                  onClick={() => setFilterLetter(letter)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${filterLetter === letter ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                >
+                  {letter}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-inner">
             <table className="w-full min-w-[680px] text-left border-collapse">
               <thead>
@@ -56,10 +86,10 @@ function AdminFetchData() {
               <tbody className="text-slate-700 divide-y divide-slate-100 bg-white text-xs sm:text-sm">
                 {loading ? (
                   <tr><td colSpan="6" className="p-6 text-center text-slate-500">Loading records...</td></tr>
-                ) : records.length === 0 ? (
-                  <tr><td colSpan="6" className="p-6 text-center text-slate-500">No records found.</td></tr>
+                ) : filteredRecords.length === 0 ? (
+                  <tr><td colSpan="6" className="p-6 text-center text-slate-500">No records found {filterLetter && `starting with "${filterLetter}"`}.</td></tr>
                 ) : (
-                  records.map((r, i) => (
+                  filteredRecords.map((r, i) => (
                     <tr key={r.id || i} className="hover:bg-slate-50/80 transition-colors">
                       <td className="p-3 sm:p-4 max-w-[200px]">
                         {r.accountName ? (

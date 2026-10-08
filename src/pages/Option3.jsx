@@ -42,7 +42,7 @@ function Option3() {
   });
 
   const slipRef = useRef(null);
-  const printLayoutRef = useRef(null);
+  const printLayoutRef = useRef([]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -89,15 +89,15 @@ function Option3() {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    for (let i = 1; i <= pagesCount; i++) {
-      // Set the state so the hidden layout renders the current page
-      setPrintState({ active: true, currentPage: i });
-      
-      // Wait for React to re-render the layout
-      await delay(500); 
+    setPrintState({ active: true });
+    
+    // Wait for React to render all pages
+    await delay(100); 
 
-      if (printLayoutRef.current) {
-        const canvas = await html2canvas(printLayoutRef.current, {
+    for (let i = 0; i < pagesCount; i++) {
+      const pageEl = printLayoutRef.current[i];
+      if (pageEl) {
+        const canvas = await html2canvas(pageEl, {
           scale: 1.5, // Reduced scale for file size optimization
           backgroundColor: '#ffffff',
           logging: false,
@@ -109,13 +109,13 @@ function Option3() {
 
         // Use JPEG format with quality 0.75 for huge size reduction
         const imgData = canvas.toDataURL('image/jpeg', 0.75);
-        if (i > 1) {
+        if (i > 0) {
           pdf.addPage();
         }
         // Add image as JPEG and use 'FAST' compression in jsPDF
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
         
-        setProgress((i / pagesCount) * 100);
+        setProgress(((i + 1) / pagesCount) * 100);
       }
     }
 
@@ -157,16 +157,22 @@ function Option3() {
     <>
       {/* Hidden Print Layout (Outside main container to avoid overflow-x-hidden clipping) */}
       {printState.active && (
-        <div style={{ position: 'absolute', top: 0, left: 0, zIndex: -10, width: '1240px', height: '1754px', pointerEvents: 'none' }}>
-          <A4PrintLayout 
-            SlipComponent={VoterSlipOption3}
-            ref={printLayoutRef}
-            baseData={formData}
-            pageNumber={printState.currentPage}
-            totalPages={pagesCount}
-            startSerialNo={parseInt(formData.serialNo || 1) + ((printState.currentPage - 1) * cardsPerPage)}
-            cardsPerPage={cardsPerPage}
-          />
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -10, width: '1240px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
+          {Array.from({ length: pagesCount }).map((_, i) => (
+            <A4PrintLayout 
+              key={i}
+              SlipComponent={VoterSlipOption3}
+              ref={el => {
+                if (!printLayoutRef.current) printLayoutRef.current = [];
+                printLayoutRef.current[i] = el;
+              }}
+              baseData={formData}
+              pageNumber={i + 1}
+              totalPages={pagesCount}
+              startSerialNo={parseInt(formData.serialNo || 1) + (i * cardsPerPage)}
+              cardsPerPage={cardsPerPage}
+            />
+          ))}
         </div>
       )}
 

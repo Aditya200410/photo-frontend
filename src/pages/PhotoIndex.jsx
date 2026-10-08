@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import PhotoAssembly from './PhotoAssembly';
 import PhotoNagarNigam from './PhotoNagarNigam';
@@ -7,6 +7,7 @@ import PhotoGramPanchayat from './PhotoGramPanchayat';
 
 function PhotoIndex() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(searchParams.get('view') || 'overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [analytics, setAnalytics] = useState({
@@ -49,7 +50,13 @@ function PhotoIndex() {
       .then(res => res.json())
       .then(data => {
         if (data && !data.error) {
-          setCurrentUser(data);
+          if (data.status === 'blocked') {
+            navigate(`/payment?userId=${data.id}&status=blocked`);
+          } else if (data.status === 'pending_payment') {
+            navigate(`/payment?userId=${data.id}`);
+          } else {
+            setCurrentUser(data);
+          }
         }
       })
       .catch(err => console.error("Failed to load user:", err));
@@ -422,7 +429,7 @@ function PhotoIndex() {
                   </div>
                   <div className="pt-3 border-t border-white/20 flex items-center justify-between mt-4">
                     <div className="text-[11px] text-emerald-100 font-medium leading-tight">
-                      Rates: 10p / 12p per page
+                      Rates: {(siteSettings?.rateWithoutImage ?? 0.10) * 100}p / {(siteSettings?.rateWithImage ?? 0.12) * 100}p per page
                     </div>
                     <Link to="/account" className="text-xs font-bold text-white underline hover:text-emerald-200 transition-colors">
                       History →

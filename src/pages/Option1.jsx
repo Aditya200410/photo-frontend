@@ -41,7 +41,7 @@ function Option1() {
   });
 
   const slipRef = useRef(null);
-  const printLayoutRef = useRef(null);
+  const printLayoutRef = useRef([]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,7 +80,7 @@ function Option1() {
 
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const handlePrintGenerate = async () => {
+  const handlePrintGenerate = async (isPreviewMode = false) => {
     setIsGenerating(true);
     setProgress(0);
 
@@ -88,7 +88,9 @@ function Option1() {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    for (let i = 1; i <= pagesCount; i++) {
+    const numPagesToPrint = isPreviewMode ? 1 : pagesCount;
+
+    for (let i = 1; i <= numPagesToPrint; i++) {
       // Set the state so the hidden layout renders the current page
       setPrintState({ active: true, currentPage: i });
       
@@ -114,37 +116,39 @@ function Option1() {
         // Add image as JPEG and use 'FAST' compression in jsPDF
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
         
-        setProgress((i / pagesCount) * 100);
+        setProgress((i / numPagesToPrint) * 100);
       }
     }
 
     const hasImage = Boolean(formData.topImage);
     const totalSlips = pagesCount * 8;
 
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/prints`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
-        body: JSON.stringify({
-          optionType: 'Option 1',
-          wardNo: formData.wardNo,
-          partNo: formData.partNo,
-          serialNo: formData.serialNo,
-          voterName: formData.voterName,
-          pagesCount: pagesCount,
-          cardsPerPage: 8,
-          slipsCount: totalSlips,
-          hasImage: hasImage
-        })
-      });
-      if (res.ok) {
-        window.dispatchEvent(new Event('user-credits-updated'));
+    if (!isPreviewMode) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/prints`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
+          body: JSON.stringify({
+            optionType: 'Option 1',
+            wardNo: formData.wardNo,
+            partNo: formData.partNo,
+            serialNo: formData.serialNo,
+            voterName: formData.voterName,
+            pagesCount: pagesCount,
+            cardsPerPage: cardsPerPage,
+            slipsCount: totalSlips,
+            hasImage: hasImage
+          })
+        });
+        if (res.ok) {
+          window.dispatchEvent(new Event('user-credits-updated'));
+        }
+      } catch (err) {
+        console.error('Failed to log print to backend:', err);
       }
-    } catch (err) {
-      console.error('Failed to log print to backend:', err);
     }
 
-    pdf.save(`voter-list-${pagesCount}-pages.pdf`);
+    pdf.save(`voter-list-${isPreviewMode ? 'preview' : pagesCount + '-pages'}.pdf`);
     
     // Cleanup
     setIsGenerating(false);
@@ -177,8 +181,16 @@ function Option1() {
         progress={progress}
         pagesCount={pagesCount}
         setPagesCount={setPagesCount}
-        cardsPerPage={cardsPerPage}
         setCardsPerPage={setCardsPerPage}
+        previewNode={
+          <A4PrintLayout 
+            baseData={formData}
+            pageNumber={1}
+            totalPages={pagesCount}
+            startSerialNo={formData.serialNo}
+            cardsPerPage={cardsPerPage}
+          />
+        }
       />
 
       {/* Enlarge Preview Modal */}

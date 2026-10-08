@@ -218,6 +218,30 @@ function AdminAddExcelAssembly() {
                     <div><span className="font-semibold text-slate-700">Booth:</span> {file.booth || 'N/A'}</div>
                   </div>
                   <p className="text-xs text-slate-500 mt-2">Uploaded at: {new Date(file.timestamp).toLocaleString()}</p>
+                  
+                  {file.stats && (
+                    <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                      <h4 className="text-xs font-bold text-slate-800 mb-2 border-b border-slate-200 pb-1">Data Analysis</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Total Voters</span>
+                          <span className="text-emerald-700 font-bold text-sm">{file.stats.totalVoters?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Gender Split</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.maleVoters?.toLocaleString()} M / {file.stats.femaleVoters?.toLocaleString()} F</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Avg Age</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.averageAge} yrs</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-500 font-medium">Youth (18-25)</span>
+                          <span className="text-slate-700 font-semibold">{file.stats.ageBrackets?.youth?.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
                   <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-bold hidden xl:inline-block">Assembly</span>

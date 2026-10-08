@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 const Payment = () => {
   const [searchParams] = useSearchParams();
   const userId = searchParams.get('userId');
+  const userStatus = searchParams.get('status');
   const [utr, setUtr] = useState('');
   const [status, setStatus] = useState('pending'); // pending, success, error
   const [message, setMessage] = useState('');
@@ -35,7 +36,7 @@ const Payment = () => {
         return;
       }
       setStatus('success');
-      setMessage('Payment request submitted successfully. Please wait for admin approval.');
+      setMessage(userStatus === 'blocked' ? 'Appeal submitted successfully. Please wait for admin approval to unblock your account.' : 'Payment request submitted successfully. Please wait for admin approval.');
     } catch (err) {
       setStatus('error');
       setMessage('Network error. Please try again.');
@@ -59,8 +60,18 @@ const Payment = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-slate-200">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">Activate Your Account</h2>
-          <p className="mt-2 text-sm text-gray-600">Scan the QR code below to make a payment and submit your UTR (Transaction Reference No.)</p>
+          {userStatus === 'blocked' ? (
+            <>
+              <h2 className="text-3xl font-extrabold text-red-600">Account Blocked</h2>
+              <p className="mt-2 text-sm text-red-500 font-bold">Your account was blocked due to false payment info.</p>
+              <p className="mt-2 text-sm text-gray-600">Appeal this decision by scanning the QR code below to make a valid payment and submitting your new UTR.</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-extrabold text-gray-900">Activate Your Account</h2>
+              <p className="mt-2 text-sm text-gray-600">Scan the QR code below to make a payment and submit your UTR (Transaction Reference No.)</p>
+            </>
+          )}
         </div>
         
         <div className="flex justify-center p-4 bg-slate-50 rounded-lg border border-slate-200 min-h-[200px] items-center">

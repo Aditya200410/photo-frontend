@@ -7,6 +7,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [siteSettings, setSiteSettings] = useState(null);
 
   // Modal states for Approval with Credit
   const [approvingUser, setApprovingUser] = useState(null);
@@ -53,9 +54,19 @@ const AdminUsers = () => {
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`);
+      const data = await res.json();
+      setSiteSettings(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const loadAllData = async () => {
     setLoading(true);
-    await Promise.all([fetchUsers(), fetchCreditRequests()]);
+    await Promise.all([fetchUsers(), fetchCreditRequests(), fetchSettings()]);
     setLoading(false);
   };
 
@@ -153,20 +164,22 @@ const AdminUsers = () => {
     }
   };
 
-  // Remove active user
-  const handleRemove = async (userId) => {
-    if (!window.confirm('Are you sure you want to remove access for this user?')) return;
+  // Block / Unblock user
+  const handleToggleBlock = async (userId, currentStatus) => {
+    const isBlocked = currentStatus === 'blocked';
+    const action = isBlocked ? 'unblock' : 'block';
+    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/remove-user`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/toggle-block-user`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': 'Bearer DUMMY'
         },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId, block: !isBlocked })
       });
       if (res.ok) {
-        setMessage('User access removed!');
+        setMessage(`User successfully ${action}ed!`);
         fetchUsers();
         setTimeout(() => setMessage(''), 3000);
       }
@@ -248,7 +261,7 @@ const AdminUsers = () => {
   };
 
   const pendingUsers = users.filter(u => u.status === 'pending_approval');
-  const activeUsers = users.filter(u => u.status === 'active' && u.role !== 'admin');
+  const activeUsers = users.filter(u => (u.status === 'active' || u.status === 'blocked') && u.role !== 'admin');
   const pendingCreditRequests = creditRequests.filter(r => r.status === 'pending');
   const processedCreditRequests = creditRequests.filter(r => r.status !== 'pending');
 
@@ -271,7 +284,7 @@ const AdminUsers = () => {
         </div>
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200/70 rounded-2xl px-4 py-2 text-xs font-semibold text-emerald-800 self-start sm:self-auto">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          Rates: 10p (no image) | 12p (with image)
+          Rates: {(siteSettings?.rateWithoutImage ?? 0.10) * 100}p (no image) | {(siteSettings?.rateWithImage ?? 0.12) * 100}p (with image)
         </div>
       </div>
 
@@ -469,14 +482,14 @@ const AdminUsers = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-amber-700 flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                Pending Account Approvals ({pendingUsers.length})
+                Pending Registrations & Appeals ({pendingUsers.length})
               </h3>
               <span className="text-xs text-slate-400 font-medium">Verify UTR and grant credit upon approving</span>
             </div>
 
             {pendingUsers.length === 0 ? (
               <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-6 text-center text-slate-500 text-sm">
-                No pending user account approvals.
+                No pending registrations or appeals.
               </div>
             ) : (
               <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
@@ -543,19 +556,38 @@ const AdminUsers = () => {
                       <th className="p-3.5">Name</th>
                       <th className="p-3.5">Email / Phone</th>
                       <th className="p-3.5">UTR</th>
+                      <th className="p-3.5">Status</th>
                       <th className="p-3.5">Current Credit (₹)</th>
                       <th className="p-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {activeUsers.map(u => (
-                      <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3.5 font-bold text-slate-800">{u.name}</td>
+                      <tr key={u.id} className={`hover:bg-slate-50/80 transition-colors ${u.status === 'blocked' ? 'bg-rose-50/40' : ''}`}>
+                        <td className="p-3.5 font-bold text-slate-800">
+                          {u.name}
+                        </td>
                         <td className="p-3.5 text-sm">
                           <div className="text-slate-800 font-medium">{u.email}</div>
                           <div className="text-slate-400 text-xs font-mono">{u.phone}</div>
                         </td>
                         <td className="p-3.5 font-mono text-xs text-slate-500">{u.utr || '-'}</td>
+                        <td className="p-3.5">
+                          {u.status === 'blocked' ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-100 text-rose-700 text-[10px] font-black uppercase tracking-wider border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                Blocked
+                              </span>
+                              <span className="text-[9px] text-rose-500 font-bold uppercase tracking-wider">False Payment Info</span>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Active
+                            </span>
+                          )}
+                        </td>
                         <td className="p-3.5">
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-extrabold text-sm">
                             <span>₹{(Number(u.credits) || 0).toFixed(2)}</span>
@@ -570,10 +602,14 @@ const AdminUsers = () => {
                             + Add / Set Credit
                           </button>
                           <button 
-                            onClick={() => handleRemove(u.id)} 
-                            className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
+                            onClick={() => handleToggleBlock(u.id, u.status)} 
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
+                              u.status === 'blocked' 
+                                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-200/80'
+                                : 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200/80'
+                            }`}
                           >
-                            Remove
+                            {u.status === 'blocked' ? 'Unblock' : 'Block'}
                           </button>
                         </td>
                       </tr>
@@ -733,8 +769,8 @@ const AdminUsers = () => {
               </div>
 
               <div className="mt-3 p-2.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-xs text-emerald-800 flex items-center justify-between">
-                <span>📄 Without Image: <strong>₹0.10 / page</strong></span>
-                <span>🖼️ With Image: <strong>₹0.12 / page</strong></span>
+                <span>📄 Without Image: <strong>₹{Number(siteSettings?.rateWithoutImage ?? 0.10).toFixed(2)} / page</strong></span>
+                <span>🖼️ With Image: <strong>₹{Number(siteSettings?.rateWithImage ?? 0.12).toFixed(2)} / page</strong></span>
               </div>
             </div>
 

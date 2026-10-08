@@ -26,8 +26,8 @@ const Login = () => {
       setIsLoading(false);
       
       if (!res.ok) {
-        if (data.status === 'pending_payment') {
-          navigate('/payment?userId=' + data.userId);
+        if (data.status === 'pending_payment' || data.status === 'blocked') {
+          navigate('/payment?userId=' + data.userId + '&status=' + data.status);
         } else {
           setError(data.error || 'Login failed. Please check your email and password.');
         }

@@ -4,7 +4,11 @@ function AdminSettings() {
   const [settings, setSettings] = useState({
     assemblyImage: '',
     nagarNigamImage: '',
-    gramPanchayatImage: ''
+    gramPanchayatImage: '',
+    qrCodeImage: '',
+    upiId: '',
+    rateWithoutImage: 0.10,
+    rateWithImage: 0.12
   });
   const [loading, setLoading] = useState(true);
 
@@ -194,6 +198,36 @@ function AdminSettings() {
                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition"
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Slip Printing Rates Settings */}
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <h2 className="text-xl font-bold text-slate-700 mb-2">Slip Printing Rates</h2>
+            <p className="text-xs text-slate-500 mb-4">Set the cost per page (in Rupees) for printing slips.</p>
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="w-full md:w-1/2">
+                <label className="block text-sm font-bold text-slate-700 mb-1">Rate without Photo (₹)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  min="0"
+                  value={settings.rateWithoutImage ?? 0.10} 
+                  onChange={(e) => setSettings({...settings, rateWithoutImage: parseFloat(e.target.value)})}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 font-mono text-sm outline-none bg-white"
+                />
+              </div>
+              <div className="w-full md:w-1/2">
+                <label className="block text-sm font-bold text-slate-700 mb-1">Rate with Photo (₹)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  min="0"
+                  value={settings.rateWithImage ?? 0.12} 
+                  onChange={(e) => setSettings({...settings, rateWithImage: parseFloat(e.target.value)})}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 font-mono text-sm outline-none bg-white"
+                />
               </div>
             </div>
           </div>
