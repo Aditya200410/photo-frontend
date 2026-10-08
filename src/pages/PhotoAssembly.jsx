@@ -185,11 +185,11 @@ function PhotoAssembly({ onBack }) {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full">
-        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
+      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full max-w-[100vw] overflow-x-hidden">
+        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative flex flex-col min-w-0">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500"></div>
           
-          <div className="p-4 sm:p-8 md:p-10">
+          <div className="p-4 sm:p-8 md:p-10 w-full max-w-full overflow-hidden">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
               <div>
@@ -377,7 +377,7 @@ function PhotoAssembly({ onBack }) {
             )}
 
             {voters.length > 0 && (
-              <div className="mt-10 pt-8 border-t border-slate-200">
+              <div className="mt-10 pt-8 border-t border-slate-200 w-full max-w-full min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                   <div>
                     <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -410,28 +410,35 @@ function PhotoAssembly({ onBack }) {
                 </div>
 
                 {/* Filter Deck */}
-                <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/90 mb-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
+                <details className="bg-slate-50/80 rounded-2xl border border-slate-200/90 mb-6 shadow-sm group [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="p-5 flex items-center justify-between cursor-pointer list-none select-none">
                     <h4 className="text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                       <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                       </svg>
                       Filter Electors Data
                     </h4>
-                    {(filters.id || filters.name || filters.houseNo || filters.age || filters.minAge || filters.maxAge || filters.sex) && (
-                      <button
-                        onClick={() => {
-                          setFilters({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
-                          setPageCount(1);
-                        }}
-                        className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
-                      >
-                        Reset All Filters ✕
-                      </button>
-                    )}
-                  </div>
+                    <div className="flex items-center gap-4">
+                      {(filters.id || filters.name || filters.houseNo || filters.age || filters.minAge || filters.maxAge || filters.sex) && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setFilters({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
+                            setPageCount(1);
+                          }}
+                          className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer bg-white px-2 py-1 rounded-md shadow-sm border border-rose-100"
+                        >
+                          Reset ✕
+                        </button>
+                      )}
+                      <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </summary>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  <div className="px-5 pb-5 border-t border-slate-200/60 pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">ID / VID Number</label>
                       <input 
@@ -508,10 +515,10 @@ function PhotoAssembly({ onBack }) {
                       </select>
                     </div>
                   </div>
-                </div>
+                </details>
 
                 {/* Electors Table */}
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">

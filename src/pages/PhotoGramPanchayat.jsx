@@ -456,11 +456,11 @@ function PhotoGramPanchayat({ onBack }) {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full">
-        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
+      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full max-w-[100vw] overflow-x-hidden">
+        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative flex flex-col min-w-0">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600"></div>
 
-          <div className="p-4 sm:p-8 md:p-10">
+          <div className="p-4 sm:p-8 md:p-10 w-full max-w-full overflow-hidden">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
               <div>
@@ -664,7 +664,7 @@ function PhotoGramPanchayat({ onBack }) {
 
             {/* Voter Results Section */}
             {voters.length > 0 && (
-              <div className="mt-10 pt-8 border-t border-slate-200">
+              <div className="mt-10 pt-8 border-t border-slate-200 w-full max-w-full min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                   <div>
                     <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -713,7 +713,7 @@ function PhotoGramPanchayat({ onBack }) {
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID / VID Card</label>
                       <input
@@ -799,7 +799,7 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* Comprehensive All-Columns Voter Table */}
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
                   <table className="w-full text-left border-collapse min-w-[1400px]">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">

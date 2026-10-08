@@ -347,12 +347,6 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 Cancel
               </button>
               <button
-                onClick={() => handlePrintGenerate(true)}
-                className="w-full lg:hidden px-6 py-3 sm:py-2.5 rounded-xl font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-all text-center text-sm"
-              >
-                Download Free Preview (1 Page)
-              </button>
-              <button
                 onClick={() => handlePrintGenerate(false)}
                 className="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-center text-sm"
                 disabled={!pagesCount || pagesCount < 1 || !isBalanceSufficient}
@@ -364,10 +358,10 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
           )}
         </div>
 
-        <div className="hidden lg:flex flex-[1.2] flex-col items-center justify-start bg-slate-100 border border-slate-200 rounded-2xl p-4 overflow-hidden relative">
+        <div className="flex flex-col lg:flex-[1.2] items-center justify-start bg-slate-100 border border-slate-200 rounded-2xl p-4 overflow-hidden relative min-h-[500px]">
           <h3 className="text-sm font-bold text-slate-500 mb-4 w-full text-center uppercase tracking-wider">Page 1 Live Preview</h3>
-          <div className="w-full flex-1 flex justify-center items-start custom-scrollbar overflow-hidden">
-            <div className="origin-top flex justify-center shadow-md bg-white" style={{ transform: 'scale(0.4)', width: '1240px', height: '1754px' }}>
+          <div className="w-full flex-1 flex justify-center items-start overflow-hidden">
+            <div className="origin-top flex justify-center shadow-md bg-white scale-[0.25] sm:scale-[0.35] lg:scale-[0.4] mb-[-1300px] sm:mb-[-1100px] lg:mb-[-1050px]" style={{ width: '1240px', height: '1754px' }}>
               <div className="w-full h-full pointer-events-none">
                 {allPagesSlipsData[0] && (
                   <BatchA4PrintLayout
@@ -386,12 +380,6 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
               </div>
             </div>
           </div>
-          <button
-            onClick={() => handlePrintGenerate(true)}
-            className="mt-4 px-6 py-2.5 rounded-xl font-bold text-indigo-600 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-sm transition-all text-center text-sm"
-          >
-            Download Free Preview PDF (1 Page)
-          </button>
         </div>
 
       </div>
