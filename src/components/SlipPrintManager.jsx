@@ -38,16 +38,18 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
       const pageEl = printLayoutRef.current[i];
       if (pageEl) {
         const canvas = await html2canvas(pageEl, {
-          scale: 1.5,
+          scale: 1.0, // Scale 1 is perfectly crisp for A4 text and fastest to compute
           backgroundColor: '#ffffff',
           logging: false,
           windowWidth: 1240,
           windowHeight: 1754,
           width: 1240,
-          height: 1754
+          height: 1754,
+          useCORS: false // Disabling CORS checks speeds up processing significantly
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.75);
+        // Reduced quality from 0.75 to 0.6 for memory and speed optimization
+        const imgData = canvas.toDataURL('image/jpeg', 0.6);
         if (i > 0) {
           pdf.addPage();
         }

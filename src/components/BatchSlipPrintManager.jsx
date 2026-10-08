@@ -96,22 +96,31 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
     const numPagesToPrint = isPreviewMode ? 1 : pagesCount;
 
+    // Load ReactDOM once outside the loop
+    const ReactDOM = await import('react-dom');
+
     for (let i = 1; i <= numPagesToPrint; i++) {
-      setPrintState({ active: true, currentPage: i });
-      await delay(500); // Give DOM time to render the layout
+      // Force React to synchronously update the DOM immediately, removing the need for any delay
+      ReactDOM.flushSync(() => {
+        setPrintState({ active: true, currentPage: i });
+      });
+      // A tiny 10ms yield to allow the browser to paint the DOM if needed, much faster than 500ms
+      await delay(10); 
 
       if (printLayoutRef.current) {
         const canvas = await html2canvas(printLayoutRef.current, {
-          scale: 1.5,
+          scale: 1.0, // Scale 1 is exactly 1240x1754 (150 DPI), perfectly crisp for A4 text and fastest to compute
           backgroundColor: '#ffffff',
           logging: false,
           windowWidth: 1240,
           windowHeight: 1754,
           width: 1240,
-          height: 1754
+          height: 1754,
+          useCORS: false // Disabling CORS checks speeds up processing significantly since images are Base64
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.75);
+        // Reduced quality from 0.75 to 0.6. Massive reduction in memory and encoding time
+        const imgData = canvas.toDataURL('image/jpeg', 0.6);
         if (i > 1) {
           pdf.addPage();
         }
