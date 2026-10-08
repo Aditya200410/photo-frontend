@@ -8,21 +8,41 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
     serialNo: baseData.serialNo // Typically startSerialNo + i if dynamic
   }));
 
-  // Determine grid layout
   let gridTemplateColumns = '1fr 1fr';
-  let gridTemplateRows = 'repeat(4, 1fr)';
-  let transform = 'scale(1)';
-  let gap = '8px 20px';
+  let rowsCount = 4;
+  let scale = 1.12; // 8 cards scale to fill space proportionally
+  let verticalGap = 15;
+  let horizontalGap = 20;
 
   if (cardsPerPage === 4) {
-    gridTemplateRows = 'repeat(2, 1fr)';
-    gap = '20px 20px';
+    rowsCount = 2;
+    verticalGap = 20;
+    horizontalGap = 20;
+    scale = 1.25;
+  } else if (cardsPerPage === 10) {
+    gridTemplateColumns = '1fr 1fr';
+    rowsCount = 5;
+    verticalGap = 15;
+    horizontalGap = 20;
+    scale = 0.95;
   } else if (cardsPerPage === 12) {
     gridTemplateColumns = '1fr 1fr';
-    gridTemplateRows = 'repeat(6, 1fr)';
-    transform = 'scale(0.85)';
-    gap = '4px 10px';
+    rowsCount = 6;
+    verticalGap = 15;
+    horizontalGap = 20;
+    scale = 0.85;
   }
+
+  // Available dimensions for the grid
+  const availableWidth = 1220; // 1240 - 20 (padding)
+  const availableHeight = 1650; // 1754 - 30 (padding) - 74 (header + margins)
+
+  // Calculate original grid dimensions before scale
+  const gridWidth = availableWidth / scale;
+  const gridHeight = availableHeight / scale;
+  
+  // Calculate exact pixel height for a single row to force html2canvas to stretch it
+  const rowHeight = (gridHeight - (rowsCount - 1) * verticalGap) / rowsCount;
 
   return (
     <div 
@@ -31,7 +51,7 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         width: '1240px',
         height: '1754px',
         backgroundColor: '#ffffff',
-        padding: '15px 10px', // Reduced top/bottom padding to maximize vertical space
+        padding: '15px 10px',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
@@ -45,7 +65,7 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         alignItems: 'center',
         paddingBottom: '5px',
         borderBottom: '2px solid black',
-        marginBottom: '10px', // Reduced margin
+        marginBottom: '15px',
         marginLeft: '10px',
         marginRight: '10px',
         fontSize: '22px',
@@ -58,24 +78,35 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         <span>Page {pageNumber} of {totalPages}</span>
       </div>
 
-      {/* Grid of slips */}
+      {/* Grid Wrapper to handle scaling perfectly to fit A4 */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns,
-        gridTemplateRows,
-        gap,
-        justifyItems: 'center',
-        alignItems: 'center', 
-        flex: 1,
-        minHeight: 0,
-        transform,
-        transformOrigin: 'top center'
+        width: `${availableWidth}px`,
+        height: `${availableHeight}px`,
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        {slips.map((slipData, index) => (
-          <div key={index}>
-            <SlipComponent data={slipData} />
-          </div>
-        ))}
+        {/* Actual Scaled Grid */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: `${gridWidth}px`,
+          height: `${gridHeight}px`,
+          display: 'grid',
+          gridTemplateColumns,
+          gridTemplateRows: `repeat(${rowsCount}, ${rowHeight}px)`,
+          gap: `${verticalGap}px ${horizontalGap}px`,
+          justifyItems: 'stretch',
+          alignItems: 'stretch',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left'
+        }}>
+          {slips.map((slipData, index) => (
+            <div key={index} style={{ display: 'flex', width: '100%', height: `${rowHeight}px` }}>
+              <SlipComponent data={slipData} style={{ width: '100%', height: `${rowHeight}px` }} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

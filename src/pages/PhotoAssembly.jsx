@@ -543,16 +543,45 @@ function PhotoAssembly({ onBack }) {
                 </details>
 
                 {/* Electors Table */}
-                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
-                  <table className="w-full text-left border-collapse">
+                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white relative">
+                  <div className="absolute top-2 right-4 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 hidden sm:block">
+                    💡 Tap any column header to sort ascending or descending
+                  </div>
+                  <table className="w-full text-left border-collapse mt-2">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                        <th className="p-3.5 pl-4">ID / Card</th>
-                        <th className="p-3.5">Name (EN / HI)</th>
-                        <th className="p-3.5">Guardian / Relation</th>
-                        <th className="p-3.5">Age & Gender</th>
-                        <th className="p-3.5">House No</th>
-                        <th className="p-3.5 pr-4 text-right">Action</th>
+                        {(() => {
+                          const renderSortableHeader = (label, key, extraClass = "") => (
+                            <th 
+                              className={`p-3.5 cursor-pointer hover:bg-slate-200/60 transition-colors group select-none ${extraClass}`}
+                              onClick={() => {
+                                let direction = 'asc';
+                                if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+                                setSortConfig({ key, direction });
+                                setPageCount(1);
+                              }}
+                              title={`Tap to sort by ${label}`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>{label}</span>
+                                <span className="text-slate-300 group-hover:text-blue-400 flex flex-col -space-y-1">
+                                  <svg className={`w-2.5 h-2.5 ${sortConfig.key === key && sortConfig.direction === 'asc' ? 'text-blue-600' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
+                                  <svg className={`w-2.5 h-2.5 ${sortConfig.key === key && sortConfig.direction === 'desc' ? 'text-blue-600' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                </span>
+                              </div>
+                            </th>
+                          );
+                          return (
+                            <>
+                              {renderSortableHeader('ID / Card', 'ID', 'pl-4')}
+                              {renderSortableHeader('Name (EN / HI)', 'EFVNAME')}
+                              {renderSortableHeader('Guardian / Relation', 'EFRNAME')}
+                              {renderSortableHeader('Age & Gender', 'MAGE')}
+                              {renderSortableHeader('House No', 'MHOUSENO')}
+                              <th className="p-3.5 pr-4 text-right">Action</th>
+                            </>
+                          );
+                        })()}
                       </tr>
                     </thead>
                     <tbody className="text-slate-700 divide-y divide-slate-100 bg-white text-xs sm:text-sm">

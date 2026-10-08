@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 
-const VoterSlip = forwardRef(({ data }, ref) => {
+const VoterSlip = forwardRef(({ data, style = {} }, ref) => {
   return (
     <div 
       ref={ref}
@@ -11,7 +11,10 @@ const VoterSlip = forwardRef(({ data }, ref) => {
         fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", 
         fontSize: '18px', 
         boxSizing: 'border-box',
-        lineHeight: '1.3'
+        lineHeight: '1.3',
+        display: 'flex',
+        flexDirection: 'column',
+        ...style
       }}
     >
       {/* Optional Top Image */}
@@ -33,7 +36,7 @@ const VoterSlip = forwardRef(({ data }, ref) => {
       )}
 
       {/* Main Slip Box */}
-      <div style={{ border: '3px solid black', padding: '6px 10px' }}>
+      <div style={{ border: '3px solid black', padding: '6px 10px', display: 'flex', flexDirection: 'column', flex: 1, height: '100%', justifyContent: 'space-evenly' }}>
         {/* Row 1: Ward No & Part No */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>

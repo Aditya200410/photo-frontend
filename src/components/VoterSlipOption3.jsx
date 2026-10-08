@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 
-const VoterSlipOption3 = forwardRef(({ data }, ref) => {
+const VoterSlipOption3 = forwardRef(({ data, style = {} }, ref) => {
   return (
     <div 
       ref={ref}
@@ -13,7 +13,8 @@ const VoterSlipOption3 = forwardRef(({ data }, ref) => {
         alignItems: 'stretch',
         fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
         color: '#000000',
-        padding: '5px'
+        padding: '5px',
+        ...style
       }}
     >
       {/* Left Box (Details) */}
@@ -23,7 +24,10 @@ const VoterSlipOption3 = forwardRef(({ data }, ref) => {
         padding: '10px',
         boxSizing: 'border-box',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        flex: 1,
+        height: '100%',
+        justifyContent: 'space-evenly'
       }}>
         {/* Row 1: Ward and Part */}
         <div style={{ display: 'flex', marginBottom: '8px', fontSize: '18px', fontWeight: 'bold' }}>
@@ -107,7 +111,8 @@ const VoterSlipOption3 = forwardRef(({ data }, ref) => {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '10px 5px',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        height: '100%'
       }}>
         <div style={{ fontSize: '18px', fontWeight: 'bold', textAlign: 'center' }}>
           चुनाव चिन्ह

@@ -19,6 +19,7 @@ function PhotoNagarNigam({ onBack }) {
   const [displayedVoters, setDisplayedVoters] = useState([]);
   const [pageCount, setPageCount] = useState(1);
   const itemsPerPage = 10;
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const filteredVoters = useMemo(() => {
     return voters.filter(v => {
@@ -43,7 +44,30 @@ function PhotoNagarNigam({ onBack }) {
 
       return idMatch && nameMatch && houseMatch && ageMatch && minAgeMatch && maxAgeMatch && sexMatch;
     });
-  }, [voters, filters]);
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let valA = a[sortConfig.key] || '';
+        let valB = b[sortConfig.key] || '';
+        
+        // Handle numeric fields
+        if (sortConfig.key === 'FAGE') {
+          valA = parseFloat(valA) || 0;
+          valB = parseFloat(valB) || 0;
+          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        }
+        
+        // String comparison
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [voters, filters, sortConfig]);
 
   useEffect(() => {
     setDisplayedVoters(filteredVoters.slice(0, pageCount * itemsPerPage));
@@ -547,16 +571,46 @@ function PhotoNagarNigam({ onBack }) {
                 </div>
 
                 {/* Electors Table */}
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
-                  <table className="w-full text-left border-collapse">
+                {/* Electors Table */}
+                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white relative">
+                  <div className="absolute top-2 right-4 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 hidden sm:block">
+                    💡 Tap any column header to sort ascending or descending
+                  </div>
+                  <table className="w-full text-left border-collapse mt-2">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                        <th className="p-3.5 pl-4">SRNO / Card</th>
-                        <th className="p-3.5">Name (EN / HI)</th>
-                        <th className="p-3.5">Guardian / Relation</th>
-                        <th className="p-3.5">Age & Gender</th>
-                        <th className="p-3.5">House No</th>
-                        <th className="p-3.5 pr-4 text-right">Action</th>
+                        {(() => {
+                          const renderSortableHeader = (label, key, extraClass = "") => (
+                            <th 
+                              className={`p-3.5 cursor-pointer hover:bg-slate-200/60 transition-colors group select-none ${extraClass}`}
+                              onClick={() => {
+                                let direction = 'asc';
+                                if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+                                setSortConfig({ key, direction });
+                                setPageCount(1);
+                              }}
+                              title={`Tap to sort by ${label}`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>{label}</span>
+                                <span className="text-slate-300 group-hover:text-emerald-400 flex flex-col -space-y-1">
+                                  <svg className={`w-2.5 h-2.5 ${sortConfig.key === key && sortConfig.direction === 'asc' ? 'text-emerald-600' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
+                                  <svg className={`w-2.5 h-2.5 ${sortConfig.key === key && sortConfig.direction === 'desc' ? 'text-emerald-600' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                </span>
+                              </div>
+                            </th>
+                          );
+                          return (
+                            <>
+                              {renderSortableHeader('SRNO / Card', 'SRNO', 'pl-4')}
+                              {renderSortableHeader('Name (EN / HI)', 'EFVNAME')}
+                              {renderSortableHeader('Guardian / Relation', 'EFRNAME')}
+                              {renderSortableHeader('Age & Gender', 'FAGE')}
+                              {renderSortableHeader('House No', 'FHOUSENO')}
+                              <th className="p-3.5 pr-4 text-right">Action</th>
+                            </>
+                          );
+                        })()}
                       </tr>
                     </thead>
                     <tbody className="text-slate-700 divide-y divide-slate-100 bg-white text-xs sm:text-sm">
