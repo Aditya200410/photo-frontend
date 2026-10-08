@@ -679,7 +679,7 @@ function PhotoIndex() {
             </div>
           )}
 
-          <div className="max-w-7xl mx-auto">
+          <div className="w-full min-w-0">
             {/* Component containers rendered with clean responsive styling */}
             {activeTab === 'assembly' && <PhotoAssembly onBack={() => handleTabChange('overview')} />}
             {activeTab === 'nagar-nigam' && <PhotoNagarNigam onBack={() => handleTabChange('overview')} />}

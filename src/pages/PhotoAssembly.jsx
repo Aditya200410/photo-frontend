@@ -185,7 +185,7 @@ function PhotoAssembly({ onBack }) {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full max-w-[100vw] overflow-x-hidden">
+      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full min-w-0">
         <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative flex flex-col min-w-0">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500"></div>
           
@@ -514,6 +514,7 @@ function PhotoAssembly({ onBack }) {
                         <option value="F">Female (महिला)</option>
                       </select>
                     </div>
+                  </div>
                   </div>
                 </details>
 

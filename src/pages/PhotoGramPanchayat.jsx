@@ -456,7 +456,7 @@ function PhotoGramPanchayat({ onBack }) {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full max-w-[100vw] overflow-x-hidden">
+      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full min-w-0">
         <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative flex flex-col min-w-0">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600"></div>
 
@@ -690,30 +690,37 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* In-Page Quick Filters */}
-                <div className="bg-slate-50/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl border border-slate-200/80 mb-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-200/60">
+                <details className="bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/80 mb-6 shadow-sm group [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="p-4 sm:p-5 flex items-center justify-between cursor-pointer list-none select-none">
                     <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                       <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                       </svg>
                       Filter & Search Electors
                     </span>
-                    {(filters.id || filters.name || filters.relativeName || filters.houseNo || filters.ward || filters.sex || filters.minAge || filters.maxAge) && (
-                      <button
-                        onClick={() => {
-                          setFilters({ id: '', name: '', relativeName: '', houseNo: '', ward: '', sex: '', minAge: '', maxAge: '' });
-                          setPageCount(1);
-                        }}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Clear Filters
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                    <div className="flex items-center gap-4">
+                      {(filters.id || filters.name || filters.relativeName || filters.houseNo || filters.ward || filters.sex || filters.minAge || filters.maxAge) && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setFilters({ id: '', name: '', relativeName: '', houseNo: '', ward: '', sex: '', minAge: '', maxAge: '' });
+                            setPageCount(1);
+                          }}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors bg-white px-2 py-1 rounded-md shadow-sm border border-rose-100"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Clear
+                        </button>
+                      )}
+                      <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </summary>
+                  <div className="px-4 sm:px-5 pb-5 border-t border-slate-200/60 pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID / VID Card</label>
                       <input
@@ -795,8 +802,9 @@ function PhotoGramPanchayat({ onBack }) {
                         />
                       </div>
                     </div>
+                    </div>
                   </div>
-                </div>
+                </details>
 
                 {/* Comprehensive All-Columns Voter Table */}
                 <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
