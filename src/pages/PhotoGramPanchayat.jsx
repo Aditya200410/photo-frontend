@@ -32,6 +32,7 @@ function PhotoGramPanchayat({ onBack }) {
   const [displayedVoters, setDisplayedVoters] = useState([]);
   const [pageCount, setPageCount] = useState(1);
   const itemsPerPage = 15;
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
