@@ -14,6 +14,7 @@ function PhotoAssembly({ onBack }) {
   const [displayedVoters, setDisplayedVoters] = useState([]);
   const [pageCount, setPageCount] = useState(1);
   const itemsPerPage = 10;
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const filteredVoters = useMemo(() => {
     return voters.filter(v => {
@@ -38,7 +39,30 @@ function PhotoAssembly({ onBack }) {
 
       return idMatch && nameMatch && houseMatch && ageMatch && minAgeMatch && maxAgeMatch && sexMatch;
     });
-  }, [voters, filters]);
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let valA = a[sortConfig.key] || '';
+        let valB = b[sortConfig.key] || '';
+        
+        // Handle numeric fields
+        if (sortConfig.key === 'MAGE') {
+          valA = parseFloat(valA) || 0;
+          valB = parseFloat(valB) || 0;
+          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        }
+        
+        // String comparison
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [voters, filters, sortConfig]);
 
   useEffect(() => {
     setDisplayedVoters(filteredVoters.slice(0, pageCount * itemsPerPage));
