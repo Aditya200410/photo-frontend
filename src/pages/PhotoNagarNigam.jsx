@@ -25,12 +25,12 @@ function PhotoNagarNigam({ onBack }) {
       const idMatch = !filters.id || (v.SRNO || '').toString().toLowerCase().includes(filters.id.toLowerCase()) || (v.VID || '').toString().toLowerCase().includes(filters.id.toLowerCase());
       const nameMatch = !filters.name || (v.EFVNAME || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || (v.FVNAME || '').toString().includes(filters.name);
       const houseMatch = !filters.houseNo || (v.FHOUSENO || '').toString().toLowerCase().includes(filters.houseNo.toLowerCase());
-      
+
       const vAge = parseInt(v.FAGE) || 0;
       const ageMatch = !filters.age || vAge === parseInt(filters.age);
       const minAgeMatch = !filters.minAge || vAge >= parseInt(filters.minAge);
       const maxAgeMatch = !filters.maxAge || vAge <= parseInt(filters.maxAge);
-      
+
       let sexMatch = true;
       if (filters.sex) {
         const vSex = (v.FGENDER || '').toUpperCase();
@@ -197,11 +197,11 @@ function PhotoNagarNigam({ onBack }) {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full min-w-0">
-        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative flex flex-col min-w-0">
+      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full">
+        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500"></div>
-          
-          <div className="p-4 sm:p-8 md:p-10 w-full max-w-full overflow-hidden">
+
+          <div className="p-4 sm:p-8 md:p-10">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
               <div>
@@ -413,7 +413,7 @@ function PhotoNagarNigam({ onBack }) {
             )}
 
             {voters.length > 0 && (
-              <div className="mt-10 pt-8 border-t border-slate-200 w-full max-w-full min-w-0">
+              <div className="mt-10 pt-8 border-t border-slate-200">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                   <div>
                     <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -446,62 +446,55 @@ function PhotoNagarNigam({ onBack }) {
                 </div>
 
                 {/* Filter Deck */}
-                <details className="bg-slate-50/80 rounded-2xl border border-slate-200/90 mb-6 shadow-sm group [&_summary::-webkit-details-marker]:hidden">
-                  <summary className="p-5 flex items-center justify-between cursor-pointer list-none select-none">
+                <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/90 mb-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
                     <h4 className="text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                       <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                       </svg>
                       Filter Electors Data
                     </h4>
-                    <div className="flex items-center gap-4">
-                      {(filters.id || filters.name || filters.houseNo || filters.age || filters.minAge || filters.maxAge || filters.sex) && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setFilters({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
-                            setPageCount(1);
-                          }}
-                          className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer bg-white px-2 py-1 rounded-md shadow-sm border border-rose-100"
-                        >
-                          Reset ✕
-                        </button>
-                      )}
-                      <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </summary>
+                    {(filters.id || filters.name || filters.houseNo || filters.age || filters.minAge || filters.maxAge || filters.sex) && (
+                      <button
+                        onClick={() => {
+                          setFilters({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
+                          setPageCount(1);
+                        }}
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                      >
+                        Reset All Filters ✕
+                      </button>
+                    )}
+                  </div>
 
-                  <div className="px-5 pb-5 border-t border-slate-200/60 pt-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">SRNO / VID</label>
-                      <input 
-                        type="text" 
-                        placeholder="Search ID / VID..." 
-                        value={filters.id} 
-                        onChange={e => { setFilters(prev => ({...prev, id: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="Search ID / VID..."
+                        value={filters.id}
+                        onChange={e => { setFilters(prev => ({ ...prev, id: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-mono"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Voter Name</label>
-                      <input 
-                        type="text" 
-                        placeholder="Search Name (English or Hindi)..." 
-                        value={filters.name} 
-                        onChange={e => { setFilters(prev => ({...prev, name: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="Search Name (English or Hindi)..."
+                        value={filters.name}
+                        onChange={e => { setFilters(prev => ({ ...prev, name: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">House Number</label>
-                      <input 
-                        type="text" 
-                        placeholder="House Number..." 
-                        value={filters.houseNo} 
-                        onChange={e => { setFilters(prev => ({...prev, houseNo: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="text"
+                        placeholder="House Number..."
+                        value={filters.houseNo}
+                        onChange={e => { setFilters(prev => ({ ...prev, houseNo: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                       />
                     </div>
@@ -510,39 +503,39 @@ function PhotoNagarNigam({ onBack }) {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-3.5 pt-3 border-t border-slate-200/70">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Exact Age</label>
-                      <input 
-                        type="number" 
-                        placeholder="e.g. 25" 
-                        value={filters.age} 
-                        onChange={e => { setFilters(prev => ({...prev, age: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="number"
+                        placeholder="e.g. 25"
+                        value={filters.age}
+                        onChange={e => { setFilters(prev => ({ ...prev, age: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Min Age</label>
-                      <input 
-                        type="number" 
-                        placeholder="Min..." 
-                        value={filters.minAge} 
-                        onChange={e => { setFilters(prev => ({...prev, minAge: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="number"
+                        placeholder="Min..."
+                        value={filters.minAge}
+                        onChange={e => { setFilters(prev => ({ ...prev, minAge: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Max Age</label>
-                      <input 
-                        type="number" 
-                        placeholder="Max..." 
-                        value={filters.maxAge} 
-                        onChange={e => { setFilters(prev => ({...prev, maxAge: e.target.value})); setPageCount(1); }} 
+                      <input
+                        type="number"
+                        placeholder="Max..."
+                        value={filters.maxAge}
+                        onChange={e => { setFilters(prev => ({ ...prev, maxAge: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Gender / Sex</label>
-                      <select 
-                        value={filters.sex} 
-                        onChange={e => { setFilters(prev => ({...prev, sex: e.target.value})); setPageCount(1); }} 
+                      <select
+                        value={filters.sex}
+                        onChange={e => { setFilters(prev => ({ ...prev, sex: e.target.value })); setPageCount(1); }}
                         className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                       >
                         <option value="">All Genders</option>
@@ -551,11 +544,10 @@ function PhotoNagarNigam({ onBack }) {
                       </select>
                     </div>
                   </div>
-                  </div>
-                </details>
+                </div>
 
                 {/* Electors Table */}
-                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
@@ -584,11 +576,10 @@ function PhotoNagarNigam({ onBack }) {
                           </td>
                           <td className="p-3.5">
                             <span className="font-bold text-slate-800">{v.FAGE || '-'} Y</span>
-                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              (v.FGENDER === 'M' || v.FGENDER === 'पुरुष') 
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${(v.FGENDER === 'M' || v.FGENDER === 'पुरुष')
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                 : 'bg-pink-50 text-pink-700 border border-pink-200'
-                            }`}>
+                              }`}>
                               {v.FGENDER === 'M' || v.FGENDER === 'पुरुष' ? 'Male' : (v.FGENDER === 'F' || v.FGENDER === 'स्त्री' ? 'Female' : v.FGENDER || '-')}
                             </span>
                           </td>
