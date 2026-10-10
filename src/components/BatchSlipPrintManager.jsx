@@ -95,29 +95,16 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     const ReactDOMServer = await import('react-dom/server');
     const SlipComp = selectedOption === 3 ? VoterSlipOption3 : VoterSlip;
 
-    let htmlContent = `
-      <html>
-        <head>
-          <title>Batch Voters Directory</title>
-          <style>
-            @page {
-              size: A4 portrait;
-              margin: 0;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              background-color: white;
-            }
-            .page-break {
-              page-break-after: always;
-            }
-          </style>
-        </head>
-        <body>
-    `;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.top = '-9999px';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.width = '210mm';
+    tempContainer.style.height = '296.5mm';
+    tempContainer.style.backgroundColor = 'white';
+    document.body.appendChild(tempContainer);
 
     for (let p = 0; p < numPagesToPrint; p++) {
       const pageVoters = allPagesSlipsData[p];
@@ -138,28 +125,30 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         />
       );
       
-      htmlContent += `<div class="page-break">${pageHtml}</div>`;
+      tempContainer.innerHTML = pageHtml;
+      
+      await delay(50); // Give browser time to apply styles
+
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2, // Keeps quality high but fast
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      if (p > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+
       setProgress(((p + 1) / numPagesToPrint) * 100);
-      if (p % 50 === 0) await delay(5);
+      await delay(10);
     }
 
-    htmlContent += `
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
-        </body>
-      </html>
-    `;
+    document.body.removeChild(tempContainer);
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.open();
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
+    if (isPreviewMode) {
+      window.open(pdf.output('bloburl'), '_blank');
     } else {
-      alert("Please allow popups to use the native print feature!");
+      pdf.save(`batch-voter-slips-${pagesCount}-pages.pdf`);
     }
 
     if (!isPreviewMode) {
@@ -212,8 +201,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         const fFName = voter.VR_FNAME_EN ? `${voter.VR_FNAME_EN} ${voter.VR_LNAME_EN || ''}`.trim() : (voter.VR_FNAME_HI || '');
 
         pageSlips.push({
-          wardNo: wardNo || voter.WARDNO || voter['PANCHAYAT WARD NO'] || voter.WARD_NO || '-',
-          partNo: boothNumber || voter.BOOTH_NO || voter.PARTNO || voter.PART_NO || '-',
+          wardNo: voter.WARDNO || voter['PANCHAYAT WARD NO'] || voter.WARD_NO || (wardNo && wardNo !== 'All' ? wardNo : '-'),
+          partNo: voter.BOOTH_NO || voter.PARTNO || voter.PART_NO || (boothNumber && boothNumber !== 'All' ? boothNumber : '-'),
           serialNo: voter.SRNO || voter.SNO || voter.SERIAL_NO || voter.ID || voter.VID || '1',
           idNumber: voter.VID || voter.IDCARD || voter.EPIC || '-',
           voterName: voter.EFVNAME || voter.FVNAME || voter.VOTER_NAME || vFName || '-',
@@ -288,8 +277,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                     className="w-full rounded-xl border border-slate-300 p-3 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white"
                   >
                     <option value={8}>8 Cards</option>
-                    <option value={10}>10 Cards</option>
-                    <option value={12}>12 Cards</option>
+                    {selectedOption !== 1 && <option value={10}>10 Cards</option>}
+                    {selectedOption !== 1 && <option value={12}>12 Cards</option>}
                   </select>
                 </div>
 
@@ -321,7 +310,13 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Select Template</label>
                   <select
                     value={selectedOption}
-                    onChange={(e) => setSelectedOption(Number(e.target.value))}
+                    onChange={(e) => {
+                      const newOption = Number(e.target.value);
+                      setSelectedOption(newOption);
+                      if (newOption === 1 && cardsPerPage > 8) {
+                        setCardsPerPage(8);
+                      }
+                    }}
                     className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium mb-3 bg-white"
                   >
                     <option value={1}>Option 1 (Top Banner Image)</option>
@@ -414,9 +409,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
           <div className="hidden lg:flex flex-[1.2] flex-col items-center justify-start bg-slate-100 border border-slate-200 rounded-2xl p-4 overflow-hidden relative">
             <h3 className="text-sm font-bold text-slate-500 mb-4 w-full text-center uppercase tracking-wider">Page 1 Live Preview</h3>
-            <div className="w-full flex-1 flex justify-center items-start custom-scrollbar overflow-hidden">
-              <div className="origin-top flex justify-center shadow-md bg-white" style={{ transform: 'scale(0.4)', width: '1240px', height: '1754px' }}>
-                <div className="w-full h-full pointer-events-none">
+            <div className="w-full flex-1 flex justify-center items-start custom-scrollbar overflow-y-auto py-2">
+              <div className="flex justify-center shadow-md bg-white pointer-events-none" style={{ width: '210mm', height: '296.5mm', zoom: 0.45 }}>
                   {allPagesSlipsData[0] && (
                     <BatchA4PrintLayout
                       slipsData={allPagesSlipsData[0]}
@@ -431,7 +425,6 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                       cardsPerPage={cardsPerPage}
                     />
                   )}
-                </div>
               </div>
             </div>
             <button

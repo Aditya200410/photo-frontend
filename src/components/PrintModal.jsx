@@ -161,8 +161,8 @@ function PrintModal({ isOpen, onClose, onGenerate, isGenerating, progress, pages
                   className="w-full rounded-xl border border-slate-300 p-3 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white"
                 >
                   <option value={8}>8 Cards</option>
-                  <option value={10}>10 Cards</option>
-                  <option value={12}>12 Cards</option>
+                  {optionNumber !== 1 && <option value={10}>10 Cards</option>}
+                  {optionNumber !== 1 && <option value={12}>12 Cards</option>}
                 </select>
 
               <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages ({cardsPerPage} slips per page)</label>

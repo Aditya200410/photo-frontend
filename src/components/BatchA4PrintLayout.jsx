@@ -23,25 +23,20 @@ const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, Slip
     horizontalGap = 20;
   }
 
-  // Available dimensions for the grid
-  const availableWidth = 1220; // 1240 - 20 (padding)
-  const availableHeight = 1650; // 1754 - 30 (padding) - 74 (header + margins)
-
-  // Calculate exact pixel height for a single row
-  const rowHeight = (availableHeight - (rowsCount - 1) * verticalGap) / rowsCount;
-
   return (
     <div 
       ref={ref}
       style={{
-        width: '1240px',
-        height: '1754px',
+        width: '210mm',
+        height: '296.5mm', // slightly less than 297mm to prevent accidental extra pages
         backgroundColor: '#ffffff',
-        padding: '15px 10px',
+        padding: '5mm',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        pageBreakAfter: 'always',
+        margin: 0
       }}
     >
       {/* Header */}
@@ -49,14 +44,13 @@ const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, Slip
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        paddingBottom: '5px',
+        paddingBottom: '2mm',
         borderBottom: '2px solid black',
-        marginBottom: '15px',
-        marginLeft: '10px',
-        marginRight: '10px',
-        fontSize: '22px',
+        marginBottom: '4mm',
+        fontSize: '14pt',
         fontWeight: 'bold',
-        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        flexShrink: 0
       }}>
         <span>{headerData.title || 'अजमेर नगर निगम'}</span>
         <span>वार्ड न०: {headerData.wardNo}</span>
@@ -64,33 +58,30 @@ const BatchA4PrintLayout = forwardRef(({ slipsData, pageNumber, totalPages, Slip
         <span>Page {pageNumber} of {totalPages}</span>
       </div>
 
-      {/* Grid Wrapper to handle scaling perfectly to fit A4 */}
+      {/* Actual Grid using Flexbox instead of CSS Grid for html2canvas compatibility */}
       <div style={{
-        width: `${availableWidth}px`,
-        height: `${availableHeight}px`,
-        position: 'relative',
-        overflow: 'hidden'
+        flex: 1,
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignContent: 'flex-start',
+        minHeight: 0
       }}>
-        {/* Actual Grid */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: `${availableWidth}px`,
-          height: `${availableHeight}px`,
-          display: 'grid',
-          gridTemplateColumns,
-          gridTemplateRows: `repeat(${rowsCount}, ${rowHeight}px)`,
-          gap: `${verticalGap}px ${horizontalGap}px`,
-          justifyItems: 'stretch',
-          alignItems: 'stretch'
-        }}>
-          {slipsData.map((slipData, index) => (
-            <div key={index} style={{ display: 'flex', width: '100%', height: `${rowHeight}px` }}>
-              <SlipComponent data={slipData} style={{ width: '100%', height: `${rowHeight}px` }} />
+        {slipsData.map((slipData, index) => {
+          const isRightCol = index % 2 === 1;
+          const isBottomRow = Math.floor(index / 2) === rowsCount - 1;
+          return (
+            <div key={index} style={{ 
+              display: 'flex', 
+              width: `calc(50% - ${horizontalGap / 2}px)`, 
+              height: `calc((100% - ${(rowsCount - 1) * verticalGap}px) / ${rowsCount})`,
+              marginRight: isRightCol ? 0 : `${horizontalGap}px`,
+              marginBottom: isBottomRow ? 0 : `${verticalGap}px`,
+              minHeight: 0 
+            }}>
+              <SlipComponent data={slipData} style={{ width: '100%', height: '100%' }} />
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

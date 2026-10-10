@@ -17,6 +17,12 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
   React.useEffect(() => {
     setLocalVoterData(voterData);
   }, [voterData]);
+
+  React.useEffect(() => {
+    if (isOpen && optionNumber === 1 && cardsPerPage > 8) {
+      setCardsPerPage(8);
+    }
+  }, [isOpen, optionNumber, cardsPerPage]);
   
   const printLayoutRef = useRef([]);
   
@@ -30,29 +36,16 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
     const ReactDOMServer = await import('react-dom/server');
     const SlipComp = optionNumber === 3 ? VoterSlipOption3 : VoterSlip;
 
-    let htmlContent = `
-      <html>
-        <head>
-          <title>Voter Slip - Option ${optionNumber}</title>
-          <style>
-            @page {
-              size: A4 portrait;
-              margin: 0;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              background-color: white;
-            }
-            .page-break {
-              page-break-after: always;
-            }
-          </style>
-        </head>
-        <body>
-    `;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.top = '-9999px';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.width = '210mm';
+    tempContainer.style.height = '296.5mm';
+    tempContainer.style.backgroundColor = 'white';
+    document.body.appendChild(tempContainer);
 
     for (let i = 0; i < pagesCount; i++) {
       const pageHtml = ReactDOMServer.renderToString(
@@ -65,29 +58,27 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
           SlipComponent={SlipComp}
         />
       );
-      htmlContent += `<div class="page-break">${pageHtml}</div>`;
+      
+      tempContainer.innerHTML = pageHtml;
+      await delay(50);
+
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+      if (i > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+
       setProgress(((i + 1) / pagesCount) * 100);
-      if (i % 50 === 0) await delay(5);
+      await delay(10);
     }
 
-    htmlContent += `
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
-        </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.open();
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-    } else {
-      alert("Please allow popups to use the native print feature!");
-    }
+    document.body.removeChild(tempContainer);
+    pdf.save(`voter-slips-${pagesCount}-pages.pdf`);
 
     const hasImage = Boolean((optionNumber === 1 && voterData?.topImage) || (optionNumber === 3 && voterData?.symbolImage));
     const totalSlips = pagesCount * cardsPerPage;
