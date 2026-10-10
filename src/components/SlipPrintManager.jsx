@@ -27,35 +27,66 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
     setIsGenerating(true);
     setProgress(0);
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const ReactDOMServer = await import('react-dom/server');
+    const SlipComp = optionNumber === 3 ? VoterSlipOption3 : VoterSlip;
 
-    setPrintState({ active: true });
-    await delay(100); 
+    let htmlContent = `
+      <html>
+        <head>
+          <title>Voter Slip - Option ${optionNumber}</title>
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 0;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              background-color: white;
+            }
+            .page-break {
+              page-break-after: always;
+            }
+          </style>
+        </head>
+        <body>
+    `;
 
     for (let i = 0; i < pagesCount; i++) {
-      const pageEl = printLayoutRef.current[i];
-      if (pageEl) {
-        const canvas = await html2canvas(pageEl, {
-          scale: 1.0, // Scale 1 is perfectly crisp for A4 text and fastest to compute
-          backgroundColor: '#ffffff',
-          logging: false,
-          windowWidth: 1240,
-          windowHeight: 1754,
-          width: 1240,
-          height: 1754,
-          useCORS: false // Disabling CORS checks speeds up processing significantly
-        });
+      const pageHtml = ReactDOMServer.renderToString(
+        <A4PrintLayout 
+          baseData={localVoterData}
+          pageNumber={i + 1}
+          totalPages={pagesCount}
+          startSerialNo={parseInt(voterData.serialNo || 1) + (i * cardsPerPage)}
+          cardsPerPage={cardsPerPage}
+          SlipComponent={SlipComp}
+        />
+      );
+      htmlContent += `<div class="page-break">${pageHtml}</div>`;
+      setProgress(((i + 1) / pagesCount) * 100);
+      if (i % 50 === 0) await delay(5);
+    }
 
-        // Reduced quality from 0.75 to 0.6 for memory and speed optimization
-        const imgData = canvas.toDataURL('image/jpeg', 0.6);
-        if (i > 0) {
-          pdf.addPage();
-        }
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-        setProgress(((i + 1) / pagesCount) * 100);
-      }
+    htmlContent += `
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+    } else {
+      alert("Please allow popups to use the native print feature!");
     }
 
     const hasImage = Boolean((optionNumber === 1 && voterData?.topImage) || (optionNumber === 3 && voterData?.symbolImage));
@@ -84,8 +115,6 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
       console.error('Failed to log print to backend:', err);
     }
 
-    pdf.save(`voter-slip-${optionNumber}-${pagesCount}-pages.pdf`);
-    
     setIsGenerating(false);
     setPrintState({ active: false, currentPage: 1 });
     onClose();

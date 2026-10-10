@@ -43,11 +43,19 @@ function PhotoIndex() {
 
   const fetchCurrentUser = () => {
     const token = localStorage.getItem('userToken');
-    if (!token) return;
+    if (!token) {
+      navigate('/login');
+      return;
+    }
     fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Not found or unauthorized');
+        }
+        return res.json();
+      })
       .then(data => {
         if (data && !data.error) {
           if (data.status === 'blocked') {
@@ -57,9 +65,16 @@ function PhotoIndex() {
           } else {
             setCurrentUser(data);
           }
+        } else {
+          localStorage.removeItem('userToken');
+          navigate('/login');
         }
       })
-      .catch(err => console.error("Failed to load user:", err));
+      .catch(err => {
+        console.error("Failed to load user:", err);
+        localStorage.removeItem('userToken');
+        navigate('/login');
+      });
   };
 
   useEffect(() => {
@@ -288,10 +303,10 @@ function PhotoIndex() {
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-xs font-bold text-white truncate group-hover:text-blue-400 transition-colors">
-                {currentUser?.name || 'Voter Operator'}
+                {currentUser?.name || ''}
               </p>
               <p className="text-[11px] text-slate-400 truncate font-mono">
-                {currentUser?.email || 'operator@portal.in'}
+                {currentUser?.email || ''}
               </p>
             </div>
             <svg className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

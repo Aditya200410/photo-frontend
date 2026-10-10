@@ -90,44 +90,106 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     setIsGenerating(true);
     setProgress(0);
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
     const numPagesToPrint = isPreviewMode ? 1 : pagesCount;
 
-    // Load ReactDOM once outside the loop
-    const ReactDOM = await import('react-dom');
+    // A4 dimensions in mm
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const marginX = 10;
+    const marginY = 15;
 
-    for (let i = 1; i <= numPagesToPrint; i++) {
-      // Force React to synchronously update the DOM immediately, removing the need for any delay
-      ReactDOM.flushSync(() => {
-        setPrintState({ active: true, currentPage: i });
-      });
-      // A tiny 10ms yield to allow the browser to paint the DOM if needed, much faster than 500ms
-      await delay(10); 
+    // Calculate Grid Config
+    let rowsCount = 4;
+    let colsCount = 2;
+    if (cardsPerPage === 4) { rowsCount = 2; colsCount = 2; }
+    else if (cardsPerPage === 10) { rowsCount = 5; colsCount = 2; }
+    else if (cardsPerPage === 12) { rowsCount = 6; colsCount = 2; }
 
-      if (printLayoutRef.current) {
-        const canvas = await html2canvas(printLayoutRef.current, {
-          scale: 1.0, // Scale 1 is exactly 1240x1754 (150 DPI), perfectly crisp for A4 text and fastest to compute
-          backgroundColor: '#ffffff',
-          logging: false,
-          windowWidth: 1240,
-          windowHeight: 1754,
-          width: 1240,
-          height: 1754,
-          useCORS: false // Disabling CORS checks speeds up processing significantly since images are Base64
-        });
+    const cardWidth = (pageWidth - 2 * marginX) / colsCount;
+    const cardHeight = (pageHeight - marginY - 15) / rowsCount; 
+    const pad = 3; 
 
-        // Reduced quality from 0.75 to 0.6. Massive reduction in memory and encoding time
-        const imgData = canvas.toDataURL('image/jpeg', 0.6);
-        if (i > 1) {
-          pdf.addPage();
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    try {
+      setProgress(5);
+      // Fetch Hindi TTF font dynamically to support native drawing
+      // Using Mukta because it natively contains both English (Latin) and Hindi (Devanagari) characters!
+      if (!window.hindiFontBase64) {
+        const res = await fetch("https://raw.githubusercontent.com/google/fonts/main/ofl/mukta/Mukta-Regular.ttf");
+        const buffer = await res.arrayBuffer();
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
         }
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-        setProgress((i / numPagesToPrint) * 100);
+        window.hindiFontBase64 = window.btoa(binary);
       }
+      
+      pdf.addFileToVFS("Mukta-Regular.ttf", window.hindiFontBase64);
+      pdf.addFont("Mukta-Regular.ttf", "Mukta", "normal");
+    } catch (e) {
+      console.error("Failed to load Hindi font", e);
     }
+
+    for (let p = 0; p < numPagesToPrint; p++) {
+      if (p > 0) pdf.addPage();
+
+      pdf.setFontSize(14);
+      pdf.setFont("Mukta", "normal"); // Use fallback if fails
+      pdf.text(assemblyName || "Voters Directory", marginX, marginY - 5);
+      pdf.text(`Ward No: ${wardNo || '-'}`, marginX + 60, marginY - 5);
+      pdf.text(`Part No: ${boothNumber || '-'}`, marginX + 110, marginY - 5);
+      pdf.setFontSize(10);
+      pdf.text(`Page ${p + 1} of ${pagesCount}`, pageWidth - marginX - 20, marginY - 5);
+      pdf.line(marginX, marginY - 2, pageWidth - marginX, marginY - 2);
+
+      const pageVoters = allPagesSlipsData[p];
+      if (!pageVoters) continue;
+
+      for (let i = 0; i < pageVoters.length; i++) {
+        const voter = pageVoters[i];
+        const row = Math.floor(i / colsCount);
+        const col = i % colsCount;
+        
+        const startX = marginX + (col * cardWidth);
+        const startY = marginY + (row * cardHeight);
+
+        pdf.setLineWidth(0.5);
+        pdf.rect(startX + pad, startY + pad, cardWidth - 2*pad, cardHeight - 2*pad);
+        
+        pdf.setFontSize(10);
+        let cy = startY + pad + 6;
+        
+        pdf.setFont("Mukta", "normal");
+        pdf.text(`Ward No: ${voter.wardNo}`, startX + pad + 3, cy);
+        pdf.text(`Part No: ${voter.partNo}`, startX + cardWidth/2, cy);
+        cy += 6;
+
+        pdf.text(`S.No: ${voter.serialNo}`, startX + pad + 3, cy);
+        pdf.text(`${voter.idNumber}`, startX + cardWidth/2, cy);
+        cy += 8;
+
+        pdf.text(`Voter: ${voter.voterName}`, startX + pad + 3, cy);
+        cy += 6;
+        pdf.text(`Father/Husband: ${voter.fatherHusbandName}`, startX + pad + 3, cy);
+        cy += 6;
+        pdf.text(`House No: ${voter.houseNo}`, startX + pad + 3, cy);
+        cy += 6;
+        pdf.text(`Gender: ${voter.gender}`, startX + pad + 3, cy);
+        pdf.text(`Age: ${voter.age}`, startX + cardWidth/2, cy);
+        cy += 8;
+
+        pdf.text(`Polling Station:`, startX + pad + 3, cy);
+        pdf.text(`${voter.pollingStation}`, startX + pad + 3, cy + 5);
+      }
+
+      setProgress(((p + 1) / numPagesToPrint) * 100);
+      if (p % 50 === 0) await delay(1); 
+    }
+
+    pdf.save(`batch-slips-${isPreviewMode ? 'preview' : pagesCount + '-pages'}.pdf`);
 
     if (!isPreviewMode) {
       try {
@@ -172,17 +234,25 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
       const pageSlips = [];
       pageVoters.forEach(voter => {
+        // Handle all possible database keys for different regions (Assembly vs Nagar Nigam vs Panchayat)
+        const rawGender = voter.FGENDER || voter.MSEX || voter.GENDER || voter.SEX;
+        const mappedGender = rawGender === 'M' || rawGender === 'पुरुष' ? 'पुरुष' : (rawGender === 'F' || rawGender === 'स्त्री' ? 'स्त्री' : rawGender);
+
+        // Extract Panchayat Names
+        const vFName = voter.V_FNAME_EN ? `${voter.V_FNAME_EN} ${voter.V_LNAME_EN || ''}`.trim() : (voter.V_FNAME_HI || '');
+        const fFName = voter.VR_FNAME_EN ? `${voter.VR_FNAME_EN} ${voter.VR_LNAME_EN || ''}`.trim() : (voter.VR_FNAME_HI || '');
+
         pageSlips.push({
-          wardNo: wardNo || '-',
-          partNo: boothNumber || '-',
-          serialNo: voter.ID || voter.VID || '1',
-          idNumber: voter.VID || '-',
-          voterName: voter.EFVNAME || voter.FVNAME || '-',
-          fatherHusbandName: voter.EFRNAME || voter.FRNAME || '-',
-          houseNo: voter.MHOUSENO || '0',
-          gender: voter.MSEX === 'M' || voter.MSEX === 'पुरुष' ? 'पुरुष' : (voter.MSEX === 'F' || voter.MSEX === 'स्त्री' ? 'स्त्री' : voter.MSEX),
-          age: voter.MAGE || '18',
-          pollingStation: `${assemblyName || ''} ${boothNumber ? '- ' + boothNumber : ''}`,
+          wardNo: wardNo || voter.WARDNO || voter['PANCHAYAT WARD NO'] || voter.WARD_NO || '-',
+          partNo: boothNumber || voter.BOOTH_NO || voter.PARTNO || voter.PART_NO || '-',
+          serialNo: voter.SRNO || voter.SNO || voter.SERIAL_NO || voter.ID || voter.VID || '1',
+          idNumber: voter.VID || voter.IDCARD || voter.EPIC || '-',
+          voterName: voter.EFVNAME || voter.FVNAME || voter.VOTER_NAME || vFName || '-',
+          fatherHusbandName: voter.EFRNAME || voter.FRNAME || voter.RELATIVE_NAME || fFName || '-',
+          houseNo: voter.HOUSE_NO || voter.FHOUSENO || voter.MHOUSENO || voter.HOUSENO || '0',
+          gender: mappedGender,
+          age: voter.AGE || voter.FAGE || voter.MAGE || '18',
+          pollingStation: voter.PS_EN || voter.PS_HI || `${assemblyName || ''} ${boothNumber ? '- ' + boothNumber : ''}`,
           topImage: selectedOption === 1 ? batchImage : null,
           symbolImage: selectedOption === 3 ? batchImage : null,
         });
@@ -240,159 +310,171 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 <p className="text-center text-sm text-slate-500">{Math.round(progress)}% Complete</p>
               </div>
             ) : (
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Cards per Page</label>
-                <select
-                  value={cardsPerPage}
-                  onChange={(e) => setCardsPerPage(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-300 p-3 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white"
-                >
-                  <option value={8}>8 Cards</option>
-                  <option value={10}>10 Cards</option>
-                  <option value={12}>12 Cards</option>
-                </select>
-              </div>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Cards per Page</label>
+                  <select
+                    value={cardsPerPage}
+                    onChange={(e) => setCardsPerPage(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-300 p-3 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white"
+                  >
+                    <option value={8}>8 Cards</option>
+                    <option value={10}>10 Cards</option>
+                    <option value={12}>12 Cards</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages ({cardsPerPage} entries per page)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max={maxPages}
-                  value={pagesCount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      setPagesCount('');
-                    } else {
-                      setPagesCount(parseInt(val, 10));
-                    }
-                  }}
-                  className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium"
-                />
-                <p className="text-xs text-slate-500 mt-1.5">Maximum available pages: {maxPages} ({voters.length} total entries)</p>
-                
-                {pagesCount === 0 || pagesCount === '' || pagesCount < 1 ? (
-                   <p className="text-xs text-red-500 mt-1 font-medium">Please enter a valid number of pages (minimum 1).</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Number of Pages ({cardsPerPage} entries per page)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={maxPages}
+                    value={pagesCount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setPagesCount('');
+                      } else {
+                        setPagesCount(parseInt(val, 10));
+                      }
+                    }}
+                    className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium"
+                  />
+                  <p className="text-xs text-slate-500 mt-1.5">Maximum available pages: {maxPages} ({voters.length} total entries)</p>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Select Template</label>
-                <select
-                  value={selectedOption}
-                  onChange={(e) => setSelectedOption(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium mb-3 bg-white"
-                >
-                  <option value={1}>Option 1 (Top Banner Image)</option>
-                  <option value={2}>Option 2 (Standard Template - Text Only)</option>
-                  <option value={3}>Option 3 (Right Symbol Image)</option>
-                </select>
-              </div>
+                  {pagesCount === 0 || pagesCount === '' || pagesCount < 1 ? (
+                    <p className="text-xs text-red-500 mt-1 font-medium">Please enter a valid number of pages (minimum 1).</p>
+                  ) : null}
+                </div>
 
-              {selectedOption !== 2 && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  {selectedOption === 1 ? 'Top Banner Image (Optional)' : 'Symbol Image (Optional)'}
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mb-2"
-                />
-                {batchImage && (
-                  <div className="flex items-center justify-between text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                    <span>✓ Image attached (+2 paisa rate applies)</span>
-                    <button type="button" onClick={() => setBatchImage(null)} className="text-rose-500 hover:text-rose-700">Remove</button>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Select Template</label>
+                  <select
+                    value={selectedOption}
+                    onChange={(e) => setSelectedOption(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-300 p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium mb-3 bg-white"
+                  >
+                    <option value={1}>Option 1 (Top Banner Image)</option>
+                    <option value={2}>Option 2 (Standard Template - Text Only)</option>
+                    <option value={3}>Option 3 (Right Symbol Image)</option>
+                  </select>
+                </div>
+
+                {selectedOption !== 2 && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      {selectedOption === 1 ? 'Top Banner Image (Optional)' : 'Symbol Image (Optional)'}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mb-2"
+                    />
+                    {batchImage && (
+                      <div className="flex items-center justify-between text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                        <span>✓ Image attached (+2 paisa rate applies)</span>
+                        <button type="button" onClick={() => setBatchImage(null)} className="text-rose-500 hover:text-rose-700">Remove</button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Credit Cost Estimate Card */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2">
-              <div className="flex justify-between items-center text-slate-600">
-                <span>Batch Print Type:</span>
-                <span className="font-bold text-slate-800">
-                  {hasImage ? '🖼️ With Image (12 Paisa / Page)' : '📄 Without Image (10 Paisa / Page)'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-slate-600">
-                <span>Rate per Page:</span>
-                <span className="font-mono font-semibold text-slate-800">₹{ratePerPage.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center text-slate-600">
-                <span>Total Pages:</span>
-                <span className="font-bold text-slate-800">{numPages} <span className="text-[11px] font-normal text-slate-500">({totalSlips} slips)</span></span>
-              </div>
-              <div className="border-t border-slate-200 pt-2 flex justify-between items-center font-extrabold text-sm">
-                <span className="text-slate-800">Total Deduction:</span>
-                <span className="text-indigo-600 font-mono text-base">₹{totalCost.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Insufficient balance warning */}
-            {!isBalanceSufficient && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3.5 rounded-2xl text-xs font-semibold flex items-start gap-2.5">
-                <svg className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div>
-                  <div className="font-bold">Insufficient Credit Balance!</div>
-                  <div className="text-rose-600/90 mt-0.5">
-                    You need ₹{totalCost.toFixed(2)}, but have only ₹{userBalance.toFixed(2)}. Please contact Admin to recharge your wallet.
+                {/* Credit Cost Estimate Card */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2">
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Batch Print Type:</span>
+                    <span className="font-bold text-slate-800">
+                      {hasImage ? '🖼️ With Image (12 Paisa / Page)' : '📄 Without Image (10 Paisa / Page)'}
+                    </span>
                   </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Rate per Page:</span>
+                    <span className="font-mono font-semibold text-slate-800">₹{ratePerPage.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Total Pages:</span>
+                    <span className="font-bold text-slate-800">{numPages} <span className="text-[11px] font-normal text-slate-500">({totalSlips} slips)</span></span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-2 flex justify-between items-center font-extrabold text-sm">
+                    <span className="text-slate-800">Total Deduction:</span>
+                    <span className="text-indigo-600 font-mono text-base">₹{totalCost.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Insufficient balance warning */}
+                {!isBalanceSufficient && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3.5 rounded-2xl text-xs font-semibold flex items-start gap-2.5">
+                    <svg className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <div className="font-bold">Insufficient Credit Balance!</div>
+                      <div className="text-rose-600/90 mt-0.5">
+                        You need ₹{totalCost.toFixed(2)}, but have only ₹{userBalance.toFixed(2)}. Please contact Admin to recharge your wallet.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-6">
+                  <button
+                    onClick={onClose}
+                    className="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 sm:bg-transparent hover:bg-slate-200 sm:hover:bg-slate-100 transition-colors text-center text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handlePrintGenerate(true)}
+                    className="w-full lg:hidden px-6 py-3 sm:py-2.5 rounded-xl font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-all text-center text-sm"
+                  >
+                    Download Free Preview (1 Page)
+                  </button>
+                  <button
+                    onClick={() => handlePrintGenerate(false)}
+                    className="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-center text-sm"
+                    disabled={!pagesCount || pagesCount < 1 || !isBalanceSufficient}
+                  >
+                    Start Print (₹{totalCost.toFixed(2)})
+                  </button>
                 </div>
               </div>
             )}
-
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-6">
-              <button
-                onClick={onClose}
-                className="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl font-semibold text-slate-600 bg-slate-100 sm:bg-transparent hover:bg-slate-200 sm:hover:bg-slate-100 transition-colors text-center text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handlePrintGenerate(false)}
-                className="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-center text-sm"
-                disabled={!pagesCount || pagesCount < 1 || !isBalanceSufficient}
-              >
-                Start Print (₹{totalCost.toFixed(2)})
-              </button>
-            </div>
           </div>
-          )}
-        </div>
 
-        <div className="flex flex-col lg:flex-[1.2] items-center justify-start bg-slate-100 border border-slate-200 rounded-2xl p-4 overflow-hidden relative min-h-[500px]">
-          <h3 className="text-sm font-bold text-slate-500 mb-4 w-full text-center uppercase tracking-wider">Page 1 Live Preview</h3>
-          <div className="w-full flex-1 flex justify-center items-start overflow-hidden">
-            <div className="origin-top flex justify-center shadow-md bg-white scale-[0.25] sm:scale-[0.35] lg:scale-[0.4] mb-[-1300px] sm:mb-[-1100px] lg:mb-[-1050px]" style={{ width: '1240px', height: '1754px' }}>
-              <div className="w-full h-full pointer-events-none">
-                {allPagesSlipsData[0] && (
-                  <BatchA4PrintLayout
-                    slipsData={allPagesSlipsData[0]}
-                    pageNumber={1}
-                    totalPages={pagesCount}
-                    SlipComponent={selectedOption === 3 ? VoterSlipOption3 : VoterSlip}
-                    headerData={{
-                      title: assemblyName || 'Voters Directory',
-                      wardNo: wardNo || '-',
-                      partNo: boothNumber || '-'
-                    }}
-                    cardsPerPage={cardsPerPage}
-                  />
-                )}
+          <div className="hidden lg:flex flex-[1.2] flex-col items-center justify-start bg-slate-100 border border-slate-200 rounded-2xl p-4 overflow-hidden relative">
+            <h3 className="text-sm font-bold text-slate-500 mb-4 w-full text-center uppercase tracking-wider">Page 1 Live Preview</h3>
+            <div className="w-full flex-1 flex justify-center items-start custom-scrollbar overflow-hidden">
+              <div className="origin-top flex justify-center shadow-md bg-white" style={{ transform: 'scale(0.4)', width: '1240px', height: '1754px' }}>
+                <div className="w-full h-full pointer-events-none">
+                  {allPagesSlipsData[0] && (
+                    <BatchA4PrintLayout
+                      slipsData={allPagesSlipsData[0]}
+                      pageNumber={1}
+                      totalPages={pagesCount}
+                      SlipComponent={selectedOption === 3 ? VoterSlipOption3 : VoterSlip}
+                      headerData={{
+                        title: assemblyName || 'Voters Directory',
+                        wardNo: wardNo || '-',
+                        partNo: boothNumber || '-'
+                      }}
+                      cardsPerPage={cardsPerPage}
+                    />
+                  )}
+                </div>
               </div>
             </div>
+            <button
+              onClick={() => handlePrintGenerate(true)}
+              className="mt-4 px-6 py-2.5 rounded-xl font-bold text-indigo-600 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-sm transition-all text-center text-sm"
+            >
+              Download Free Preview PDF (1 Page)
+            </button>
           </div>
-        </div>
 
+        </div>
       </div>
-    </div >
     </>
   );
 }

@@ -29,7 +29,6 @@ import AdminTerms from './pages/AdminTerms';
 // Auth Pages
 import Login from './pages/Login';
 import Account from './pages/Account';
-import Signup from './pages/Signup';
 import Payment from './pages/Payment';
 
 function App() {
@@ -39,7 +38,6 @@ function App() {
       <FloatingButtons />
       <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
       <Route path="/payment" element={<Payment />} />
       
       {/* Protected User Routes */}
