@@ -92,104 +92,75 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
     const numPagesToPrint = isPreviewMode ? 1 : pagesCount;
 
-    // A4 dimensions in mm
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const marginX = 10;
-    const marginY = 15;
+    const ReactDOMServer = await import('react-dom/server');
+    const SlipComp = selectedOption === 3 ? VoterSlipOption3 : VoterSlip;
 
-    // Calculate Grid Config
-    let rowsCount = 4;
-    let colsCount = 2;
-    if (cardsPerPage === 4) { rowsCount = 2; colsCount = 2; }
-    else if (cardsPerPage === 10) { rowsCount = 5; colsCount = 2; }
-    else if (cardsPerPage === 12) { rowsCount = 6; colsCount = 2; }
-
-    const cardWidth = (pageWidth - 2 * marginX) / colsCount;
-    const cardHeight = (pageHeight - marginY - 15) / rowsCount; 
-    const pad = 3; 
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-
-    try {
-      setProgress(5);
-      // Fetch Hindi TTF font dynamically to support native drawing
-      // Using Mukta because it natively contains both English (Latin) and Hindi (Devanagari) characters!
-      if (!window.hindiFontBase64) {
-        const res = await fetch("https://raw.githubusercontent.com/google/fonts/main/ofl/mukta/Mukta-Regular.ttf");
-        const buffer = await res.arrayBuffer();
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        window.hindiFontBase64 = window.btoa(binary);
-      }
-      
-      pdf.addFileToVFS("Mukta-Regular.ttf", window.hindiFontBase64);
-      pdf.addFont("Mukta-Regular.ttf", "Mukta", "normal");
-    } catch (e) {
-      console.error("Failed to load Hindi font", e);
-    }
+    let htmlContent = `
+      <html>
+        <head>
+          <title>Batch Voters Directory</title>
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 0;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              background-color: white;
+            }
+            .page-break {
+              page-break-after: always;
+            }
+          </style>
+        </head>
+        <body>
+    `;
 
     for (let p = 0; p < numPagesToPrint; p++) {
-      if (p > 0) pdf.addPage();
-
-      pdf.setFontSize(14);
-      pdf.setFont("Mukta", "normal"); // Use fallback if fails
-      pdf.text(assemblyName || "Voters Directory", marginX, marginY - 5);
-      pdf.text(`Ward No: ${wardNo || '-'}`, marginX + 60, marginY - 5);
-      pdf.text(`Part No: ${boothNumber || '-'}`, marginX + 110, marginY - 5);
-      pdf.setFontSize(10);
-      pdf.text(`Page ${p + 1} of ${pagesCount}`, pageWidth - marginX - 20, marginY - 5);
-      pdf.line(marginX, marginY - 2, pageWidth - marginX, marginY - 2);
-
       const pageVoters = allPagesSlipsData[p];
       if (!pageVoters) continue;
 
-      for (let i = 0; i < pageVoters.length; i++) {
-        const voter = pageVoters[i];
-        const row = Math.floor(i / colsCount);
-        const col = i % colsCount;
-        
-        const startX = marginX + (col * cardWidth);
-        const startY = marginY + (row * cardHeight);
-
-        pdf.setLineWidth(0.5);
-        pdf.rect(startX + pad, startY + pad, cardWidth - 2*pad, cardHeight - 2*pad);
-        
-        pdf.setFontSize(10);
-        let cy = startY + pad + 6;
-        
-        pdf.setFont("Mukta", "normal");
-        pdf.text(`Ward No: ${voter.wardNo}`, startX + pad + 3, cy);
-        pdf.text(`Part No: ${voter.partNo}`, startX + cardWidth/2, cy);
-        cy += 6;
-
-        pdf.text(`S.No: ${voter.serialNo}`, startX + pad + 3, cy);
-        pdf.text(`${voter.idNumber}`, startX + cardWidth/2, cy);
-        cy += 8;
-
-        pdf.text(`Voter: ${voter.voterName}`, startX + pad + 3, cy);
-        cy += 6;
-        pdf.text(`Father/Husband: ${voter.fatherHusbandName}`, startX + pad + 3, cy);
-        cy += 6;
-        pdf.text(`House No: ${voter.houseNo}`, startX + pad + 3, cy);
-        cy += 6;
-        pdf.text(`Gender: ${voter.gender}`, startX + pad + 3, cy);
-        pdf.text(`Age: ${voter.age}`, startX + cardWidth/2, cy);
-        cy += 8;
-
-        pdf.text(`Polling Station:`, startX + pad + 3, cy);
-        pdf.text(`${voter.pollingStation}`, startX + pad + 3, cy + 5);
-      }
-
+      const pageHtml = ReactDOMServer.renderToString(
+        <BatchA4PrintLayout
+          slipsData={pageVoters}
+          pageNumber={p + 1}
+          totalPages={pagesCount}
+          SlipComponent={SlipComp}
+          headerData={{
+            title: assemblyName || 'Voters Directory',
+            wardNo: wardNo || '-',
+            partNo: boothNumber || '-'
+          }}
+          cardsPerPage={cardsPerPage}
+        />
+      );
+      
+      htmlContent += `<div class="page-break">${pageHtml}</div>`;
       setProgress(((p + 1) / numPagesToPrint) * 100);
-      if (p % 50 === 0) await delay(1); 
+      if (p % 50 === 0) await delay(5);
     }
 
-    pdf.save(`batch-slips-${isPreviewMode ? 'preview' : pagesCount + '-pages'}.pdf`);
+    htmlContent += `
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+    } else {
+      alert("Please allow popups to use the native print feature!");
+    }
 
     if (!isPreviewMode) {
       try {
@@ -215,8 +186,6 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         console.error('Failed to log print to backend:', err);
       }
     }
-
-    pdf.save(`batch-slips-${isPreviewMode ? 'preview' : pagesCount + '-pages'}.pdf`);
 
     setIsGenerating(false);
     setPrintState({ active: false, currentPage: 1 });

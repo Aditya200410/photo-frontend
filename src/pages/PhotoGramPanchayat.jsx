@@ -557,7 +557,7 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={selectedDistrict}
                     onChange={handleDistrictChange}
-                    disabled={availableDistricts.length === 0}
+                    disabled={!selectedState || availableDistricts.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">Select Zilla Parishad</option>
@@ -573,7 +573,7 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={selectedSamiti}
                     onChange={handleSamitiChange}
-                    disabled={availableSamitis.length === 0}
+                    disabled={!selectedState || availableSamitis.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">All Samitis ({availableSamitis.length})</option>
@@ -591,7 +591,7 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={panchayatName}
                     onChange={handlePanchayatChange}
-                    disabled={availablePanchayats.length === 0}
+                    disabled={!selectedState || availablePanchayats.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">Select Panchayat</option>
@@ -605,7 +605,7 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={villageName}
                     onChange={handleVillageChange}
-                    disabled={!panchayatName || availableVillages.length === 0}
+                    disabled={!selectedState || !panchayatName || availableVillages.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">All Villages ({availableVillages.length})</option>
@@ -619,7 +619,7 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={wardNumber}
                     onChange={handleWardChange}
-                    disabled={!panchayatName || availableWards.length === 0}
+                    disabled={!selectedState || !panchayatName || availableWards.length === 0}
                     className="w-full bg-white border border-violet-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-bold focus:outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-500/30 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">All Wards ({availableWards.length})</option>
@@ -633,7 +633,7 @@ function PhotoGramPanchayat({ onBack }) {
                   <select
                     value={boothNumber}
                     onChange={(e) => setBoothNumber(e.target.value)}
-                    disabled={!panchayatName || availableBooths.length === 0}
+                    disabled={!selectedState || !panchayatName || availableBooths.length === 0}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
                   >
                     <option value="">All Booths ({availableBooths.length})</option>
