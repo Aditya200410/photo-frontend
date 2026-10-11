@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useEffect } from 'react';
 
 function AdminPrivacyPolicy() {
@@ -6,7 +7,7 @@ function AdminPrivacyPolicy() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`)
+    fetch(`${API_BASE_URL}/api/settings`)
       .then(res => res.json())
       .then(data => {
         setText(data.privacyPolicyText || '');
@@ -21,7 +22,7 @@ function AdminPrivacyPolicy() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`, {
+      const res = await fetch(`${API_BASE_URL}/api/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ privacyPolicyText: text })

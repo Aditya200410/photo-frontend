@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import { useState, useEffect, useRef } from 'react';
 import { State, City } from 'country-state-city';
 
@@ -71,7 +72,7 @@ export default function FileEditModal({ isOpen, onClose, file, onSave }) {
         data.append('fileName', file.fileName);
       }
 
-      const res = await fetch(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/excel-files/${file.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/excel-files/${file.id}`, {
         method: 'PUT',
         body: data // FormData handles multipart/form-data implicitly
       });

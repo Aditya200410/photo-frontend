@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -27,9 +28,12 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/users`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
         headers: { 'Authorization': 'Bearer DUMMY' }
       });
+      if (!res.ok) {
+        throw new Error(`Failed to load users (status ${res.status})`);
+      }
       const data = await res.json();
       if (Array.isArray(data)) {
         setUsers(data);
@@ -42,9 +46,12 @@ const AdminUsers = () => {
 
   const fetchCreditRequests = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/credit-requests`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/credit-requests`, {
         headers: { 'Authorization': 'Bearer DUMMY' }
       });
+      if (!res.ok) {
+        throw new Error(`Failed to load credit requests (status ${res.status})`);
+      }
       const data = await res.json();
       if (Array.isArray(data)) {
         setCreditRequests(data);
@@ -56,7 +63,10 @@ const AdminUsers = () => {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`);
+      const res = await fetch(`${API_BASE_URL}/api/settings`);
+      if (!res.ok) {
+        throw new Error(`Failed to load settings (status ${res.status})`);
+      }
       const data = await res.json();
       setSiteSettings(data);
     } catch (e) {
@@ -90,7 +100,7 @@ const AdminUsers = () => {
 
     setIsApproving(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/approve-user`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/approve-user`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -135,7 +145,7 @@ const AdminUsers = () => {
 
     setIsUpdatingCredit(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/update-credits`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/update-credits`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -170,7 +180,7 @@ const AdminUsers = () => {
     const action = isBlocked ? 'unblock' : 'block';
     if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/toggle-block-user`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/toggle-block-user`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -204,7 +214,7 @@ const AdminUsers = () => {
 
     setIsProcessingRequest(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/approve-credit-request`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/approve-credit-request`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -238,7 +248,7 @@ const AdminUsers = () => {
     if (reason === null) return; // user cancelled
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/reject-credit-request`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/reject-credit-request`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -383,8 +393,7 @@ const AdminUsers = () => {
                       <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="p-3.5 font-bold text-slate-800">
                           <div>{r.userName}</div>
-                          <div className="text-xs text-slate-400 font-normal">{r.userEmail}</div>
-                          {r.userPhone && <div className="text-[11px] text-slate-400 font-mono">{r.userPhone}</div>}
+                          <div className="text-xs text-slate-600 font-mono font-medium">{r.userPhone || r.userEmail || '—'}</div>
                         </td>
                         <td className="p-3.5 font-mono text-base font-black text-emerald-600">
                           ₹{Number(r.amount).toFixed(2)}
@@ -447,7 +456,7 @@ const AdminUsers = () => {
                           {new Date(r.createdAt).toLocaleDateString()}
                         </td>
                         <td className="p-3 font-semibold text-slate-800">
-                          {r.userName} <span className="text-slate-400 font-normal">({r.userEmail})</span>
+                          {r.userName} <span className="text-slate-500 font-mono font-normal">({r.userPhone || r.userEmail || '—'})</span>
                         </td>
                         <td className="p-3 font-mono text-slate-600">{r.utr}</td>
                         <td className="p-3 font-mono font-bold text-slate-800">
@@ -497,7 +506,7 @@ const AdminUsers = () => {
                   <thead>
                     <tr className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider font-bold border-b border-slate-200">
                       <th className="p-3.5">Name</th>
-                      <th className="p-3.5">Email / Phone</th>
+                      <th className="p-3.5">Phone Number</th>
                       <th className="p-3.5">Payment UTR</th>
                       <th className="p-3.5 text-right">Action</th>
                     </tr>
@@ -506,9 +515,8 @@ const AdminUsers = () => {
                     {pendingUsers.map(u => (
                       <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="p-3.5 font-bold text-slate-800">{u.name}</td>
-                        <td className="p-3.5 text-sm">
-                          <div className="text-slate-800 font-medium">{u.email}</div>
-                          <div className="text-slate-400 text-xs font-mono">{u.phone}</div>
+                        <td className="p-3.5 text-sm font-mono font-semibold text-slate-800">
+                          {u.phone || u.email || '—'}
                         </td>
                         <td className="p-3.5">
                           <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200/60 rounded-lg px-2.5 py-1 inline-block">
@@ -554,7 +562,7 @@ const AdminUsers = () => {
                   <thead>
                     <tr className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider font-bold border-b border-slate-200">
                       <th className="p-3.5">Name</th>
-                      <th className="p-3.5">Email / Phone</th>
+                      <th className="p-3.5">Phone Number</th>
                       <th className="p-3.5">UTR</th>
                       <th className="p-3.5">Status</th>
                       <th className="p-3.5">Current Credit (₹)</th>
@@ -567,9 +575,8 @@ const AdminUsers = () => {
                         <td className="p-3.5 font-bold text-slate-800">
                           {u.name}
                         </td>
-                        <td className="p-3.5 text-sm">
-                          <div className="text-slate-800 font-medium">{u.email}</div>
-                          <div className="text-slate-400 text-xs font-mono">{u.phone}</div>
+                        <td className="p-3.5 text-sm font-mono font-semibold text-slate-800">
+                          {u.phone || u.email || '—'}
                         </td>
                         <td className="p-3.5 font-mono text-xs text-slate-500">{u.utr || '-'}</td>
                         <td className="p-3.5">
@@ -644,8 +651,8 @@ const AdminUsers = () => {
                 <span className="font-bold text-slate-800">{approvingRequest.userName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Email:</span>
-                <span className="font-medium text-slate-800">{approvingRequest.userEmail}</span>
+                <span className="text-slate-500 font-medium">Phone Number:</span>
+                <span className="font-mono font-bold text-slate-800">{approvingRequest.userPhone || approvingRequest.userEmail}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">Payment UTR:</span>
@@ -722,8 +729,8 @@ const AdminUsers = () => {
                 <span className="font-bold text-slate-800">{approvingUser.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Email:</span>
-                <span className="font-medium text-slate-800">{approvingUser.email}</span>
+                <span className="text-slate-500 font-medium">Phone Number:</span>
+                <span className="font-mono font-bold text-slate-800">{approvingUser.phone || approvingUser.email}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">UTR Reference:</span>

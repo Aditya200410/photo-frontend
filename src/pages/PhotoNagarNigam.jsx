@@ -5,6 +5,7 @@ import autoTable from 'jspdf-autotable';
 import TemplateSelectorModal from '../components/TemplateSelectorModal';
 import SlipPrintManager from '../components/SlipPrintManager';
 import BatchSlipPrintManager from '../components/BatchSlipPrintManager';
+import API_BASE_URL from '../config';
 
 function PhotoNagarNigam({ onBack }) {
   const [selectedState, setSelectedState] = useState('');
@@ -22,7 +23,7 @@ function PhotoNagarNigam({ onBack }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const filteredVoters = useMemo(() => {
-    return voters.filter(v => {
+    let result = voters.filter(v => {
       const idMatch = !filters.id || (v.SRNO || '').toString().toLowerCase().includes(filters.id.toLowerCase()) || (v.VID || '').toString().toLowerCase().includes(filters.id.toLowerCase());
       const nameMatch = !filters.name || (v.EFVNAME || '').toString().toLowerCase().includes(filters.name.toLowerCase()) || (v.FVNAME || '').toString().includes(filters.name);
       const houseMatch = !filters.houseNo || (v.FHOUSENO || '').toString().toLowerCase().includes(filters.houseNo.toLowerCase());
@@ -46,27 +47,29 @@ function PhotoNagarNigam({ onBack }) {
     });
 
     if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let valA = a[sortConfig.key] || '';
-        let valB = b[sortConfig.key] || '';
+      result = [...result].sort((a, b) => {
+        let valA = a[sortConfig.key];
+        let valB = b[sortConfig.key];
         
         // Handle numeric fields
-        if (sortConfig.key === 'FAGE') {
-          valA = parseFloat(valA) || 0;
-          valB = parseFloat(valB) || 0;
-          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        const numericKeys = ['FAGE', 'AGE', 'SRNO', 'ID', 'SERIAL_NO', 'SNO', 'SLNOINPART'];
+        if (numericKeys.includes(sortConfig.key)) {
+          const numA = parseFloat(valA);
+          const numB = parseFloat(valB);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+          }
         }
         
-        // String comparison
-        valA = String(valA).toLowerCase();
-        valB = String(valB).toLowerCase();
-        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
+        // String comparison with natural sorting
+        valA = (valA ?? '').toString().trim();
+        valB = (valB ?? '').toString().trim();
+        const cmp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+        return sortConfig.direction === 'asc' ? cmp : -cmp;
       });
     }
 
-    return filtered;
+    return result;
   }, [voters, filters, sortConfig]);
 
   useEffect(() => {
@@ -81,7 +84,7 @@ function PhotoNagarNigam({ onBack }) {
   const [availableFiles, setAvailableFiles] = useState([]);
 
   useEffect(() => {
-    fetch(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/excel-files/nagar-nigam`)
+    fetch(`${API_BASE_URL}/api/excel-files/nagar-nigam`)
       .then(res => res.json())
       .then(data => setAvailableFiles(data))
       .catch(err => console.error(err));
@@ -117,11 +120,32 @@ function PhotoNagarNigam({ onBack }) {
   // Compute available options based on selections
   const availableStates = [...new Set(availableFiles.map(f => f.state).filter(Boolean))];
 
+  // Auto-select state if only 1
+  useEffect(() => {
+    if (availableStates.length === 1 && !selectedState) {
+      setSelectedState(availableStates[0]);
+    }
+  }, [availableStates, selectedState]);
+
   const stateFiles = availableFiles.filter(f => f.state === selectedState);
   const availableDistricts = [...new Set(stateFiles.map(f => f.district).filter(Boolean))];
 
+  // Auto-select district if only 1
+  useEffect(() => {
+    if (availableDistricts.length === 1 && !selectedDistrict) {
+      setSelectedDistrict(availableDistricts[0]);
+    }
+  }, [availableDistricts, selectedDistrict]);
+
   const validFiles = stateFiles.filter(f => f.district === selectedDistrict);
   const availableCities = [...new Set(validFiles.map(f => f.city).filter(Boolean))];
+
+  // Auto-select city if only 1
+  useEffect(() => {
+    if (availableCities.length === 1 && !cityName) {
+      setCityName(availableCities[0]);
+    }
+  }, [availableCities, cityName]);
 
   const wardFiles = validFiles.filter(f => f.city === cityName);
   const availableWards = [...new Set(wardFiles.map(f => f.ward).filter(Boolean))];
@@ -181,7 +205,8 @@ function PhotoNagarNigam({ onBack }) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/voters`);
+      const baseUrl = API_BASE_URL || window.location.origin;
+      const url = new URL(`${baseUrl}/api/voters`);
       url.searchParams.append('category', 'nagar-nigam');
       url.searchParams.append('state', selectedState);
       url.searchParams.append('district', selectedDistrict);
@@ -189,7 +214,7 @@ function PhotoNagarNigam({ onBack }) {
       url.searchParams.append('ward', wardNumber);
       url.searchParams.append('booth', boothNumber);
 
-      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } });
+      const res = await fetch(url.toString(), { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } });
       const data = await res.json();
 
       if (data.error) {
@@ -571,12 +596,16 @@ function PhotoNagarNigam({ onBack }) {
                 </div>
 
                 {/* Electors Table */}
-                {/* Electors Table */}
-                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white relative">
-                  <div className="absolute top-2 right-4 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 hidden sm:block">
-                    💡 Tap any column header to sort ascending or descending
-                  </div>
-                  <table className="w-full text-left border-collapse mt-2">
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-2 px-1">
+                  <span className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Horizontal scroll enabled • Tap any column to sort
+                  </span>
+                </div>
+                <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white block">
+                  <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
                         {(() => {

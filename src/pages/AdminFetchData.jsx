@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -19,7 +20,7 @@ function AdminFetchData() {
     const fetchRecords = async () => {
       try {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/fetches`, {
+        const res = await fetch(`${API_BASE_URL}/api/fetches`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -175,12 +176,8 @@ function AdminFetchData() {
                     <span className="font-semibold text-slate-800 break-words">{selectedRecord.accountName || '—'}</span>
                   </div>
                   <div>
-                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Email</span>
-                    <span className="font-semibold text-slate-800 break-all">{selectedRecord.account || 'Guest User'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Phone</span>
-                    <span className="font-semibold text-slate-800 break-words">{selectedRecord.accountPhone || '—'}</span>
+                    <span className="block text-slate-400 text-xs font-semibold mb-0.5">Phone Number</span>
+                    <span className="font-semibold text-slate-800 break-words">{selectedRecord.accountPhone || selectedRecord.account || '—'}</span>
                   </div>
                   <div>
                     <span className="block text-slate-400 text-xs font-semibold mb-0.5">UTR / Payment Ref</span>

@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 
@@ -15,7 +16,7 @@ const Payment = () => {
     if (!userId) {
       navigate('/login');
     }
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`)
+    fetch(`${API_BASE_URL}/api/settings`)
       .then(res => res.json())
       .then(data => setSettings(data))
       .catch(err => console.error(err));
@@ -24,7 +25,7 @@ const Payment = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/submit-utr`, {
+      const res = await fetch(`${API_BASE_URL}/api/submit-utr`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, utr })
@@ -68,8 +69,8 @@ const Payment = () => {
             </>
           ) : (
             <>
-              <h2 className="text-3xl font-extrabold text-gray-900">Activate Your Account</h2>
-              <p className="mt-2 text-sm text-gray-600">Scan the QR code below to make a payment and submit your UTR (Transaction Reference No.)</p>
+              <h2 className="text-3xl font-extrabold text-gray-900">Recharge Printing Credits</h2>
+              <p className="mt-2 text-sm text-gray-600">Scan the QR code below to top up your wallet credits and submit your 12-digit UTR (Transaction Reference No.)</p>
             </>
           )}
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import API_BASE_URL from '../config';
 
 const Account = () => {
   const [user, setUser] = useState(null);
@@ -34,12 +35,12 @@ const Account = () => {
 
     try {
       // 1. Fetch user profile
-      const userRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/me`, {
+      const userRes = await fetch(`${API_BASE_URL}/api/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (!userRes.ok) {
-        if (userRes.status === 401 || userRes.status === 404) {
+        if (userRes.status === 401) {
           localStorage.removeItem('userToken');
           navigate('/login');
         } else {
@@ -51,13 +52,11 @@ const Account = () => {
       const userData = await userRes.json();
       if (userData.status === 'blocked') {
         return navigate('/payment?userId=' + userData.id + '&status=blocked');
-      } else if (userData.status === 'pending_payment') {
-        return navigate('/payment?userId=' + userData.id);
       }
       setUser(userData);
 
       // 2. Fetch user's print history and credit transactions
-      const historyRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/user/print-history`, {
+      const historyRes = await fetch(`${API_BASE_URL}/api/user/print-history`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -71,7 +70,7 @@ const Account = () => {
       }
 
       // 3. Fetch user's credit recharge requests
-      const reqRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/user/credit-requests`, {
+      const reqRes = await fetch(`${API_BASE_URL}/api/user/credit-requests`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (reqRes.ok) {
@@ -80,7 +79,7 @@ const Account = () => {
       }
 
       // 4. Fetch system settings for UPI and QR Code
-      const settingsRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`);
+      const settingsRes = await fetch(`${API_BASE_URL}/api/settings`);
       if (settingsRes.ok) {
         const setts = await settingsRes.json();
         setSettings(prev => ({ ...prev, ...setts }));
@@ -132,7 +131,7 @@ const Account = () => {
     const token = localStorage.getItem('userToken');
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/user/credit-request`, {
+      const res = await fetch(`${API_BASE_URL}/api/user/credit-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,14 +278,10 @@ const Account = () => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-xs">
+                <div className="grid grid-cols-1 gap-3 mt-4 text-xs">
                   <div className="bg-white/5 rounded-xl px-3.5 py-2.5 border border-white/5">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Email</span>
-                    <span className="text-white font-medium truncate block">{user?.email || '—'}</span>
-                  </div>
-                  <div className="bg-white/5 rounded-xl px-3.5 py-2.5 border border-white/5">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Phone</span>
-                    <span className="text-white font-medium">{user?.phone || '—'}</span>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Phone Number</span>
+                    <span className="text-white font-mono font-semibold text-sm truncate block mt-0.5">{user?.phone || user?.email || '—'}</span>
                   </div>
                   {user?.utr && (
                     <div className="bg-white/5 rounded-xl px-3.5 py-2.5 border border-white/5 sm:col-span-2 flex items-center justify-between">

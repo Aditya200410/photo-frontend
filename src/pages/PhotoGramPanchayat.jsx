@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import TemplateSelectorModal from '../components/TemplateSelectorModal';
 import SlipPrintManager from '../components/SlipPrintManager';
 import BatchSlipPrintManager from '../components/BatchSlipPrintManager';
+import API_BASE_URL from '../config';
 
 function PhotoGramPanchayat({ onBack }) {
   const [availableFiles, setAvailableFiles] = useState([]);
@@ -50,14 +51,16 @@ function PhotoGramPanchayat({ onBack }) {
 
   // Fetch available Panchayat files on mount
   useEffect(() => {
-    fetch(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/excel-files/panchayat`)
+    fetch(`${API_BASE_URL}/api/excel-files/panchayat`)
       .then(res => res.json())
       .then(data => {
-        setAvailableFiles(data);
-        if (data.length > 0) {
-          // Preselect first state if only one
-          const states = [...new Set(data.map(f => f.state).filter(Boolean))];
-          if (states.length === 1) setSelectedState(states[0]);
+        if (Array.isArray(data)) {
+          setAvailableFiles(data);
+          if (data.length > 0) {
+            // Preselect first state if only one
+            const states = [...new Set(data.map(f => f.state).filter(Boolean))];
+            if (states.length === 1) setSelectedState(states[0]);
+          }
         }
       })
       .catch(err => console.error('Error fetching panchayat files:', err));
@@ -333,7 +336,8 @@ function PhotoGramPanchayat({ onBack }) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = new URL(`${(import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com')}/api/voters`);
+      const baseUrl = API_BASE_URL || window.location.origin;
+      const url = new URL(`${baseUrl}/api/voters`);
       url.searchParams.append('category', 'panchayat');
       if (selectedState) url.searchParams.append('state', selectedState);
       if (selectedDistrict) url.searchParams.append('district', selectedDistrict);
@@ -343,7 +347,7 @@ function PhotoGramPanchayat({ onBack }) {
       if (wardNumber) url.searchParams.append('ward', wardNumber);
       if (boothNumber) url.searchParams.append('booth', boothNumber);
 
-      const res = await fetch(url, {
+      const res = await fetch(url.toString(), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` }
       });
       const data = await res.json();
@@ -373,7 +377,7 @@ function PhotoGramPanchayat({ onBack }) {
 
   // --- Client-side Filtered Voters ---
   const filteredVoters = useMemo(() => {
-    return voters.filter(v => {
+    let result = voters.filter(v => {
       const idMatch = !filters.id || (v.IDCARD || '').toString().toLowerCase().includes(filters.id.toLowerCase());
       const nameMatch = !filters.name ||
         (v.V_FNAME_EN || '').toString().toLowerCase().includes(filters.name.toLowerCase()) ||
@@ -411,27 +415,49 @@ function PhotoGramPanchayat({ onBack }) {
     });
 
     if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let valA = a[sortConfig.key] || '';
-        let valB = b[sortConfig.key] || '';
-        
-        // Handle numeric fields
-        if (sortConfig.key === 'AGE' || sortConfig.key === 'SNO' || sortConfig.key === 'SLNOINPART') {
-          valA = parseFloat(valA) || 0;
-          valB = parseFloat(valB) || 0;
-          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+      result = [...result].sort((a, b) => {
+        let valA = a[sortConfig.key];
+        let valB = b[sortConfig.key];
+
+        // Fallbacks for composite/alternate keys
+        if (sortConfig.key === 'WARDNO') {
+          valA = a.WARDNO || a['PANCHAYAT WARD NO'] || '';
+          valB = b.WARDNO || b['PANCHAYAT WARD NO'] || '';
+        } else if (sortConfig.key === 'GRAM_PANCHAYAT') {
+          valA = a['PANCHAYAT NAME'] || a.GRAM_PANCHAYAT || '';
+          valB = b['PANCHAYAT NAME'] || b.GRAM_PANCHAYAT || '';
+        } else if (sortConfig.key === 'PANCHAYAT_SAMITI') {
+          valA = a['PANCHAYAT SAMITI NAME'] || a.PANCHAYAT_SAMITI || '';
+          valB = b['PANCHAYAT SAMITI NAME'] || b.PANCHAYAT_SAMITI || '';
+        } else if (sortConfig.key === 'ZILLA_PARISHAD') {
+          valA = a['ZILLA PARISHAD NAME'] || a.ZILLA_PARISHAD || '';
+          valB = b['ZILLA PARISHAD NAME'] || b.ZILLA_PARISHAD || '';
+        } else if (sortConfig.key === 'PC_NAME') {
+          valA = a['PC NAME'] || a.PC_NAME || '';
+          valB = b['PC NAME'] || b.PC_NAME || '';
         }
         
-        // String comparison
-        valA = String(valA).toLowerCase();
-        valB = String(valB).toLowerCase();
-        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
+        // Handle numeric fields
+        const numericKeys = ['AGE', 'SERIAL_NO', 'SNO', 'SLNOINPART', 'WARDNO', 'BOOTH_NO', 'PARTNO'];
+        if (numericKeys.includes(sortConfig.key)) {
+          const numA = parseFloat(valA);
+          const numB = parseFloat(valB);
+          const isNumA = !isNaN(numA);
+          const isNumB = !isNaN(numB);
+          if (isNumA && isNumB) {
+            return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+          }
+        }
+        
+        // String comparison with natural sorting
+        valA = (valA ?? '').toString().trim();
+        valB = (valB ?? '').toString().trim();
+        const cmp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+        return sortConfig.direction === 'asc' ? cmp : -cmp;
       });
     }
 
-    return filtered;
+    return result;
   }, [voters, filters, sortConfig]);
 
   useEffect(() => {
@@ -480,13 +506,13 @@ function PhotoGramPanchayat({ onBack }) {
 
   return (
     <>
-      <div className="flex-1 flex items-center justify-center p-0 md:p-6 w-full">
-        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative">
+      <div className="flex-1 flex items-center justify-center p-0 sm:p-2 md:p-6 w-full max-w-full overflow-hidden min-w-0">
+        <div className="w-full max-w-7xl bg-white md:rounded-3xl shadow-xl shadow-slate-200/50 border-0 md:border border-slate-100 overflow-hidden relative min-w-0">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600"></div>
 
-          <div className="p-4 sm:p-8 md:p-10">
+          <div className="p-3 sm:p-6 md:p-10 w-full max-w-full overflow-hidden min-w-0">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-6 border-b border-slate-100 gap-4">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="bg-violet-50 text-violet-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-violet-200/60 flex items-center gap-1.5">
@@ -504,45 +530,45 @@ function PhotoGramPanchayat({ onBack }) {
                     </span>
                   )}
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 tracking-tight">
                   Gram Panchayat Details & Voter Directory
                 </h2>
-                <p className="text-slate-500 mt-1 text-sm sm:text-base">
+                <p className="text-slate-500 mt-1 text-xs sm:text-sm md:text-base">
                   Select parameters or upload village Excel data to automatically separate wards and generate slips.
                 </p>
               </div>
 
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-violet-500/25 shrink-0">
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-violet-500/25 shrink-0 self-start sm:self-auto">
+                <svg className="w-5 h-5 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
 
             {/* Parameter Selection Form */}
-            <form className="space-y-6 bg-slate-50/70 p-4 sm:p-6 rounded-3xl border border-slate-200/80">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+            <form className="space-y-6 bg-slate-50/70 p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/80 w-full max-w-full overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between pb-2 border-b border-slate-200/60 gap-2">
                 <h3 className="text-xs sm:text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                  <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-violet-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                   Location & Panchayat Parameters
                 </h3>
                 {availableWards.length > 0 && (
-                  <span className="text-xs bg-violet-600 text-white font-bold px-3 py-1 rounded-full shadow-sm">
+                  <span className="text-[11px] sm:text-xs bg-violet-600 text-white font-bold px-3 py-1 rounded-full shadow-sm">
                     {availableWards.length} Wards Detected in Excel
                   </span>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3 sm:gap-3.5 w-full min-w-0">
                 {/* 1. State */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">State</label>
+                <div className="space-y-1.5 min-w-0">
+                  <label className="text-xs font-bold text-slate-700 block truncate">State</label>
                   <select
                     value={selectedState}
                     onChange={handleStateChange}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm truncate"
                   >
                     <option value="">{availableStates.length === 0 ? 'No State Data' : 'Select State'}</option>
                     {availableStates.map(state => <option key={state} value={state}>{state}</option>)}
@@ -550,7 +576,7 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* 2. District / Zilla Parishad */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-bold text-slate-700 block truncate">
                     Zilla Parishad {currentZillaNo ? `(No. ${currentZillaNo})` : ''}
                   </label>
@@ -558,7 +584,7 @@ function PhotoGramPanchayat({ onBack }) {
                     value={selectedDistrict}
                     onChange={handleDistrictChange}
                     disabled={!selectedState || availableDistricts.length === 0}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60 truncate"
                   >
                     <option value="">Select Zilla Parishad</option>
                     {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -566,7 +592,7 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* 3. Panchayat Samiti (City / Block) */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-bold text-slate-700 block truncate">
                     Samiti {currentSamitiNo ? `(No. ${currentSamitiNo})` : ''}
                   </label>
@@ -574,7 +600,7 @@ function PhotoGramPanchayat({ onBack }) {
                     value={selectedSamiti}
                     onChange={handleSamitiChange}
                     disabled={!selectedState || availableSamitis.length === 0}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60 truncate"
                   >
                     <option value="">All Samitis ({availableSamitis.length})</option>
                     {availableSamitis.map(s => (
@@ -586,13 +612,13 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* 4. Gram Panchayat Name */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-bold text-slate-700 block truncate">Panchayat Name</label>
                   <select
                     value={panchayatName}
                     onChange={handlePanchayatChange}
                     disabled={!selectedState || availablePanchayats.length === 0}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60 truncate"
                   >
                     <option value="">Select Panchayat</option>
                     {availablePanchayats.map(p => <option key={p} value={p}>{p}</option>)}
@@ -600,13 +626,13 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* 5. Village */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-bold text-slate-700 block truncate">Village</label>
                   <select
                     value={villageName}
                     onChange={handleVillageChange}
                     disabled={!selectedState || !panchayatName || availableVillages.length === 0}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60 truncate"
                   >
                     <option value="">All Villages ({availableVillages.length})</option>
                     {availableVillages.map(v => <option key={v} value={v}>{v}</option>)}
@@ -614,13 +640,13 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* 6. Ward Number */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-bold text-slate-700 block truncate">Ward Number</label>
                   <select
                     value={wardNumber}
                     onChange={handleWardChange}
                     disabled={!selectedState || !panchayatName || availableWards.length === 0}
-                    className="w-full bg-white border border-violet-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-bold focus:outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-500/30 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
+                    className="w-full bg-white border border-violet-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-bold focus:outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-500/30 shadow-sm disabled:bg-slate-100 disabled:opacity-60 truncate"
                   >
                     <option value="">All Wards ({availableWards.length})</option>
                     {availableWards.map(w => <option key={w} value={w}>Ward {w}</option>)}
@@ -628,13 +654,13 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* 7. Booth / Part Number */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <label className="text-xs font-bold text-slate-700 block truncate">Booth / Part No</label>
                   <select
                     value={boothNumber}
                     onChange={(e) => setBoothNumber(e.target.value)}
                     disabled={!selectedState || !panchayatName || availableBooths.length === 0}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 font-medium focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm disabled:bg-slate-100 disabled:opacity-60 truncate"
                   >
                     <option value="">All Booths ({availableBooths.length})</option>
                     {availableBooths.map(b => <option key={b} value={b}>Booth {b}</option>)}
@@ -714,7 +740,7 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* In-Page Quick Filters */}
-                <div className="bg-slate-50/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl border border-slate-200/80 mb-6 shadow-sm">
+                <div className="bg-slate-50/80 backdrop-blur-sm p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 mb-6 shadow-sm w-full max-w-full min-w-0">
                   <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-200/60">
                     <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                       <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -737,97 +763,104 @@ function PhotoGramPanchayat({ onBack }) {
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID / VID Card</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 w-full min-w-0">
+                    <div className="min-w-0">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">ID / VID Card</label>
                       <input
                         type="text"
                         placeholder="Search ID..."
                         value={filters.id}
                         onChange={e => { setFilters(prev => ({ ...prev, id: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Voter Name</label>
+                    <div className="min-w-0">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Voter Name</label>
                       <input
                         type="text"
                         placeholder="Name (EN/HI)..."
                         value={filters.name}
                         onChange={e => { setFilters(prev => ({ ...prev, name: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Relative Name</label>
+                    <div className="min-w-0">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Relative Name</label>
                       <input
                         type="text"
                         placeholder="Father/Husband..."
                         value={filters.relativeName}
                         onChange={e => { setFilters(prev => ({ ...prev, relativeName: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">House No</label>
+                    <div className="min-w-0">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">House No</label>
                       <input
                         type="text"
                         placeholder="House No..."
                         value={filters.houseNo}
                         onChange={e => { setFilters(prev => ({ ...prev, houseNo: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Ward</label>
+                    <div className="min-w-0">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Filter Ward</label>
                       <input
                         type="text"
                         placeholder="Ward..."
                         value={filters.ward}
                         onChange={e => { setFilters(prev => ({ ...prev, ward: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Gender</label>
+                    <div className="min-w-0">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Gender</label>
                       <select
                         value={filters.sex}
                         onChange={e => { setFilters(prev => ({ ...prev, sex: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm cursor-pointer"
+                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm cursor-pointer truncate"
                       >
                         <option value="">All Genders</option>
                         <option value="M">Male (पुरुष)</option>
                         <option value="F">Female (महिला)</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Age Range</label>
-                      <div className="flex gap-1.5">
+                    <div className="min-w-0">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Age Range</label>
+                      <div className="flex gap-1.5 min-w-0">
                         <input
                           type="number"
                           placeholder="Min"
                           value={filters.minAge}
                           onChange={e => { setFilters(prev => ({ ...prev, minAge: e.target.value })); setPageCount(1); }}
-                          className="w-1/2 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                          className="w-1/2 min-w-0 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                         />
                         <input
                           type="number"
                           placeholder="Max"
                           value={filters.maxAge}
                           onChange={e => { setFilters(prev => ({ ...prev, maxAge: e.target.value })); setPageCount(1); }}
-                          className="w-1/2 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                          className="w-1/2 min-w-0 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Table scroll helper caption */}
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-2 px-1">
+                  <span className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Horizontal scroll enabled • Tap any column to sort
+                  </span>
+                </div>
+
                 {/* Comprehensive All-Columns Voter Table */}
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white relative">
-                  <div className="absolute top-2 right-4 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-md border border-violet-100 hidden sm:block">
-                    💡 Tap any column header to sort ascending or descending
-                  </div>
-                  <table className="w-full text-left border-collapse min-w-[1400px] mt-2">
+                <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white block">
+                  <table className="w-full text-left border-collapse min-w-[1300px]">
                     <thead>
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
                         {(() => {
@@ -997,8 +1030,8 @@ function PhotoGramPanchayat({ onBack }) {
 
       {/* Voter Full Profile Details Modal */}
       {detailModalVoter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-w-[calc(100vw-1rem)] sm:max-w-2xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col min-w-0">
             <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4 flex items-center justify-between text-white shrink-0">
               <div>
                 <h3 className="text-lg font-bold">Voter Complete Profile</h3>

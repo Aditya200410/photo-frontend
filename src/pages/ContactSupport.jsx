@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../config';
 
 function ContactSupport() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -10,7 +11,7 @@ function ContactSupport() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`);
+        const res = await fetch(`${API_BASE_URL}/api/settings`);
         if (res.ok) setSettings(await res.json());
       } catch (e) {
         console.error(e);
@@ -38,11 +39,16 @@ function ContactSupport() {
       navigate('/login');
       return;
     }
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/me`, {
+    fetch(`${API_BASE_URL}/api/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
-        if (!res.ok) throw new Error('Not found or unauthorized');
+        if (res.status === 401) {
+          localStorage.removeItem('userToken');
+          navigate('/login');
+          return null;
+        }
+        if (!res.ok) return null;
         return res.json();
       })
       .then(data => {
@@ -55,21 +61,16 @@ function ContactSupport() {
             email: prev.email || data.email || '',
             phone: prev.phone || data.mobile || data.phone || ''
           }));
-        } else {
-          localStorage.removeItem('userToken');
-          navigate('/login');
         }
       })
       .catch(err => {
         console.error("Failed to load user:", err);
-        localStorage.removeItem('userToken');
-        navigate('/login');
       });
   }, [navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) return;
+    if (!formData.name || (!formData.phone && !formData.email) || !formData.message) return;
 
     setIsSubmitting(true);
     setTimeout(() => {
@@ -250,7 +251,7 @@ function ContactSupport() {
           >
             <div className="relative shrink-0">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md ring-1 ring-white/10 group-hover:ring-blue-400 transition-all">
-                {(currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase()}
+                {(currentUser?.name || currentUser?.phone || currentUser?.email || 'U').charAt(0).toUpperCase()}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-950"></span>
             </div>
@@ -259,7 +260,7 @@ function ContactSupport() {
                 {currentUser?.name || ''}
               </p>
               <p className="text-[11px] text-slate-400 truncate font-mono">
-                {currentUser?.email || ''}
+                {currentUser?.phone || currentUser?.email || ''}
               </p>
             </div>
             <svg className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -505,13 +506,14 @@ function ContactSupport() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                        Phone / Mobile
+                        Phone / Mobile <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="tel"
+                        required
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
                         placeholder="+91 98765 00000"
                       />
                     </div>
@@ -519,11 +521,10 @@ function ContactSupport() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                      Email Address <span className="text-rose-500">*</span>
+                      Email Address <span className="text-slate-400 font-normal lowercase">(optional)</span>
                     </label>
                     <input
                       type="email"
-                      required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"

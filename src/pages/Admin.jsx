@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -16,12 +17,12 @@ function Admin() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const analyticsRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/analytics`);
+        const analyticsRes = await fetch(`${API_BASE_URL}/api/analytics`);
         const analyticsData = await analyticsRes.json();
         setAnalytics(analyticsData);
 
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-        const usersRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/admin/users`, {
+        const usersRes = await fetch(`${API_BASE_URL}/api/admin/users`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (usersRes.ok) {

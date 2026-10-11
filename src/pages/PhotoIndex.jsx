@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import PhotoAssembly from './PhotoAssembly';
 import PhotoNagarNigam from './PhotoNagarNigam';
 import PhotoGramPanchayat from './PhotoGramPanchayat';
+import API_BASE_URL from '../config';
 
 
 function PhotoIndex() {
@@ -31,7 +32,7 @@ function PhotoIndex() {
   });
 
   const fetchSiteSettings = () => {
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/settings`)
+    fetch(`${API_BASE_URL}/api/settings`)
       .then(res => res.json())
       .then(data => {
         if (data && !data.error) {
@@ -47,12 +48,18 @@ function PhotoIndex() {
       navigate('/login');
       return;
     }
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/me`, {
+    fetch(`${API_BASE_URL}/api/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
+        if (res.status === 401) {
+          // Token is genuinely invalid/expired
+          localStorage.removeItem('userToken');
+          navigate('/login');
+          return null;
+        }
         if (!res.ok) {
-          throw new Error('Not found or unauthorized');
+          return null;
         }
         return res.json();
       })
@@ -60,20 +67,14 @@ function PhotoIndex() {
         if (data && !data.error) {
           if (data.status === 'blocked') {
             navigate(`/payment?userId=${data.id}&status=blocked`);
-          } else if (data.status === 'pending_payment') {
-            navigate(`/payment?userId=${data.id}`);
           } else {
             setCurrentUser(data);
           }
-        } else {
-          localStorage.removeItem('userToken');
-          navigate('/login');
         }
       })
       .catch(err => {
         console.error("Failed to load user:", err);
-        localStorage.removeItem('userToken');
-        navigate('/login');
+        // Do NOT log out on network error! Keep session intact.
       });
   };
 
@@ -98,7 +99,7 @@ function PhotoIndex() {
 
   const fetchAnalytics = (showLoader = false) => {
     if (showLoader) setIsLoadingAnalytics(true);
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.onlinevoterslip.com'}/api/analytics`)
+    fetch(`${API_BASE_URL}/api/analytics`)
       .then(res => res.json())
       .then(data => {
         setAnalytics(prev => ({ ...prev, ...data }));
@@ -142,7 +143,7 @@ function PhotoIndex() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex text-slate-800">
+    <div className="min-h-screen bg-slate-50 font-sans flex text-slate-800 w-full max-w-full overflow-x-hidden">
 
       {/* Sidebar Overlay for Mobile */}
       {isMobileMenuOpen && (
@@ -297,7 +298,7 @@ function PhotoIndex() {
           >
             <div className="relative shrink-0">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md ring-1 ring-white/10 group-hover:ring-blue-400 transition-all">
-                {(currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase()}
+                {(currentUser?.name || currentUser?.phone || currentUser?.email || 'U').charAt(0).toUpperCase()}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-950"></span>
             </div>
@@ -306,7 +307,7 @@ function PhotoIndex() {
                 {currentUser?.name || ''}
               </p>
               <p className="text-[11px] text-slate-400 truncate font-mono">
-                {currentUser?.email || ''}
+                {currentUser?.phone || currentUser?.email || ''}
               </p>
             </div>
             <svg className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -332,7 +333,7 @@ function PhotoIndex() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen w-full">
+      <div className="flex-1 md:ml-64 flex flex-col min-h-screen w-full min-w-0 max-w-full overflow-x-hidden">
         {/* Top Header */}
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 shadow-sm">
           <div className="flex items-center gap-3 md:gap-4">
@@ -410,7 +411,7 @@ function PhotoIndex() {
         </header>
 
         {/* Dynamic View Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto w-full overflow-x-hidden">
+        <main className="flex-1 p-2 sm:p-4 md:p-8 overflow-y-auto w-full max-w-full min-w-0 overflow-x-hidden">
           {activeTab === 'overview' && (
             <div className="space-y-8 max-w-7xl mx-auto">
 
@@ -685,7 +686,7 @@ function PhotoIndex() {
             </div>
           )}
 
-          <div className="w-full min-w-0">
+          <div className="w-full max-w-full min-w-0 overflow-x-hidden">
             {/* Component containers rendered with clean responsive styling */}
             {activeTab === 'assembly' && <PhotoAssembly onBack={() => handleTabChange('overview')} />}
             {activeTab === 'nagar-nigam' && <PhotoNagarNigam onBack={() => handleTabChange('overview')} />}
