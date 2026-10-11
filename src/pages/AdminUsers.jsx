@@ -26,6 +26,14 @@ const AdminUsers = () => {
   const [overrideCreditAmount, setOverrideCreditAmount] = useState('');
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
 
+  // Modal states for Viewing Full User Details, Credit Spending & Past Records
+  const [selectedUserDetail, setSelectedUserDetail] = useState(null);
+  const [activeRequestDetail, setActiveRequestDetail] = useState(null);
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  const [userDetailsData, setUserDetailsData] = useState(null);
+  const [detailsTab, setDetailsTab] = useState('spending'); // 'spending' | 'fetches' | 'ledger' | 'profile'
+  const [detailsSearchQuery, setDetailsSearchQuery] = useState('');
+
   const fetchUsers = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
@@ -270,6 +278,71 @@ const AdminUsers = () => {
     }
   };
 
+  const handleViewUserDetails = async (identifier, requestContext = null) => {
+    const lookupId = identifier || requestContext?.userId || requestContext?.userPhone || requestContext?.userEmail;
+    if (!lookupId) return;
+    setActiveRequestDetail(requestContext);
+    setSelectedUserDetail(lookupId);
+    setUserDetailsLoading(true);
+    setDetailsTab('spending');
+    setDetailsSearchQuery('');
+
+    try {
+      const token = localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY';
+      const res = await fetch(`${API_BASE_URL}/api/admin/user-details/${encodeURIComponent(lookupId)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserDetailsData(data);
+      } else {
+        throw new Error('API returned ' + res.status);
+      }
+    } catch (e) {
+      console.warn('Compiling fallback user details:', e);
+      const matchedUser = users.find(u => 
+        u.id === lookupId || 
+        (u.phone && u.phone === lookupId) || 
+        (u.email && u.email === lookupId) ||
+        (requestContext && ((u.phone && u.phone === requestContext.userPhone) || (u.email && u.email === requestContext.userEmail)))
+      );
+      const userReqs = creditRequests.filter(r => 
+        (matchedUser && (r.userId === matchedUser.id || r.userPhone === matchedUser.phone || r.userEmail === matchedUser.email)) ||
+        r.userId === lookupId || r.userPhone === lookupId || r.userEmail === lookupId ||
+        (requestContext && r.id === requestContext.id)
+      );
+      setUserDetailsData({
+        user: matchedUser || {
+          id: lookupId,
+          name: requestContext?.userName || 'User',
+          phone: requestContext?.userPhone || lookupId,
+          email: requestContext?.userEmail || lookupId,
+          status: 'active',
+          credits: requestContext?.currentUserCredits || 0,
+          creditHistory: []
+        },
+        creditRequests: userReqs,
+        prints: [],
+        fetches: [],
+        summary: {
+          currentCredits: matchedUser ? (Number(matchedUser.credits) || 0) : (Number(requestContext?.currentUserCredits) || 0),
+          totalApprovedCredits: userReqs.filter(r => r.status === 'approved').reduce((s, r) => s + (Number(r.approvedAmount || r.amount) || 0), 0),
+          totalSpent: 0,
+          totalPrintsCount: 0,
+          totalPages: 0,
+          totalSlips: 0,
+          totalFetchesCount: 0
+        }
+      });
+    } finally {
+      setUserDetailsLoading(false);
+    }
+  };
+
+  const handlePrintStatement = () => {
+    window.print();
+  };
+
   const pendingUsers = users.filter(u => u.status === 'pending_approval');
   const activeUsers = users.filter(u => (u.status === 'active' || u.status === 'blocked') && u.role !== 'admin');
   const pendingCreditRequests = creditRequests.filter(r => r.status === 'pending');
@@ -412,6 +485,13 @@ const AdminUsers = () => {
                         </td>
                         <td className="p-3.5 text-right space-x-2">
                           <button
+                            onClick={() => handleViewUserDetails(r.userId || r.userPhone || r.userEmail, r)}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
+                            title="View user details & past credit usage"
+                          >
+                            Details
+                          </button>
+                          <button
                             onClick={() => openApproveRequestModal(r)}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition-all hover:scale-105"
                           >
@@ -447,18 +527,23 @@ const AdminUsers = () => {
                       <th className="p-3">UTR</th>
                       <th className="p-3">Amount</th>
                       <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {processedCreditRequests.map(r => (
-                      <tr key={r.id} className="hover:bg-slate-50/50">
+                      <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-3 text-slate-500 whitespace-nowrap">
                           {new Date(r.createdAt).toLocaleDateString()}
                         </td>
                         <td className="p-3 font-semibold text-slate-800">
                           {r.userName} <span className="text-slate-500 font-mono font-normal">({r.userPhone || r.userEmail || '—'})</span>
                         </td>
-                        <td className="p-3 font-mono text-slate-600">{r.utr}</td>
+                        <td className="p-3 font-mono text-slate-600">
+                          <span className="font-mono text-xs font-semibold bg-slate-100 border border-slate-200/80 rounded px-1.5 py-0.5 inline-block text-slate-700">
+                            {r.utr}
+                          </span>
+                        </td>
                         <td className="p-3 font-mono font-bold text-slate-800">
                           ₹{Number(r.approvedAmount || r.amount).toFixed(2)}
                         </td>
@@ -472,6 +557,19 @@ const AdminUsers = () => {
                               ✕ Rejected
                             </span>
                           )}
+                        </td>
+                        <td className="p-3 text-right">
+                          <button
+                            onClick={() => handleViewUserDetails(r.userId || r.userPhone || r.userEmail, r)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 shadow-sm shadow-blue-600/20"
+                            title="View user details, past records, fetch, print and credit spending"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.452 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            View Details
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -601,6 +699,17 @@ const AdminUsers = () => {
                           </div>
                         </td>
                         <td className="p-3.5 text-right space-x-2">
+                          <button 
+                            onClick={() => handleViewUserDetails(u.id || u.phone || u.email)}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+                            title="View complete user details, print and fetch history"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.452 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            History & Details
+                          </button>
                           <button 
                             onClick={() => openManageCreditModal(u)}
                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
@@ -909,8 +1018,711 @@ const AdminUsers = () => {
           </div>
         </div>
       )}
+
+      {/* Modal 4: Comprehensive User Details, Credit Spending & History */}
+      {selectedUserDetail && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 print:hidden overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-5xl w-full shadow-2xl border border-slate-100 my-6 max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-slate-50 via-white to-blue-50/40">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white font-extrabold flex items-center justify-center text-xl shadow-md shadow-blue-500/20">
+                  {userDetailsData?.user?.name ? userDetailsData.user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xl font-black text-slate-800">
+                      {userDetailsData?.user?.name || activeRequestDetail?.userName || 'User Details'}
+                    </h3>
+                    {userDetailsData?.user?.status === 'blocked' ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">
+                        Blocked
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 font-mono flex items-center gap-2 mt-0.5">
+                    <span>📞 {userDetailsData?.user?.phone || activeRequestDetail?.userPhone || '—'}</span>
+                    {userDetailsData?.user?.email && userDetailsData.user.email !== userDetailsData.user.phone && (
+                      <span>✉️ {userDetailsData.user.email}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Header Right Actions */}
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={handlePrintStatement}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 shadow-md shadow-slate-900/10"
+                  title="Print complete user activity and credit spending statement"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print Statement
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedUserDetail(null);
+                    setUserDetailsData(null);
+                    setActiveRequestDetail(null);
+                  }}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center font-bold transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Context Banner if opened from a specific credit request */}
+            {activeRequestDetail && (
+              <div className="px-6 py-2.5 bg-blue-50 border-b border-blue-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 text-blue-900">
+                  <span className="font-bold">Credit Request Context:</span>
+                  <span className="font-mono font-bold bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700">
+                    UTR: {activeRequestDetail.utr}
+                  </span>
+                  <span>Requested ₹{Number(activeRequestDetail.amount).toFixed(2)}</span>
+                  <span>•</span>
+                  <span>Date: {new Date(activeRequestDetail.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div>
+                  {activeRequestDetail.status === 'approved' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 border border-emerald-300 text-emerald-800">
+                      ✓ Approved (₹{Number(activeRequestDetail.approvedAmount || activeRequestDetail.amount).toFixed(2)})
+                    </span>
+                  ) : activeRequestDetail.status === 'pending' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 border border-amber-300 text-amber-800">
+                      ⏳ Pending Approval
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 border border-rose-300 text-rose-800">
+                      ✕ Rejected {activeRequestDetail.rejectionReason ? `(${activeRequestDetail.rejectionReason})` : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Loading Indicator or Modal Body */}
+            {userDetailsLoading ? (
+              <div className="p-16 flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                <p className="text-sm font-semibold text-slate-500">Loading complete user details, past records, fetch & print activity...</p>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+                {/* 4 Summary Metric Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Available Wallet Balance</span>
+                    <div className="text-2xl font-black text-emerald-700 mt-2">
+                      ₹{(Number(userDetailsData?.summary?.currentCredits ?? userDetailsData?.user?.credits) || 0).toFixed(2)}
+                    </div>
+                    <span className="text-[11px] text-emerald-600/80 font-medium mt-1">Ready to use</span>
+                  </div>
+
+                  <div className="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Total Recharged / Added</span>
+                    <div className="text-2xl font-black text-blue-700 mt-2">
+                      ₹{(Number(userDetailsData?.summary?.totalApprovedCredits) || 0).toFixed(2)}
+                    </div>
+                    <span className="text-[11px] text-blue-600/80 font-medium mt-1">
+                      {userDetailsData?.creditRequests?.filter(r => r.status === 'approved').length || 0} approved recharges
+                    </span>
+                  </div>
+
+                  <div className="bg-purple-50/60 border border-purple-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider">Total Credit Spent</span>
+                    <div className="text-2xl font-black text-purple-700 mt-2">
+                      ₹{(Number(userDetailsData?.summary?.totalSpent) || 0).toFixed(2)}
+                    </div>
+                    <span className="text-[11px] text-purple-600/80 font-medium mt-1">
+                      {userDetailsData?.summary?.totalPrintsCount || 0} print jobs ({userDetailsData?.summary?.totalSlips || 0} slips)
+                    </span>
+                  </div>
+
+                  <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Voter Searches & Fetches</span>
+                    <div className="text-2xl font-black text-amber-700 mt-2">
+                      {userDetailsData?.summary?.totalFetchesCount || 0}
+                    </div>
+                    <span className="text-[11px] text-amber-600/80 font-medium mt-1">Total fetch requests</span>
+                  </div>
+                </div>
+
+                {/* Tab Navigation */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <button
+                      onClick={() => setDetailsTab('spending')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        detailsTab === 'spending'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      <span>🖨️</span>
+                      <span>Credit Spent (Print Logs)</span>
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${detailsTab === 'spending' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                        {userDetailsData?.prints?.length || 0}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setDetailsTab('fetches')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        detailsTab === 'fetches'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      <span>🔍</span>
+                      <span>Fetch History</span>
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${detailsTab === 'fetches' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                        {userDetailsData?.fetches?.length || 0}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setDetailsTab('ledger')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        detailsTab === 'ledger'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      <span>💳</span>
+                      <span>Recharge & Wallet Ledger</span>
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${detailsTab === 'ledger' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                        {userDetailsData?.creditRequests?.length || 0}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setDetailsTab('profile')}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        detailsTab === 'profile'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      <span>👤</span>
+                      <span>User Profile</span>
+                    </button>
+                  </div>
+
+                  {/* Search input for filtering tables */}
+                  {(detailsTab === 'spending' || detailsTab === 'fetches') && (
+                    <div className="relative min-w-[200px]">
+                      <input
+                        type="text"
+                        placeholder="Search records..."
+                        value={detailsSearchQuery}
+                        onChange={(e) => setDetailsSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <svg className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* TAB 1: Credit Spent (Print Records) */}
+                {detailsTab === 'spending' && (
+                  <div>
+                    {(() => {
+                      const prints = (userDetailsData?.prints || []).filter(p => {
+                        if (!detailsSearchQuery) return true;
+                        const q = detailsSearchQuery.toLowerCase();
+                        return (
+                          (p.voter_name && p.voter_name.toLowerCase().includes(q)) ||
+                          (p.option_type && p.option_type.toLowerCase().includes(q)) ||
+                          (p.panchayat && p.panchayat.toLowerCase().includes(q)) ||
+                          (p.assembly && p.assembly.toLowerCase().includes(q)) ||
+                          (p.district && p.district.toLowerCase().includes(q)) ||
+                          (p.part_no && String(p.part_no).toLowerCase().includes(q))
+                        );
+                      });
+
+                      if (prints.length === 0) {
+                        return (
+                          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-10 text-center">
+                            <span className="text-3xl block mb-2">🖨️</span>
+                            <p className="text-slate-600 font-bold text-sm">No credit spending / print records found.</p>
+                            <p className="text-slate-400 text-xs mt-1">
+                              {detailsSearchQuery ? 'Try clearing your search query.' : 'This user has not yet spent credit on printing slips or directories.'}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider">
+                                <th className="p-3">Date & Time</th>
+                                <th className="p-3">Option / Service</th>
+                                <th className="p-3">Voter / Part Details</th>
+                                <th className="p-3">Location</th>
+                                <th className="p-3 text-center">Pages / Slips</th>
+                                <th className="p-3 text-center">Photo Mode</th>
+                                <th className="p-3 text-right">Cost Deducted</th>
+                                <th className="p-3 text-right">Balance After</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {prints.map(p => (
+                                <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
+                                  <td className="p-3 text-slate-500 whitespace-nowrap font-mono">
+                                    <div>{new Date(p.timestamp).toLocaleDateString()}</div>
+                                    <div className="text-[10px] text-slate-400">{new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+                                  </td>
+                                  <td className="p-3 font-bold text-slate-800">
+                                    <span className="inline-block px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/60 font-semibold text-[11px]">
+                                      {p.option_type || 'Slip Generation'}
+                                    </span>
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="font-bold text-slate-800">{p.voter_name || 'Voter Slips'}</div>
+                                    <div className="text-[11px] text-slate-500 font-mono">
+                                      Part: {p.part_no || '—'} | Sr: {p.serial_no || '—'} | Ward: {p.ward_no || '—'}
+                                    </div>
+                                  </td>
+                                  <td className="p-3 text-slate-600">
+                                    <div className="font-medium text-slate-800">{p.panchayat || p.assembly || p.district || '—'}</div>
+                                    <div className="text-[10px] text-slate-400">
+                                      {[p.district, p.state].filter(Boolean).join(', ') || '—'}
+                                    </div>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="font-bold text-slate-800">{p.pages_count || 1} p</span>
+                                    <span className="text-slate-400 text-[10px] block">({p.slips_count || 8} slips)</span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    {p.has_image ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        📷 With Photo
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                        No Photo
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-right font-mono font-black text-rose-600 text-sm whitespace-nowrap">
+                                    -₹{Number(p.cost || 0).toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-right font-mono font-bold text-slate-700 whitespace-nowrap">
+                                    {p.balance_after !== null && p.balance_after !== undefined ? `₹${Number(p.balance_after).toFixed(2)}` : '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* TAB 2: Voter Search & Fetch History */}
+                {detailsTab === 'fetches' && (
+                  <div>
+                    {(() => {
+                      const fetches = (userDetailsData?.fetches || []).filter(f => {
+                        if (!detailsSearchQuery) return true;
+                        const q = detailsSearchQuery.toLowerCase();
+                        return (
+                          (f.category && f.category.toLowerCase().includes(q)) ||
+                          (f.panchayat && f.panchayat.toLowerCase().includes(q)) ||
+                          (f.assembly && f.assembly.toLowerCase().includes(q)) ||
+                          (f.district && f.district.toLowerCase().includes(q)) ||
+                          (f.village && f.village.toLowerCase().includes(q))
+                        );
+                      });
+
+                      if (fetches.length === 0) {
+                        return (
+                          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-10 text-center">
+                            <span className="text-3xl block mb-2">🔍</span>
+                            <p className="text-slate-600 font-bold text-sm">No voter search or fetch records found.</p>
+                            <p className="text-slate-400 text-xs mt-1">This user has not searched or fetched voter lists yet.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider">
+                                <th className="p-3">Date & Time</th>
+                                <th className="p-3">Category</th>
+                                <th className="p-3">State & District</th>
+                                <th className="p-3">Assembly / Samiti</th>
+                                <th className="p-3">Panchayat / Local Body</th>
+                                <th className="p-3">Village / Ward / Booth</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {fetches.map(f => (
+                                <tr key={f.id} className="hover:bg-slate-50/70 transition-colors">
+                                  <td className="p-3 text-slate-500 whitespace-nowrap font-mono">
+                                    <div>{new Date(f.timestamp).toLocaleDateString()}</div>
+                                    <div className="text-[10px] text-slate-400">{new Date(f.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                  </td>
+                                  <td className="p-3 font-bold text-slate-800">
+                                    <span className="capitalize px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">
+                                      {f.category}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-slate-700">
+                                    <div className="font-semibold">{f.district || '—'}</div>
+                                    <div className="text-[10px] text-slate-400">{f.state || '—'}</div>
+                                  </td>
+                                  <td className="p-3 font-semibold text-slate-800">{f.assembly || '—'}</td>
+                                  <td className="p-3 font-bold text-slate-800">{f.panchayat || '—'}</td>
+                                  <td className="p-3 text-slate-500 font-mono text-[11px]">
+                                    {[f.village !== '-' ? f.village : null, f.ward !== '-' ? `Ward ${f.ward}` : null, f.booth !== '-' ? `Booth ${f.booth}` : null].filter(Boolean).join(' • ') || '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* TAB 3: Recharge Requests & Wallet Ledger */}
+                {detailsTab === 'ledger' && (
+                  <div className="space-y-6">
+                    {/* All Credit Recharge Requests */}
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <span>💳</span> All UPI Recharge Requests ({userDetailsData?.creditRequests?.length || 0})
+                      </h4>
+                      {(!userDetailsData?.creditRequests || userDetailsData.creditRequests.length === 0) ? (
+                        <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-6 text-center text-slate-500 text-xs">
+                          No credit requests recorded.
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase">
+                                <th className="p-3">Request Date</th>
+                                <th className="p-3">Payment UTR</th>
+                                <th className="p-3">Requested</th>
+                                <th className="p-3">Approved</th>
+                                <th className="p-3">Status</th>
+                                <th className="p-3">Admin Note / Processed At</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {userDetailsData.creditRequests.map(r => (
+                                <tr key={r.id} className="hover:bg-slate-50/50">
+                                  <td className="p-3 text-slate-500 whitespace-nowrap">
+                                    {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </td>
+                                  <td className="p-3 font-mono font-bold text-blue-700 select-all">{r.utr}</td>
+                                  <td className="p-3 font-mono font-bold text-slate-800">₹{Number(r.amount).toFixed(2)}</td>
+                                  <td className="p-3 font-mono font-bold text-emerald-700">
+                                    {r.approvedAmount ? `₹${Number(r.approvedAmount).toFixed(2)}` : '—'}
+                                  </td>
+                                  <td className="p-3">
+                                    {r.status === 'approved' ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        ✓ Approved
+                                      </span>
+                                    ) : r.status === 'pending' ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                        ⏳ Pending
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                        ✕ Rejected
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-slate-500">
+                                    {r.rejectionReason || r.notes || (r.approvedAt ? `Approved on ${new Date(r.approvedAt).toLocaleDateString()}` : '—')}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Credit Ledger History */}
+                    {userDetailsData?.user?.creditHistory && userDetailsData.user.creditHistory.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                          <span>📋</span> Internal Balance Ledger ({userDetailsData.user.creditHistory.length})
+                        </h4>
+                        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase">
+                                <th className="p-3">Timestamp</th>
+                                <th className="p-3">Type</th>
+                                <th className="p-3">Description</th>
+                                <th className="p-3 text-right">Amount</th>
+                                <th className="p-3 text-right">Balance After</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {userDetailsData.user.creditHistory.map(entry => (
+                                <tr key={entry.id} className="hover:bg-slate-50/50">
+                                  <td className="p-3 text-slate-500 whitespace-nowrap font-mono">
+                                    {new Date(entry.timestamp).toLocaleDateString()} {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </td>
+                                  <td className="p-3">
+                                    <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-[10px] uppercase ${
+                                      entry.amount >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                    }`}>
+                                      {entry.type}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-slate-700 font-medium">{entry.description}</td>
+                                  <td className={`p-3 text-right font-mono font-bold ${entry.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                    {entry.amount >= 0 ? `+₹${Number(entry.amount).toFixed(2)}` : `-₹${Math.abs(Number(entry.amount)).toFixed(2)}`}
+                                  </td>
+                                  <td className="p-3 text-right font-mono font-bold text-slate-800">
+                                    ₹{Number(entry.balanceAfter).toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 4: User Profile & Security Details */}
+                {detailsTab === 'profile' && (
+                  <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-6 space-y-4">
+                    <h4 className="text-sm font-bold text-slate-800 border-b pb-2">User Registration & Account Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-500 font-medium">Full Name:</span>
+                        <span className="font-bold text-slate-800">{userDetailsData?.user?.name || '—'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-500 font-medium">Registered Phone:</span>
+                        <span className="font-mono font-bold text-slate-800">{userDetailsData?.user?.phone || '—'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-500 font-medium">Email / Username:</span>
+                        <span className="font-mono font-bold text-slate-800">{userDetailsData?.user?.email || '—'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-500 font-medium">Registration Payment UTR:</span>
+                        <span className="font-mono font-bold text-blue-700">{userDetailsData?.user?.utr || '—'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-500 font-medium">Account Status:</span>
+                        <span className="font-bold uppercase text-slate-800">{userDetailsData?.user?.status || 'active'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-500 font-medium">System Role:</span>
+                        <span className="font-bold uppercase text-slate-800">{userDetailsData?.user?.role || 'user'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-500 font-medium">Current Balance:</span>
+                        <span className="font-bold text-emerald-700 text-sm">₹{(Number(userDetailsData?.user?.credits) || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs text-slate-400">
+                Photo ID Voter Management System • Complete User Activity & Spending Record
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrintStatement}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <span>🖨️</span>
+                  <span>Print Activity Statement</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedUserDetail(null);
+                    setUserDetailsData(null);
+                    setActiveRequestDetail(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-700 text-xs transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STANDALONE PRINTABLE STATEMENT FOR BROWSER PRINT --- */}
+      {userDetailsData && (
+        <div id="printable-user-statement" className="hidden print:block font-sans text-black">
+          <div style={{ borderBottom: '2px solid #000', paddingBottom: '12px', marginBottom: '20px' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 4px 0' }}>PHOTO ID VOTER SLIP SERVICE</h1>
+            <h2 style={{ fontSize: '14px', margin: 0, color: '#333' }}>CUSTOMER CREDIT USAGE & ACTIVITY STATEMENT</h2>
+            <div style={{ fontSize: '11px', marginTop: '6px', color: '#666' }}>
+              Generated On: {new Date().toLocaleString()}
+            </div>
+          </div>
+
+          {/* User Profile Box */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', marginBottom: '16px' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{userDetailsData?.user?.name || 'User'}</div>
+              <div style={{ fontSize: '12px' }}>Phone: {userDetailsData?.user?.phone || '—'}</div>
+              <div style={{ fontSize: '12px' }}>Email: {userDetailsData?.user?.email || '—'}</div>
+              <div style={{ fontSize: '12px' }}>Status: {userDetailsData?.user?.status || 'Active'}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11px', color: '#666' }}>Current Wallet Balance:</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#047857' }}>
+                ₹{(Number(userDetailsData?.summary?.currentCredits ?? userDetailsData?.user?.credits) || 0).toFixed(2)}
+              </div>
+              <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                Total Recharged: ₹{(Number(userDetailsData?.summary?.totalApprovedCredits) || 0).toFixed(2)}
+              </div>
+              <div style={{ fontSize: '11px' }}>
+                Total Spent: ₹{(Number(userDetailsData?.summary?.totalSpent) || 0).toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Credit Spending Breakdown (Print Records) */}
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px' }}>
+              CREDIT SPENDING BREAKDOWN (PRINT & SLIP GENERATION) ({userDetailsData?.prints?.length || 0})
+            </h3>
+            {(!userDetailsData?.prints || userDetailsData.prints.length === 0) ? (
+              <div style={{ fontSize: '11px', fontStyle: 'italic', padding: '8px 0' }}>No print or credit deduction records.</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                <thead>
+                  <tr style={{ background: '#f3f4f6', borderBottom: '1px solid #000', textAlign: 'left' }}>
+                    <th style={{ padding: '6px 4px' }}>Date & Time</th>
+                    <th style={{ padding: '6px 4px' }}>Option / Job</th>
+                    <th style={{ padding: '6px 4px' }}>Voter / Part Info</th>
+                    <th style={{ padding: '6px 4px' }}>Location</th>
+                    <th style={{ padding: '6px 4px', textAlign: 'center' }}>Pages / Slips</th>
+                    <th style={{ padding: '6px 4px', textAlign: 'right' }}>Amount Deducted</th>
+                    <th style={{ padding: '6px 4px', textAlign: 'right' }}>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userDetailsData.prints.map((p, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '6px 4px', whiteSpace: 'nowrap' }}>{new Date(p.timestamp).toLocaleString()}</td>
+                      <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>{p.option_type || 'Slip'}</td>
+                      <td style={{ padding: '6px 4px' }}>{p.voter_name || '—'} {p.part_no ? `(Part ${p.part_no})` : ''}</td>
+                      <td style={{ padding: '6px 4px' }}>{[p.panchayat || p.assembly, p.district].filter(Boolean).join(', ') || '—'}</td>
+                      <td style={{ padding: '6px 4px', textAlign: 'center' }}>{p.pages_count || 1}p / {p.slips_count || 8}s {p.has_image ? '(Photo)' : ''}</td>
+                      <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 'bold' }}>-₹{Number(p.cost || 0).toFixed(2)}</td>
+                      <td style={{ padding: '6px 4px', textAlign: 'right' }}>{p.balance_after !== null && p.balance_after !== undefined ? `₹${Number(p.balance_after).toFixed(2)}` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Location Fetches Table */}
+          {userDetailsData?.fetches && userDetailsData.fetches.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px' }}>
+                VOTER LOCATION SEARCHES & FETCH RECORDS ({userDetailsData.fetches.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                <thead>
+                  <tr style={{ background: '#f3f4f6', borderBottom: '1px solid #000', textAlign: 'left' }}>
+                    <th style={{ padding: '6px 4px' }}>Date & Time</th>
+                    <th style={{ padding: '6px 4px' }}>Category</th>
+                    <th style={{ padding: '6px 4px' }}>District</th>
+                    <th style={{ padding: '6px 4px' }}>Assembly / Samiti</th>
+                    <th style={{ padding: '6px 4px' }}>Panchayat</th>
+                    <th style={{ padding: '6px 4px' }}>Village / Ward / Booth</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userDetailsData.fetches.slice(0, 50).map((f, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '6px 4px' }}>{new Date(f.timestamp).toLocaleString()}</td>
+                      <td style={{ padding: '6px 4px', textTransform: 'capitalize' }}>{f.category}</td>
+                      <td style={{ padding: '6px 4px' }}>{f.district || '—'}</td>
+                      <td style={{ padding: '6px 4px' }}>{f.assembly || '—'}</td>
+                      <td style={{ padding: '6px 4px' }}>{f.panchayat || '—'}</td>
+                      <td style={{ padding: '6px 4px' }}>{[f.village !== '-' ? f.village : null, f.ward !== '-' ? `Ward ${f.ward}` : null, f.booth !== '-' ? `Booth ${f.booth}` : null].filter(Boolean).join(' • ') || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Recharge History Table */}
+          {userDetailsData?.creditRequests && userDetailsData.creditRequests.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px' }}>
+                UPI RECHARGE & WALLET TOP-UP HISTORY ({userDetailsData.creditRequests.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                <thead>
+                  <tr style={{ background: '#f3f4f6', borderBottom: '1px solid #000', textAlign: 'left' }}>
+                    <th style={{ padding: '6px 4px' }}>Date</th>
+                    <th style={{ padding: '6px 4px' }}>UTR Number</th>
+                    <th style={{ padding: '6px 4px' }}>Requested Amount</th>
+                    <th style={{ padding: '6px 4px' }}>Approved Amount</th>
+                    <th style={{ padding: '6px 4px' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userDetailsData.creditRequests.map((r, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '6px 4px' }}>{new Date(r.createdAt).toLocaleString()}</td>
+                      <td style={{ padding: '6px 4px', fontFamily: 'monospace' }}>{r.utr}</td>
+                      <td style={{ padding: '6px 4px' }}>₹{Number(r.amount).toFixed(2)}</td>
+                      <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>{r.approvedAmount ? `₹${Number(r.approvedAmount).toFixed(2)}` : '—'}</td>
+                      <td style={{ padding: '6px 4px', textTransform: 'uppercase' }}>{r.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div style={{ borderTop: '1px solid #000', paddingTop: '8px', fontSize: '10px', textAlign: 'center', color: '#666', marginTop: '20px' }}>
+            This is an official computer-generated activity statement for user {userDetailsData?.user?.name} ({userDetailsData?.user?.phone || '—'}).
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default AdminUsers;
+

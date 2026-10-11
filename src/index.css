@@ -34,3 +34,25 @@ body { top: 0 !important; }
 #goog-gt-tt { display: none !important; }
 .goog-te-banner-frame { display: none !important; }
 .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
+
+/* Print Statement Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-user-statement,
+  #printable-user-statement * {
+    visibility: visible;
+  }
+  #printable-user-statement {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 24px;
+    background: #ffffff !important;
+    color: #000000 !important;
+    display: block !important;
+  }
+}
