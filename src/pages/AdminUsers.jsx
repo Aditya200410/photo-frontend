@@ -359,21 +359,21 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="w-full max-w-6xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 sm:p-8">
+    <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-4 sm:p-6 md:p-8 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b pb-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">User & Credit Management</h2>
-          <p className="text-slate-500 text-sm mt-1">Verify payment UTRs, approve recharge requests, and manage member wallets.</p>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 tracking-tight">User & Credit Management</h2>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1">Verify payment UTRs, approve recharge requests, and manage member wallets.</p>
         </div>
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200/70 rounded-2xl px-4 py-2 text-xs font-semibold text-emerald-800 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200/70 rounded-2xl px-3.5 py-2 text-xs font-semibold text-emerald-800 self-start sm:self-auto shrink-0">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
           Rates: {(siteSettings?.rateWithoutImage ?? 0.10) * 100}p (no image) | {(siteSettings?.rateWithImage ?? 0.12) * 100}p (with image)
         </div>
       </div>
 
       {message && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl font-medium flex items-center gap-3 shadow-sm">
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl font-medium flex items-center gap-3 shadow-sm text-sm">
           <svg className="w-5 h-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -382,16 +382,16 @@ const AdminUsers = () => {
       )}
 
       {errorMessage && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl font-medium">
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl font-medium text-sm">
           {errorMessage}
         </div>
       )}
 
       {/* Main Tabs Navigation */}
-      <div className="flex items-center gap-2 mb-6 border-b pb-4">
+      <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4 overflow-x-auto custom-scrollbar flex-nowrap sm:flex-wrap">
         <button
           onClick={() => setActiveAdminTab('requests')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all shrink-0 ${
             activeAdminTab === 'requests'
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -400,7 +400,7 @@ const AdminUsers = () => {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Credit Increase Requests
+          <span>Credit Increase Requests</span>
           {pendingCreditRequests.length > 0 && (
             <span className={`px-2 py-0.5 rounded-full text-xs font-black ${
               activeAdminTab === 'requests' ? 'bg-amber-400 text-slate-900' : 'bg-amber-500 text-white animate-pulse'
@@ -412,7 +412,7 @@ const AdminUsers = () => {
 
         <button
           onClick={() => setActiveAdminTab('users')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 sm:px-5 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all shrink-0 ${
             activeAdminTab === 'users'
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -421,7 +421,7 @@ const AdminUsers = () => {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          Users & Approvals
+          <span>Users & Approvals</span>
           {pendingUsers.length > 0 && (
             <span className={`px-2 py-0.5 rounded-full text-xs font-black ${
               activeAdminTab === 'users' ? 'bg-amber-400 text-slate-900' : 'bg-amber-500 text-white'
@@ -484,7 +484,7 @@ const AdminUsers = () => {
                           <div>{new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                           {r.notes && <div className="text-slate-400 italic mt-0.5 max-w-xs truncate">"{r.notes}"</div>}
                         </td>
-                        <td className="p-3.5 text-right space-x-2">
+                        <td className="p-3.5 text-right whitespace-nowrap space-x-2">
                           <button
                             onClick={() => handleViewUserDetails(r.userId || r.userPhone || r.userEmail, r)}
                             className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
@@ -699,7 +699,7 @@ const AdminUsers = () => {
                             <span>₹{(Number(u.credits) || 0).toFixed(2)}</span>
                           </div>
                         </td>
-                        <td className="p-3.5 text-right space-x-2">
+                        <td className="p-3.5 text-right whitespace-nowrap space-x-2">
                           <button 
                             onClick={() => handleViewUserDetails(u.id || u.phone || u.email)}
                             className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1.5"

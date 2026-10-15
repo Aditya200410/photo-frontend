@@ -126,7 +126,7 @@ function AdminAddExcelPanchayat() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-4 md:p-8 font-sans">
+    <div className="w-full max-w-5xl mx-auto py-2 sm:py-6 font-sans">
       <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative mb-8">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-violet-500 to-purple-600"></div>
         <div className="p-6 md:p-10">

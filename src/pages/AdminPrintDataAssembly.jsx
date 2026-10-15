@@ -33,10 +33,10 @@ function AdminPrintDataAssembly() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-3 sm:p-6 md:p-8 font-sans">
-      <div className="w-full max-w-7xl bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+    <div className="w-full max-w-7xl mx-auto py-2 sm:py-6 font-sans">
+      <div className="w-full bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-blue-700"></div>
-        <div className="p-4 sm:p-8 md:p-12">
+        <div className="p-4 sm:p-6 md:p-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Assembly Print Records</h2>

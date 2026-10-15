@@ -69,12 +69,25 @@ const AdminProtectedRoute = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full bg-white p-8 border border-gray-300 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Admin Login</h2>
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-900 font-sans relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div className="max-w-md w-full bg-white/95 backdrop-blur-xl p-6 sm:p-10 border border-white/20 rounded-3xl shadow-2xl relative z-10 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-xl mx-auto mb-3 shadow-lg shadow-blue-500/30">
+            A
+          </div>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Admin Authentication</h2>
+          <p className="text-xs text-slate-500 mt-1">Please enter your administrative master password.</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-slate-700 text-xs font-bold mb-1.5 uppercase tracking-wider" htmlFor="password">
               Password
             </label>
             <input
@@ -82,18 +95,24 @@ const AdminProtectedRoute = ({ children }) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 text-slate-800 transition-all text-sm font-medium"
               placeholder="Enter admin password"
               required
             />
           </div>
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+          {error && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl">
+              {error}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full text-white font-bold py-2 px-4 rounded transition duration-200 ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+            className={`w-full text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-200 text-sm active:scale-95 ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
           >
-            {isLoading ? 'Verifying...' : 'Login'}
+            {isLoading ? 'Verifying access...' : 'Authenticate & Enter'}
           </button>
         </form>
       </div>

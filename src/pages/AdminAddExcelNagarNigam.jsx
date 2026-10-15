@@ -125,10 +125,10 @@ function AdminAddExcelNagarNigam() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-4 md:p-8 font-sans">
+    <div className="w-full max-w-5xl mx-auto py-2 sm:py-6 font-sans">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative mb-8">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 to-emerald-700"></div>
-        <div className="p-8 md:p-12">
+        <div className="p-4 sm:p-6 md:p-10">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Upload Nagar Nigam Data</h2>

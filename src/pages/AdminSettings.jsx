@@ -72,14 +72,35 @@ function AdminSettings() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="w-full py-16 flex flex-col items-center justify-center gap-3">
+        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+        <p className="text-slate-500 font-medium text-sm">Loading site settings...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12 font-sans">
-      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-100 p-8 md:p-12">
-        <h1 className="text-3xl font-bold text-slate-800 mb-8">Site Settings</h1>
+    <div className="w-full max-w-5xl mx-auto py-2 sm:py-6 font-sans">
+      <div className="w-full bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-4 sm:p-6 md:p-10 relative overflow-hidden">
+        {/* Top Decorative Gradient */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">Site Settings</h1>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">Configure portal graphics, UPI recharge credentials, and print billing rates.</p>
+          </div>
+          <button 
+            onClick={saveUrlSettings}
+            className="self-start sm:self-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold rounded-xl transition shadow-md shadow-blue-500/20 active:scale-95"
+          >
+            Save All Changes
+          </button>
+        </div>
         
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Assembly Image */}
           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
             <h2 className="text-xl font-bold text-slate-700 mb-4">Assembly Image</h2>
