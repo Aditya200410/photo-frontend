@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
+import { getUserToken, logout } from '../utils/auth';
 
 function ContactSupport() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -34,9 +35,9 @@ function ContactSupport() {
 
   // Fetch current user details
   useEffect(() => {
-    const token = localStorage.getItem('userToken');
+    const token = getUserToken();
     if (!token) {
-      navigate('/login');
+      logout('/login');
       return;
     }
     fetch(`${API_BASE_URL}/api/me`, {
@@ -44,8 +45,7 @@ function ContactSupport() {
     })
       .then(res => {
         if (res.status === 401) {
-          localStorage.removeItem('userToken');
-          navigate('/login');
+          logout('/login');
           return null;
         }
         if (!res.ok) return null;
@@ -271,9 +271,7 @@ function ContactSupport() {
           {/* Logout Button in Bottom Sidebar */}
           <button
             onClick={() => {
-              localStorage.removeItem('userToken');
-              localStorage.removeItem('token');
-              window.location.href = '/login';
+              logout('/login');
             }}
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/30 transition-all text-xs font-bold active:scale-[0.98] shadow-sm cursor-pointer"
           >

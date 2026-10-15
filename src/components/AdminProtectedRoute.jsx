@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import API_BASE_URL from '../config';
+import { isAdminLoggedIn, setAuthSession } from '../utils/auth';
 
 const AdminProtectedRoute = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    sessionStorage.getItem('isAdmin') === 'true'
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(() => isAdminLoggedIn());
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setIsAuthenticated(isAdminLoggedIn());
+    };
+    window.addEventListener('auth-state-changed', handleAuthChange);
+    window.addEventListener('auth-logout', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-state-changed', handleAuthChange);
+      window.removeEventListener('auth-logout', handleAuthChange);
+    };
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -16,7 +27,7 @@ const AdminProtectedRoute = ({ children }) => {
 
     // 1. Check if client-side environment variable matches
     if (clientAdminPassword && password === clientAdminPassword) {
-      sessionStorage.setItem('isAdmin', 'true');
+      setAuthSession({ role: 'admin', isAdmin: true });
       setIsAuthenticated(true);
       return;
     }
@@ -32,11 +43,7 @@ const AdminProtectedRoute = ({ children }) => {
       const data = await res.json().catch(() => null);
 
       if (res.ok && data?.success) {
-        sessionStorage.setItem('isAdmin', 'true');
-        if (data.token) {
-          localStorage.setItem('adminToken', data.token);
-          localStorage.setItem('userToken', data.token);
-        }
+        setAuthSession({ token: data.token, role: 'admin', isAdmin: true });
         setIsAuthenticated(true);
       } else {
         if (!clientAdminPassword && data?.error && data.error.includes('not configured')) {

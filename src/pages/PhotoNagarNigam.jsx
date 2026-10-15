@@ -17,6 +17,7 @@ function PhotoNagarNigam({ onBack }) {
 
   const [voters, setVoters] = useState([]);
   const [filters, setFilters] = useState({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [displayedVoters, setDisplayedVoters] = useState([]);
   const [pageCount, setPageCount] = useState(1);
   const itemsPerPage = 10;
@@ -222,7 +223,9 @@ function PhotoNagarNigam({ onBack }) {
       url.searchParams.append('ward', wardNumber);
       url.searchParams.append('booth', boothNumber);
 
-      const res = await fetch(url.toString(), { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } });
+      const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch(url.toString(), { headers });
       const data = await res.json();
 
       if (data.error) {
@@ -503,102 +506,137 @@ function PhotoNagarNigam({ onBack }) {
                 </div>
 
                 {/* Filter Deck */}
-                <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/90 mb-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                      <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                      </svg>
-                      Filter Electors Data
-                    </h4>
-                    {(filters.id || filters.name || filters.houseNo || filters.age || filters.minAge || filters.maxAge || filters.sex) && (
+                <div className="bg-slate-50/80 p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 mb-6 shadow-sm transition-all duration-200">
+                  <div 
+                    onClick={() => setIsMobileFiltersOpen(prev => !prev)}
+                    className="flex items-center justify-between cursor-pointer sm:cursor-default select-none pb-2.5 sm:pb-3.5 border-b border-slate-200/60"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider truncate">
+                        Filter Electors Data
+                      </h4>
+                      {[filters.id, filters.name, filters.houseNo, filters.age, filters.minAge, filters.maxAge, filters.sex].filter(Boolean).length > 0 && (
+                        <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 shadow-sm">
+                          {[filters.id, filters.name, filters.houseNo, filters.age, filters.minAge, filters.maxAge, filters.sex].filter(Boolean).length} Active
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {(filters.id || filters.name || filters.houseNo || filters.age || filters.minAge || filters.maxAge || filters.sex) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFilters({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
+                            setPageCount(1);
+                          }}
+                          className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer px-2 py-1 rounded-lg hover:bg-rose-50"
+                        >
+                          <span className="hidden sm:inline">Reset All Filters ✕</span>
+                          <span className="sm:hidden">Reset ✕</span>
+                        </button>
+                      )}
+
+                      {/* Mobile Accordion Toggle Chevron */}
                       <button
-                        onClick={() => {
-                          setFilters({ id: '', name: '', houseNo: '', age: '', minAge: '', maxAge: '', sex: '' });
-                          setPageCount(1);
-                        }}
-                        className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                        type="button"
+                        aria-label="Toggle Filters"
+                        className="sm:hidden w-7 h-7 rounded-lg bg-slate-200/70 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
                       >
-                        Reset All Filters ✕
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-300 ${isMobileFiltersOpen ? 'rotate-180 text-emerald-600' : 'text-slate-500'}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">SRNO / VID</label>
-                      <input
-                        type="text"
-                        placeholder="Search ID / VID..."
-                        value={filters.id}
-                        onChange={e => { setFilters(prev => ({ ...prev, id: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Voter Name</label>
-                      <input
-                        type="text"
-                        placeholder="Search Name (English or Hindi)..."
-                        value={filters.name}
-                        onChange={e => { setFilters(prev => ({ ...prev, name: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">House Number</label>
-                      <input
-                        type="text"
-                        placeholder="House Number..."
-                        value={filters.houseNo}
-                        onChange={e => { setFilters(prev => ({ ...prev, houseNo: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                      />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-3.5 pt-3 border-t border-slate-200/70">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Exact Age</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 25"
-                        value={filters.age}
-                        onChange={e => { setFilters(prev => ({ ...prev, age: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                      />
+                  <div className={`${isMobileFiltersOpen ? 'block' : 'hidden'} sm:block pt-3 sm:pt-4 transition-all duration-300`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">SRNO / VID</label>
+                        <input
+                          type="text"
+                          placeholder="Search ID / VID..."
+                          value={filters.id}
+                          onChange={e => { setFilters(prev => ({ ...prev, id: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Voter Name</label>
+                        <input
+                          type="text"
+                          placeholder="Search Name (English or Hindi)..."
+                          value={filters.name}
+                          onChange={e => { setFilters(prev => ({ ...prev, name: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">House Number</label>
+                        <input
+                          type="text"
+                          placeholder="House Number..."
+                          value={filters.houseNo}
+                          onChange={e => { setFilters(prev => ({ ...prev, houseNo: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Min Age</label>
-                      <input
-                        type="number"
-                        placeholder="Min..."
-                        value={filters.minAge}
-                        onChange={e => { setFilters(prev => ({ ...prev, minAge: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Max Age</label>
-                      <input
-                        type="number"
-                        placeholder="Max..."
-                        value={filters.maxAge}
-                        onChange={e => { setFilters(prev => ({ ...prev, maxAge: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Gender / Sex</label>
-                      <select
-                        value={filters.sex}
-                        onChange={e => { setFilters(prev => ({ ...prev, sex: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                      >
-                        <option value="">All Genders</option>
-                        <option value="M">Male (पुरुष)</option>
-                        <option value="F">Female (महिला)</option>
-                      </select>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-3.5 pt-3 border-t border-slate-200/70">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Exact Age</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 25"
+                          value={filters.age}
+                          onChange={e => { setFilters(prev => ({ ...prev, age: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Min Age</label>
+                        <input
+                          type="number"
+                          placeholder="Min..."
+                          value={filters.minAge}
+                          onChange={e => { setFilters(prev => ({ ...prev, minAge: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Max Age</label>
+                        <input
+                          type="number"
+                          placeholder="Max..."
+                          value={filters.maxAge}
+                          onChange={e => { setFilters(prev => ({ ...prev, maxAge: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Gender / Sex</label>
+                        <select
+                          value={filters.sex}
+                          onChange={e => { setFilters(prev => ({ ...prev, sex: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        >
+                          <option value="">All Genders</option>
+                          <option value="M">Male (पुरुष)</option>
+                          <option value="F">Female (महिला)</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import API_BASE_URL from '../config';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getAdminToken } from '../utils/auth';
 
 function Admin() {
   const [analytics, setAnalytics] = useState({
@@ -21,7 +22,7 @@ function Admin() {
         const analyticsData = await analyticsRes.json();
         setAnalytics(analyticsData);
 
-        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        const token = getAdminToken();
         const usersRes = await fetch(`${API_BASE_URL}/api/admin/users`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });

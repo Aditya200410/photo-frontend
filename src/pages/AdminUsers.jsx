@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API_BASE_URL from '../config';
+import { getAdminToken } from '../utils/auth';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -37,7 +38,7 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
-        headers: { 'Authorization': 'Bearer DUMMY' }
+        headers: { 'Authorization': `Bearer ${getAdminToken() || ''}` }
       });
       if (!res.ok) {
         throw new Error(`Failed to load users (status ${res.status})`);
@@ -55,7 +56,7 @@ const AdminUsers = () => {
   const fetchCreditRequests = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/credit-requests`, {
-        headers: { 'Authorization': 'Bearer DUMMY' }
+        headers: { 'Authorization': `Bearer ${getAdminToken() || ''}` }
       });
       if (!res.ok) {
         throw new Error(`Failed to load credit requests (status ${res.status})`);
@@ -112,7 +113,7 @@ const AdminUsers = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer DUMMY'
+          'Authorization': `Bearer ${getAdminToken() || ''}`
         },
         body: JSON.stringify({ 
           userId: approvingUser.id,
@@ -157,7 +158,7 @@ const AdminUsers = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer DUMMY'
+          'Authorization': `Bearer ${getAdminToken() || ''}`
         },
         body: JSON.stringify({ 
           userId: managingCreditUser.id,
@@ -192,7 +193,7 @@ const AdminUsers = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer DUMMY'
+          'Authorization': `Bearer ${getAdminToken() || ''}`
         },
         body: JSON.stringify({ userId, block: !isBlocked })
       });
@@ -226,7 +227,7 @@ const AdminUsers = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer DUMMY'
+          'Authorization': `Bearer ${getAdminToken() || ''}`
         },
         body: JSON.stringify({
           requestId: approvingRequest.id,
@@ -260,7 +261,7 @@ const AdminUsers = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer DUMMY'
+          'Authorization': `Bearer ${getAdminToken() || ''}`
         },
         body: JSON.stringify({
           requestId: request.id,
@@ -288,7 +289,7 @@ const AdminUsers = () => {
     setDetailsSearchQuery('');
 
     try {
-      const token = localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY';
+      const token = getAdminToken() || '';
       const res = await fetch(`${API_BASE_URL}/api/admin/user-details/${encodeURIComponent(lookupId)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });

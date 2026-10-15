@@ -1,6 +1,7 @@
 import API_BASE_URL from '../config';
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
+import { getUserToken, getAdminToken } from './auth';
 
 /**
  * Triggers instant browser window.print dialog for A4 slips.
@@ -207,13 +208,16 @@ export const generatePdfFromHtml = async ({
  */
 export const logPrintTransaction = async (payload) => {
   try {
-    const token = localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY';
+    const token = getUserToken() || getAdminToken();
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     const res = await fetch(`${API_BASE_URL}/api/prints`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers,
       body: JSON.stringify(payload)
     });
     if (res.ok) {

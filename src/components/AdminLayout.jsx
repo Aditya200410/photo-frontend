@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { logout } from '../utils/auth';
 
 function AdminLayout() {
   const location = useLocation();
@@ -7,10 +8,7 @@ function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('adminToken');
-    sessionStorage.removeItem('isAdmin');
-    navigate('/');
+    logout('/login');
   };
 
   const closeSidebar = () => setIsSidebarOpen(false);

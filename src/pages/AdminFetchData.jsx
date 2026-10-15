@@ -1,6 +1,7 @@
 import API_BASE_URL from '../config';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getAdminToken } from '../utils/auth';
 
 function AdminFetchData() {
   const [records, setRecords] = useState([]);
@@ -19,7 +20,7 @@ function AdminFetchData() {
   useEffect(() => {
     const fetchRecords = async () => {
       try {
-        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        const token = getAdminToken();
         const res = await fetch(`${API_BASE_URL}/api/fetches`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });

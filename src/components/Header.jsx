@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { logout } from '../utils/auth';
 
 const Header = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('userToken');
-    navigate('/login');
+    logout('/login');
   };
 
   return (

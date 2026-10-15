@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API_BASE_URL from '../config';
+import { getUserToken, logout } from '../utils/auth';
 
 const Account = () => {
   const [user, setUser] = useState(null);
@@ -27,9 +28,9 @@ const Account = () => {
   const navigate = useNavigate();
 
   const fetchAccountData = async () => {
-    const token = localStorage.getItem('userToken');
+    const token = getUserToken();
     if (!token) {
-      navigate('/login');
+      logout('/login');
       return;
     }
 
@@ -41,8 +42,7 @@ const Account = () => {
 
       if (!userRes.ok) {
         if (userRes.status === 401) {
-          localStorage.removeItem('userToken');
-          navigate('/login');
+          logout('/login');
         } else {
           setError('Failed to fetch account details.');
         }
@@ -128,7 +128,7 @@ const Account = () => {
     }
 
     setIsSubmittingRecharge(true);
-    const token = localStorage.getItem('userToken');
+    const token = getUserToken();
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/user/credit-request`, {
@@ -243,6 +243,16 @@ const Account = () => {
             </svg>
             Dashboard
           </Link>
+          <button
+            onClick={() => logout('/login')}
+            className="text-rose-400 hover:text-rose-300 flex items-center gap-2 font-bold text-sm transition-colors bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2 rounded-xl border border-rose-500/20"
+            title="Log Out"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Log Out</span>
+          </button>
         </div>
       </header>
 

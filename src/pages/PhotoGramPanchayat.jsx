@@ -30,6 +30,7 @@ function PhotoGramPanchayat({ onBack }) {
     ward: '',
     village: ''
   });
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [displayedVoters, setDisplayedVoters] = useState([]);
   const [pageCount, setPageCount] = useState(1);
   const itemsPerPage = 15;
@@ -347,9 +348,9 @@ function PhotoGramPanchayat({ onBack }) {
       if (wardNumber) url.searchParams.append('ward', wardNumber);
       if (boothNumber) url.searchParams.append('booth', boothNumber);
 
-      const res = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` }
-      });
+      const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch(url.toString(), { headers });
       const data = await res.json();
 
       if (data.error) {
@@ -746,109 +747,146 @@ function PhotoGramPanchayat({ onBack }) {
                 </div>
 
                 {/* In-Page Quick Filters */}
-                <div className="bg-slate-50/80 backdrop-blur-sm p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 mb-6 shadow-sm w-full max-w-full min-w-0">
-                  <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-200/60">
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                      <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                      </svg>
-                      Filter & Search Electors
-                    </span>
-                    {(filters.id || filters.name || filters.relativeName || filters.houseNo || filters.ward || filters.sex || filters.minAge || filters.maxAge) && (
-                      <button
-                        onClick={() => {
-                          setFilters({ id: '', name: '', relativeName: '', houseNo: '', ward: '', sex: '', minAge: '', maxAge: '' });
-                          setPageCount(1);
-                        }}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <div className="bg-slate-50/80 backdrop-blur-sm p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 mb-6 shadow-sm w-full max-w-full min-w-0 transition-all duration-200">
+                  <div 
+                    onClick={() => setIsMobileFiltersOpen(prev => !prev)}
+                    className="flex items-center justify-between cursor-pointer sm:cursor-default select-none pb-2.5 sm:pb-3.5 border-b border-slate-200/60"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                         </svg>
-                        Clear Filters
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 w-full min-w-0">
-                    <div className="min-w-0">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">ID / VID Card</label>
-                      <input
-                        type="text"
-                        placeholder="Search ID..."
-                        value={filters.id}
-                        onChange={e => { setFilters(prev => ({ ...prev, id: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
-                      />
+                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider truncate">
+                        Filter & Search Electors
+                      </span>
+                      {[filters.id, filters.name, filters.relativeName, filters.houseNo, filters.ward, filters.sex, filters.minAge, filters.maxAge].filter(Boolean).length > 0 && (
+                        <span className="bg-violet-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 shadow-sm">
+                          {[filters.id, filters.name, filters.relativeName, filters.houseNo, filters.ward, filters.sex, filters.minAge, filters.maxAge].filter(Boolean).length} Active
+                        </span>
+                      )}
                     </div>
-                    <div className="min-w-0">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Voter Name</label>
-                      <input
-                        type="text"
-                        placeholder="Name (EN/HI)..."
-                        value={filters.name}
-                        onChange={e => { setFilters(prev => ({ ...prev, name: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Relative Name</label>
-                      <input
-                        type="text"
-                        placeholder="Father/Husband..."
-                        value={filters.relativeName}
-                        onChange={e => { setFilters(prev => ({ ...prev, relativeName: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">House No</label>
-                      <input
-                        type="text"
-                        placeholder="House No..."
-                        value={filters.houseNo}
-                        onChange={e => { setFilters(prev => ({ ...prev, houseNo: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Filter Ward</label>
-                      <input
-                        type="text"
-                        placeholder="Ward..."
-                        value={filters.ward}
-                        onChange={e => { setFilters(prev => ({ ...prev, ward: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Gender</label>
-                      <select
-                        value={filters.sex}
-                        onChange={e => { setFilters(prev => ({ ...prev, sex: e.target.value })); setPageCount(1); }}
-                        className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm cursor-pointer truncate"
+
+                    <div className="flex items-center gap-2">
+                      {(filters.id || filters.name || filters.relativeName || filters.houseNo || filters.ward || filters.sex || filters.minAge || filters.maxAge) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFilters({ id: '', name: '', relativeName: '', houseNo: '', ward: '', sex: '', minAge: '', maxAge: '' });
+                            setPageCount(1);
+                          }}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors px-2 py-1 rounded-lg hover:bg-rose-50"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="hidden sm:inline">Clear Filters</span>
+                          <span className="sm:hidden">Clear</span>
+                        </button>
+                      )}
+
+                      {/* Mobile Accordion Toggle Chevron */}
+                      <button
+                        type="button"
+                        aria-label="Toggle Filters"
+                        className="sm:hidden w-7 h-7 rounded-lg bg-slate-200/70 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
                       >
-                        <option value="">All Genders</option>
-                        <option value="M">Male (पुरुष)</option>
-                        <option value="F">Female (महिला)</option>
-                      </select>
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-300 ${isMobileFiltersOpen ? 'rotate-180 text-violet-600' : 'text-slate-500'}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
                     </div>
-                    <div className="min-w-0">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Age Range</label>
-                      <div className="flex gap-1.5 min-w-0">
+                  </div>
+
+                  {/* Accordion Body: Collapsible on mobile, always open on sm: and up */}
+                  <div className={`${isMobileFiltersOpen ? 'block' : 'hidden'} sm:block pt-3 sm:pt-4 transition-all duration-300`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 w-full min-w-0">
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">ID / VID Card</label>
                         <input
-                          type="number"
-                          placeholder="Min"
-                          value={filters.minAge}
-                          onChange={e => { setFilters(prev => ({ ...prev, minAge: e.target.value })); setPageCount(1); }}
-                          className="w-1/2 min-w-0 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                          type="text"
+                          placeholder="Search ID..."
+                          value={filters.id}
+                          onChange={e => { setFilters(prev => ({ ...prev, id: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
                         />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Voter Name</label>
                         <input
-                          type="number"
-                          placeholder="Max"
-                          value={filters.maxAge}
-                          onChange={e => { setFilters(prev => ({ ...prev, maxAge: e.target.value })); setPageCount(1); }}
-                          className="w-1/2 min-w-0 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                          type="text"
+                          placeholder="Name (EN/HI)..."
+                          value={filters.name}
+                          onChange={e => { setFilters(prev => ({ ...prev, name: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
                         />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Relative Name</label>
+                        <input
+                          type="text"
+                          placeholder="Father/Husband..."
+                          value={filters.relativeName}
+                          onChange={e => { setFilters(prev => ({ ...prev, relativeName: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">House No</label>
+                        <input
+                          type="text"
+                          placeholder="House No..."
+                          value={filters.houseNo}
+                          onChange={e => { setFilters(prev => ({ ...prev, houseNo: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Filter Ward</label>
+                        <input
+                          type="text"
+                          placeholder="Ward..."
+                          value={filters.ward}
+                          onChange={e => { setFilters(prev => ({ ...prev, ward: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm truncate"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Gender</label>
+                        <select
+                          value={filters.sex}
+                          onChange={e => { setFilters(prev => ({ ...prev, sex: e.target.value })); setPageCount(1); }}
+                          className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm cursor-pointer truncate"
+                        >
+                          <option value="">All Genders</option>
+                          <option value="M">Male (पुरुष)</option>
+                          <option value="F">Female (महिला)</option>
+                        </select>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 truncate">Age Range</label>
+                        <div className="flex gap-1.5 min-w-0">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={filters.minAge}
+                            onChange={e => { setFilters(prev => ({ ...prev, minAge: e.target.value })); setPageCount(1); }}
+                            className="w-1/2 min-w-0 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={filters.maxAge}
+                            onChange={e => { setFilters(prev => ({ ...prev, maxAge: e.target.value })); setPageCount(1); }}
+                            className="w-1/2 min-w-0 bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 import API_BASE_URL from '../config';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getAdminToken } from '../utils/auth';
 
 function AdminPrintDataAssembly() {
   const [records, setRecords] = useState([]);
@@ -10,7 +11,7 @@ function AdminPrintDataAssembly() {
   useEffect(() => {
     const fetchRecords = async () => {
       try {
-        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        const token = getAdminToken();
         const res = await fetch(`${API_BASE_URL}/api/prints`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });

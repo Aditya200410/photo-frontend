@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API_BASE_URL from '../config';
+import { setAuthSession, isUserLoggedIn } from '../utils/auth';
 
 const Login = () => {
   const [step, setStep] = useState(1);
@@ -14,6 +15,13 @@ const Login = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isUserLoggedIn()) {
+      const origin = location.state?.from?.pathname || '/';
+      navigate(origin, { replace: true });
+    }
+  }, [navigate, location]);
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -66,12 +74,8 @@ const Login = () => {
           navigate('/payment?userId=' + data.userId + '&status=blocked');
           return;
         } else if (data.status === 'pending_payment' || data.error === 'Payment pending') {
-          // Legacy backend 403 returned: bypass forced activation and log user in
           if (data.token) {
-            localStorage.setItem('userToken', data.token);
-          } else {
-            // Set dummy user token so protected route accepts user
-            localStorage.setItem('userToken', 'user-' + (data.userId || Date.now()));
+            setAuthSession({ token: data.token, role: data.role || 'user' });
           }
           const origin = location.state?.from?.pathname || '/';
           navigate(origin);
@@ -82,7 +86,7 @@ const Login = () => {
         }
       }
       
-      localStorage.setItem('userToken', data.token);
+      setAuthSession({ token: data.token, role: data.role || 'user' });
       
       const origin = location.state?.from?.pathname || '/';
       navigate(origin);

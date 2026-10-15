@@ -4,6 +4,7 @@ import PhotoAssembly from './PhotoAssembly';
 import PhotoNagarNigam from './PhotoNagarNigam';
 import PhotoGramPanchayat from './PhotoGramPanchayat';
 import API_BASE_URL from '../config';
+import { getUserToken, logout } from '../utils/auth';
 
 
 function PhotoIndex() {
@@ -43,9 +44,9 @@ function PhotoIndex() {
   };
 
   const fetchCurrentUser = () => {
-    const token = localStorage.getItem('userToken');
+    const token = getUserToken();
     if (!token) {
-      navigate('/login');
+      logout('/login');
       return;
     }
     fetch(`${API_BASE_URL}/api/me`, {
@@ -54,8 +55,7 @@ function PhotoIndex() {
       .then(res => {
         if (res.status === 401) {
           // Token is genuinely invalid/expired
-          localStorage.removeItem('userToken');
-          navigate('/login');
+          logout('/login');
           return null;
         }
         if (!res.ok) {
@@ -318,9 +318,7 @@ function PhotoIndex() {
           {/* Logout Button */}
           <button
             onClick={() => {
-              localStorage.removeItem('userToken');
-              localStorage.removeItem('token');
-              window.location.href = '/login';
+              logout('/login');
             }}
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/30 transition-all text-xs font-bold active:scale-[0.98] shadow-sm cursor-pointer"
           >

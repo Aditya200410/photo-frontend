@@ -202,7 +202,9 @@ function PhotoAssembly({ onBack }) {
       url.searchParams.append('assembly', assemblyName);
       url.searchParams.append('booth', boothNumber);
 
-      const res = await fetch(url.toString(), { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` } });
+      const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch(url.toString(), { headers });
       const data = await res.json();
 
       if (data.error) {
