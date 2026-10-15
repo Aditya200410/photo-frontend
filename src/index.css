@@ -35,11 +35,27 @@ body { top: 0 !important; }
 .goog-te-banner-frame { display: none !important; }
 .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
 
-/* Print Statement Styles */
+/* Print Statement & Slips Styles */
+@page {
+  size: A4 portrait;
+  margin: 0mm;
+}
+
 @media print {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
   body * {
     visibility: hidden;
   }
+
+  /* User Statement Print */
   #printable-user-statement,
   #printable-user-statement * {
     visibility: visible;
@@ -54,5 +70,22 @@ body { top: 0 !important; }
     background: #ffffff !important;
     color: #000000 !important;
     display: block !important;
+  }
+
+  /* Voter Slips Print Area */
+  #printable-slip-area,
+  #printable-slip-area * {
+    visibility: visible !important;
+  }
+  #printable-slip-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    display: block !important;
+    z-index: 9999999 !important;
   }
 }

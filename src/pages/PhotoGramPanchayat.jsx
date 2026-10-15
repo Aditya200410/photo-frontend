@@ -478,17 +478,23 @@ function PhotoGramPanchayat({ onBack }) {
     setIsTemplateModalOpen(false);
     if (!selectedVoter) return;
 
+    const rawWard = selectedVoter.WARDNO || selectedVoter['PANCHAYAT WARD NO'] || selectedVoter.WARD_NO || selectedVoter['WARD NO'] || selectedVoter.WARD || selectedVoter.NWARDNO || selectedVoter._meta_ward || selectedVoter.ward;
+    const cleanWard = (rawWard && String(rawWard).trim().toLowerCase() !== 'all') ? String(rawWard).trim() : (wardNumber && String(wardNumber).trim().toLowerCase() !== 'all' ? String(wardNumber).trim() : '-');
+
+    const rawPart = selectedVoter.BOOTH_NO || selectedVoter.PARTNO || selectedVoter.PART_NO || selectedVoter['PART NO'] || selectedVoter._meta_booth || selectedVoter.booth;
+    const cleanPart = (rawPart && String(rawPart).trim().toLowerCase() !== 'all') ? String(rawPart).trim() : (boothNumber && String(boothNumber).trim().toLowerCase() !== 'all' ? String(boothNumber).trim() : '-');
+
     const mappedData = {
-      wardNo: selectedVoter.WARDNO || selectedVoter['PANCHAYAT WARD NO'] || wardNumber || '-',
-      partNo: selectedVoter.BOOTH_NO || selectedVoter.PARTNO || boothNumber || '-',
-      serialNo: selectedVoter.SERIAL_NO || selectedVoter.IDCARD || '1',
-      idNumber: selectedVoter.IDCARD || '-',
+      wardNo: cleanWard,
+      partNo: cleanPart,
+      serialNo: selectedVoter.SERIAL_NO || selectedVoter.SRNO || selectedVoter.SNO || selectedVoter.IDCARD || '1',
+      idNumber: selectedVoter.IDCARD || selectedVoter.VID || selectedVoter.EPIC || '-',
       voterName: selectedVoter.V_FNAME_EN ? `${selectedVoter.V_FNAME_EN} ${selectedVoter.V_LNAME_EN || ''}`.trim() : (selectedVoter.V_FNAME_HI || '-'),
       fatherHusbandName: selectedVoter.VR_FNAME_EN ? `${selectedVoter.VR_FNAME_EN} ${selectedVoter.VR_LNAME_EN || ''}`.trim() : (selectedVoter.VR_FNAME_HI || '-'),
       houseNo: selectedVoter.HOUSE_NO || '0',
       gender: selectedVoter.SEX === 'M' || selectedVoter.SEX === 'पुरुष' ? 'पुरुष' : (selectedVoter.SEX === 'F' || selectedVoter.SEX === 'स्त्री' ? 'स्त्री' : selectedVoter.SEX),
       age: selectedVoter.AGE || '18',
-      pollingStation: selectedVoter.PS_HI || selectedVoter.PS_EN || `${selectedVoter['PANCHAYAT NAME'] || panchayatName} - Ward ${selectedVoter.WARDNO || wardNumber}`,
+      pollingStation: selectedVoter.PS_HI || selectedVoter.PS_EN || `${selectedVoter['PANCHAYAT NAME'] || panchayatName} ${cleanWard !== '-' ? '- Ward ' + cleanWard : ''}`,
       topImage: null,
       symbolImage: null,
       symbolName: 'कमल का फूल'
@@ -1185,8 +1191,8 @@ function PhotoGramPanchayat({ onBack }) {
         onClose={() => setIsBatchPrintModalOpen(false)}
         voters={filteredVoters}
         assemblyName={panchayatName}
-        wardNo={wardNumber || 'All'}
-        boothNumber={boothNumber || 'All'}
+        wardNo={wardNumber && wardNumber !== 'All' ? wardNumber : ''}
+        boothNumber={boothNumber && boothNumber !== 'All' ? boothNumber : ''}
       />
     </>
   );

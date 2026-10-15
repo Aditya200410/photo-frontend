@@ -1,47 +1,56 @@
 import React, { forwardRef } from 'react';
 import VoterSlip from './VoterSlip';
 
-const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSerialNo, SlipComponent = VoterSlip, cardsPerPage = 8 }, ref) => {
+const A4PrintLayout = forwardRef(({ baseData = {}, pageNumber, totalPages, startSerialNo, SlipComponent = VoterSlip, cardsPerPage = 8 }, ref) => {
   // We need `cardsPerPage` slips for one A4 page
   const slips = Array.from({ length: cardsPerPage }, (_, i) => ({
     ...baseData,
     serialNo: startSerialNo + i
   }));
 
-  let gridTemplateColumns = '1fr 1fr';
   let rowsCount = 4;
-  let verticalGap = 15;
-  let horizontalGap = 20;
+  let verticalGap = 8;
+  let horizontalGap = 10;
 
   if (cardsPerPage === 4) {
     rowsCount = 2;
-    verticalGap = 20;
-    horizontalGap = 20;
+    verticalGap = 12;
+    horizontalGap = 12;
   } else if (cardsPerPage === 10) {
-    gridTemplateColumns = '1fr 1fr';
     rowsCount = 5;
-    verticalGap = 15;
-    horizontalGap = 20;
+    verticalGap = 6;
+    horizontalGap = 10;
   } else if (cardsPerPage === 12) {
-    gridTemplateColumns = '1fr 1fr';
     rowsCount = 6;
-    verticalGap = 15;
-    horizontalGap = 20;
+    verticalGap = 5;
+    horizontalGap = 8;
   }
+
+  const isLastPage = Boolean(totalPages && pageNumber >= totalPages);
+
+  // Clean ward and part (never show 'All')
+  const rawWard = baseData.wardNo && String(baseData.wardNo).trim().toLowerCase() !== 'all' ? baseData.wardNo : '-';
+  const displayWard = rawWard;
+  const rawPart = baseData.partNo && String(baseData.partNo).trim().toLowerCase() !== 'all' ? baseData.partNo : '-';
+  const displayPart = rawPart;
 
   return (
     <div 
       ref={ref}
+      className="a4-print-sheet"
       style={{
         width: '210mm',
         height: '296.5mm', // slightly less than 297mm to prevent accidental extra pages
         backgroundColor: '#ffffff',
-        padding: '5mm',
+        padding: '4.5mm',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        pageBreakAfter: 'always',
+        pageBreakAfter: isLastPage ? 'auto' : 'always',
+        breakAfter: isLastPage ? 'auto' : 'page',
+        pageBreakInside: 'avoid',
+        breakInside: 'avoid',
         margin: 0
       }}
     >
@@ -50,21 +59,24 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        paddingBottom: '2mm',
-        borderBottom: '2px solid black',
-        marginBottom: '4mm',
-        fontSize: '14pt',
+        paddingBottom: '1.5mm',
+        borderBottom: '2px solid #0f172a',
+        marginBottom: '2.5mm',
+        fontSize: '12pt',
         fontWeight: 'bold',
-        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        fontFamily: "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+        color: '#0f172a',
         flexShrink: 0
       }}>
-        <span>अजमेर नगर निगम</span>
-        <span>वार्ड न०: {baseData.wardNo}</span>
-        <span>भाग न०: {baseData.partNo}</span>
-        <span>Page {pageNumber} of {totalPages}</span>
+        <span style={{ fontSize: '13pt', fontWeight: '800' }}>
+          {baseData.title || baseData.assemblyName || baseData.cityName || 'मतदाता सूची पर्ची'}
+        </span>
+        <span style={{ fontSize: '11pt', fontWeight: '700' }}>वार्ड न०: {displayWard}</span>
+        <span style={{ fontSize: '11pt', fontWeight: '700' }}>भाग न०: {displayPart}</span>
+        <span style={{ fontSize: '10pt', color: '#475569', fontWeight: '600' }}>Page {pageNumber} of {totalPages}</span>
       </div>
 
-      {/* Actual Grid using Flexbox instead of CSS Grid for html2canvas compatibility */}
+      {/* Actual Grid */}
       <div style={{
         flex: 1,
         display: 'flex',
@@ -82,7 +94,8 @@ const A4PrintLayout = forwardRef(({ baseData, pageNumber, totalPages, startSeria
               height: `calc((100% - ${(rowsCount - 1) * verticalGap}px) / ${rowsCount})`,
               marginRight: isRightCol ? 0 : `${horizontalGap}px`,
               marginBottom: isBottomRow ? 0 : `${verticalGap}px`,
-              minHeight: 0 
+              minHeight: 0,
+              boxSizing: 'border-box'
             }}>
               <SlipComponent data={slipData} style={{ width: '100%', height: '100%' }} />
             </div>

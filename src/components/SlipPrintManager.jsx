@@ -7,12 +7,13 @@ import A4PrintLayout from './A4PrintLayout';
 import VoterSlip from './VoterSlip';
 import VoterSlipOption3 from './VoterSlipOption3';
 
+import { printViaWindowPrint, generatePdfFromHtml, logPrintTransaction } from '../utils/printService';
+
 function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
   const [pagesCount, setPagesCount] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(8);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [printState, setPrintState] = useState({ active: false, currentPage: 1 });
   const [localVoterData, setLocalVoterData] = useState(voterData);
   
   React.useEffect(() => {
@@ -24,91 +25,68 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
       setCardsPerPage(8);
     }
   }, [isOpen, optionNumber, cardsPerPage]);
-  
-  const printLayoutRef = useRef([]);
-  
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const handlePrintGenerate = async () => {
-    if (!pagesCount || pagesCount < 1) return;
+  const handlePrintGenerate = async (mode = 'print') => {
+    const isDownloadOnly = mode === 'download';
+    const numPages = Number(pagesCount) || 1;
+    if (numPages < 1) return;
+
     setIsGenerating(true);
     setProgress(0);
 
     const ReactDOMServer = await import('react-dom/server');
     const SlipComp = optionNumber === 3 ? VoterSlipOption3 : VoterSlip;
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
-
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'fixed';
-    tempContainer.style.top = '-9999px';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.width = '210mm';
-    tempContainer.style.height = '296.5mm';
-    tempContainer.style.backgroundColor = 'white';
-    document.body.appendChild(tempContainer);
-
-    for (let i = 0; i < pagesCount; i++) {
-      const pageHtml = ReactDOMServer.renderToString(
-        <A4PrintLayout 
-          baseData={localVoterData}
-          pageNumber={i + 1}
-          totalPages={pagesCount}
-          startSerialNo={parseInt(voterData.serialNo || 1) + (i * cardsPerPage)}
-          cardsPerPage={cardsPerPage}
-          SlipComponent={SlipComp}
-        />
+    const pagesHtml = [];
+    for (let i = 0; i < numPages; i++) {
+      pagesHtml.push(
+        ReactDOMServer.renderToString(
+          <A4PrintLayout 
+            baseData={localVoterData}
+            pageNumber={i + 1}
+            totalPages={numPages}
+            startSerialNo={parseInt(voterData.serialNo || 1, 10) + (i * cardsPerPage)}
+            cardsPerPage={cardsPerPage}
+            SlipComponent={SlipComp}
+          />
+        )
       );
-      
-      tempContainer.innerHTML = pageHtml;
-      await delay(50);
-
-      const canvas = await html2canvas(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        logging: false
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-
-      setProgress(((i + 1) / pagesCount) * 100);
-      await delay(10);
     }
-
-    document.body.removeChild(tempContainer);
-    pdf.save(`voter-slips-${pagesCount}-pages.pdf`);
 
     const hasImage = Boolean((optionNumber === 1 && voterData?.topImage) || (optionNumber === 3 && voterData?.symbolImage));
-    const totalSlips = pagesCount * cardsPerPage;
+    const totalSlips = numPages * cardsPerPage;
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/prints`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
-        body: JSON.stringify({
-          optionType: `Option ${optionNumber}`,
-          wardNo: voterData.wardNo || '-',
-          partNo: voterData.partNo || '-',
-          serialNo: voterData.serialNo || '1',
-          voterName: voterData.voterName || '-',
-          pagesCount: pagesCount,
-          cardsPerPage: cardsPerPage,
-          slipsCount: totalSlips,
-          hasImage: hasImage
-        })
+    if (isDownloadOnly) {
+      // Direct PDF download with optimized html2canvas & jsPDF
+      await generatePdfFromHtml({
+        pagesHtml,
+        filename: `voter-slips-${numPages}-pages.pdf`,
+        onProgress: (p) => setProgress(p),
+        scale: 1.4,
+        quality: 0.85
       });
-      if (res.ok) {
-        window.dispatchEvent(new Event('user-credits-updated'));
-      }
-    } catch (err) {
-      console.error('Failed to log print to backend:', err);
+    } else {
+      // Instant window.print popup
+      await printViaWindowPrint({
+        htmlContent: pagesHtml.join(''),
+        title: `voter-slips-${numPages}-pages`
+      });
     }
 
+    // Record transaction & deduct credits
+    await logPrintTransaction({
+      optionType: `Option ${optionNumber}`,
+      wardNo: voterData.wardNo || '-',
+      partNo: voterData.partNo || '-',
+      serialNo: voterData.serialNo || '1',
+      voterName: voterData.voterName || '-',
+      pagesCount: numPages,
+      cardsPerPage: cardsPerPage,
+      slipsCount: totalSlips,
+      hasImage: hasImage
+    });
+
     setIsGenerating(false);
-    setPrintState({ active: false, currentPage: 1 });
     onClose();
   };
 
@@ -118,26 +96,6 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -10, width: '1240px', pointerEvents: 'none', opacity: 0, overflow: 'hidden' }}>
-        {printState.active && (
-          Array.from({ length: pagesCount }).map((_, i) => (
-            <A4PrintLayout 
-              key={i}
-              ref={el => {
-                if (!printLayoutRef.current) printLayoutRef.current = [];
-                printLayoutRef.current[i] = el;
-              }}
-              baseData={localVoterData}
-              pageNumber={i + 1}
-              totalPages={pagesCount}
-              startSerialNo={parseInt(voterData.serialNo || 1) + (i * cardsPerPage)}
-              cardsPerPage={cardsPerPage}
-              SlipComponent={SlipComp}
-            />
-          ))
-        )}
-      </div>
-
       <PrintModal 
         isOpen={isOpen}
         onClose={onClose}

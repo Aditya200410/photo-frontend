@@ -165,22 +165,30 @@ function PhotoNagarNigam({ onBack }) {
     setSelectedVoter(voter);
     setIsTemplateModalOpen(true);
   };
-
   const handleTemplateSelect = (optionNumber) => {
     setIsTemplateModalOpen(false);
     if (!selectedVoter) return;
 
+    const rawWard = selectedVoter.WARDNO || selectedVoter['PANCHAYAT WARD NO'] || selectedVoter.WARD_NO || selectedVoter['WARD NO'] || selectedVoter.WARD || selectedVoter.NWARDNO || selectedVoter._meta_ward || selectedVoter.ward;
+    const cleanWard = (rawWard && String(rawWard).trim().toLowerCase() !== 'all') ? String(rawWard).trim() : (wardNumber && String(wardNumber).trim().toLowerCase() !== 'all' ? String(wardNumber).trim() : '-');
+
+    const rawPart = selectedVoter.BOOTH_NO || selectedVoter.PARTNO || selectedVoter.PART_NO || selectedVoter['PART NO'] || selectedVoter._meta_booth || selectedVoter.booth;
+    const cleanPart = (rawPart && String(rawPart).trim().toLowerCase() !== 'all') ? String(rawPart).trim() : (boothNumber && String(boothNumber).trim().toLowerCase() !== 'all' ? String(boothNumber).trim() : '-');
+
+    const vFName = selectedVoter.V_FNAME_EN ? `${selectedVoter.V_FNAME_EN} ${selectedVoter.V_LNAME_EN || ''}`.trim() : (selectedVoter.V_FNAME_HI || '');
+    const fFName = selectedVoter.VR_FNAME_EN ? `${selectedVoter.VR_FNAME_EN} ${selectedVoter.VR_LNAME_EN || ''}`.trim() : (selectedVoter.VR_FNAME_HI || '');
+
     const mappedData = {
-      wardNo: wardNumber,
-      partNo: boothNumber,
-      serialNo: selectedVoter.SRNO || selectedVoter.VID || '1',
-      idNumber: selectedVoter.VID || '-',
-      voterName: selectedVoter.EFVNAME || selectedVoter.FVNAME || '-',
-      fatherHusbandName: selectedVoter.EFRNAME || selectedVoter.FRNAME || '-',
-      houseNo: selectedVoter.FHOUSENO || '0',
-      gender: selectedVoter.FGENDER === 'M' || selectedVoter.FGENDER === 'पुरुष' ? 'पुरुष' : (selectedVoter.FGENDER === 'F' || selectedVoter.FGENDER === 'स्त्री' ? 'स्त्री' : selectedVoter.FGENDER),
-      age: selectedVoter.FAGE || '18',
-      pollingStation: `${cityName} - Ward ${wardNumber} - Booth ${boothNumber}`,
+      wardNo: cleanWard,
+      partNo: cleanPart,
+      serialNo: selectedVoter.SRNO || selectedVoter.SNO || selectedVoter.SERIAL_NO || selectedVoter.SLNOINPART || selectedVoter.ID || selectedVoter.VID || '1',
+      idNumber: selectedVoter.VID || selectedVoter.IDCARD || selectedVoter.EPIC || '-',
+      voterName: selectedVoter.EFVNAME || selectedVoter.FVNAME || selectedVoter.VOTER_NAME || vFName || '-',
+      fatherHusbandName: selectedVoter.EFRNAME || selectedVoter.FRNAME || selectedVoter.RELATIVE_NAME || fFName || '-',
+      houseNo: selectedVoter.FHOUSENO || selectedVoter.HOUSE_NO || selectedVoter.MHOUSENO || selectedVoter.HOUSENO || '0',
+      gender: selectedVoter.FGENDER === 'M' || selectedVoter.FGENDER === 'पुरुष' || selectedVoter.SEX === 'M' || selectedVoter.SEX === 'पुरुष' ? 'पुरुष' : (selectedVoter.FGENDER === 'F' || selectedVoter.FGENDER === 'स्त्री' || selectedVoter.SEX === 'F' || selectedVoter.SEX === 'स्त्री' ? 'स्त्री' : selectedVoter.FGENDER || selectedVoter.SEX || '-'),
+      age: selectedVoter.FAGE || selectedVoter.AGE || selectedVoter.MAGE || '18',
+      pollingStation: selectedVoter.PS_EN || selectedVoter.PS_HI || `${cityName} ${cleanWard !== '-' ? '- Ward ' + cleanWard : ''} ${cleanPart !== '-' ? '- Booth ' + cleanPart : ''}`.trim(),
       topImage: null,
       symbolImage: null,
       symbolName: 'कमल का फूल'
@@ -722,8 +730,8 @@ function PhotoNagarNigam({ onBack }) {
         onClose={() => setIsBatchPrintModalOpen(false)}
         voters={filteredVoters}
         assemblyName={cityName}
-        wardNo={wardNumber}
-        boothNumber={boothNumber}
+        wardNo={wardNumber && wardNumber !== 'All' ? wardNumber : ''}
+        boothNumber={boothNumber && boothNumber !== 'All' ? boothNumber : ''}
       />
     </>
   );

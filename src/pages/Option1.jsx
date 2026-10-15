@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';
 import VoterSlip from '../components/VoterSlip';
 import PrintModal from '../components/PrintModal';
 import A4PrintLayout from '../components/A4PrintLayout';
+import { printViaWindowPrint, generatePdfFromHtml, logPrintTransaction } from '../utils/printService';
 
 function Option1() {
   const location = useLocation();
@@ -81,98 +82,88 @@ function Option1() {
 
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const handlePrintGenerate = async (isPreviewMode = false) => {
+  const handlePrintGenerate = async (mode = 'print') => {
+    const isPreviewMode = mode === 'preview' || mode === true;
+    const isDownloadOnly = mode === 'download';
+    const numPages = Number(pagesCount) || 1;
+    if (numPages < 1) return;
+
     setIsGenerating(true);
     setProgress(0);
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const numPagesToPrint = isPreviewMode ? 1 : numPages;
+    const ReactDOMServer = await import('react-dom/server');
 
-    const numPagesToPrint = isPreviewMode ? 1 : pagesCount;
-
-    for (let i = 1; i <= numPagesToPrint; i++) {
-      // Set the state so the hidden layout renders the current page
-      setPrintState({ active: true, currentPage: i });
-      
-      // Wait for React to re-render the layout
-      await delay(500); 
-
-      if (printLayoutRef.current) {
-        const canvas = await html2canvas(printLayoutRef.current, {
-          scale: 1.5, // Reduced scale for file size optimization
-          backgroundColor: '#ffffff',
-          logging: false,
-          windowWidth: 1240,
-          windowHeight: 1754,
-          width: 1240,
-          height: 1754
-        });
-
-        // Use JPEG format with quality 0.75 for huge size reduction
-        const imgData = canvas.toDataURL('image/jpeg', 0.75);
-        if (i > 1) {
-          pdf.addPage();
-        }
-        // Add image as JPEG and use 'FAST' compression in jsPDF
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-        
-        setProgress((i / numPagesToPrint) * 100);
-      }
+    const pagesHtml = [];
+    for (let i = 0; i < numPagesToPrint; i++) {
+      pagesHtml.push(
+        ReactDOMServer.renderToString(
+          <A4PrintLayout 
+            baseData={formData}
+            pageNumber={i + 1}
+            totalPages={numPagesToPrint}
+            startSerialNo={parseInt(formData.serialNo || 1, 10) + (i * cardsPerPage)}
+            cardsPerPage={cardsPerPage}
+            SlipComponent={VoterSlip}
+          />
+        )
+      );
     }
 
     const hasImage = Boolean(formData.topImage);
-    const totalSlips = pagesCount * 8;
+    const totalSlips = numPages * cardsPerPage;
 
-    if (!isPreviewMode) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/prints`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('token') || 'DUMMY'}` },
-          body: JSON.stringify({
-            optionType: 'Option 1',
-            wardNo: formData.wardNo,
-            partNo: formData.partNo,
-            serialNo: formData.serialNo,
-            voterName: formData.voterName,
-            pagesCount: pagesCount,
-            cardsPerPage: cardsPerPage,
-            slipsCount: totalSlips,
-            hasImage: hasImage
-          })
-        });
-        if (res.ok) {
-          window.dispatchEvent(new Event('user-credits-updated'));
-        }
-      } catch (err) {
-        console.error('Failed to log print to backend:', err);
-      }
+    if (isPreviewMode) {
+      await generatePdfFromHtml({
+        pagesHtml,
+        filename: 'voter-list-preview.pdf',
+        onProgress: (p) => setProgress(p),
+        scale: 1.4,
+        quality: 0.85
+      });
+    } else if (isDownloadOnly) {
+      await generatePdfFromHtml({
+        pagesHtml,
+        filename: `voter-list-${numPages}-pages.pdf`,
+        onProgress: (p) => setProgress(p),
+        scale: 1.4,
+        quality: 0.85
+      });
+      await logPrintTransaction({
+        optionType: 'Option 1',
+        wardNo: formData.wardNo,
+        partNo: formData.partNo,
+        serialNo: formData.serialNo,
+        voterName: formData.voterName,
+        pagesCount: numPages,
+        cardsPerPage: cardsPerPage,
+        slipsCount: totalSlips,
+        hasImage: hasImage
+      });
+    } else {
+      await printViaWindowPrint({
+        htmlContent: pagesHtml.join(''),
+        title: `voter-list-${numPages}-pages`
+      });
+      await logPrintTransaction({
+        optionType: 'Option 1',
+        wardNo: formData.wardNo,
+        partNo: formData.partNo,
+        serialNo: formData.serialNo,
+        voterName: formData.voterName,
+        pagesCount: numPages,
+        cardsPerPage: cardsPerPage,
+        slipsCount: totalSlips,
+        hasImage: hasImage
+      });
     }
 
-    pdf.save(`voter-list-${isPreviewMode ? 'preview' : pagesCount + '-pages'}.pdf`);
-    
-    // Cleanup
     setIsGenerating(false);
     setIsModalOpen(false);
-    setPrintState({ active: false, currentPage: 1 });
   };
 
   return (
     <>
-      {/* Hidden Print Layout (Outside main container to avoid overflow-x-hidden clipping) */}
-      {printState.active && (
-        <div style={{ position: 'absolute', top: 0, left: 0, zIndex: -10, width: '1240px', height: '1754px', pointerEvents: 'none' }}>
-          <A4PrintLayout 
-            ref={printLayoutRef}
-            baseData={formData}
-            pageNumber={printState.currentPage}
-            totalPages={pagesCount}
-            startSerialNo={parseInt(formData.serialNo || 1) + ((printState.currentPage - 1) * cardsPerPage)}
-            cardsPerPage={cardsPerPage}
-          />
-        </div>
-      )}
-
       {/* Print Modal - Placed outside relative wrappers to fix mobile fixed positioning */}
       <PrintModal 
         isOpen={isModalOpen}
