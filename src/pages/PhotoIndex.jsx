@@ -343,8 +343,8 @@ function PhotoIndex() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-lg md:text-xl font-bold text-slate-800 capitalize tracking-tight truncate max-w-[120px] sm:max-w-none">
-              {activeTab.replace('-', ' ')}
+            <h1 className="text-lg md:text-xl font-bold text-slate-800 capitalize tracking-tight truncate max-w-[150px] sm:max-w-none">
+              {currentUser?.name ? `Hi ${currentUser.name}` : activeTab.replace('-', ' ')}
             </h1>
             <div className="h-5 w-px bg-slate-300 hidden sm:block"></div>
             <span className="text-xs md:text-sm text-slate-500 font-medium bg-slate-100 px-2 md:px-3 py-1 rounded-full border border-slate-200 hidden sm:inline-block">
@@ -353,6 +353,12 @@ function PhotoIndex() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+            {currentUser?.name && (
+              <span className="text-xs sm:text-sm font-semibold text-slate-600 hidden lg:inline-flex items-center gap-1.5 bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Hi, <strong className="text-slate-900">{currentUser.name}</strong>
+              </span>
+            )}
             <button className="text-slate-400 hover:text-blue-600 transition-colors hidden sm:block">
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
             </button>
@@ -412,6 +418,32 @@ function PhotoIndex() {
         <main className="flex-1 p-2 sm:p-4 md:p-8 overflow-y-auto w-full max-w-full min-w-0 overflow-x-hidden">
           {activeTab === 'overview' && (
             <div className="space-y-8 max-w-7xl mx-auto">
+
+              {/* Welcome Greeting Banner */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-xl shadow-blue-500/20">
+                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <span className="inline-block text-[11px] font-extrabold uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full mb-3 text-blue-100">
+                      Welcome to Voter Directory Pro
+                    </span>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tight">
+                      Hi, {currentUser?.name || 'User'}! 👋
+                    </h2>
+                    <p className="text-sm text-blue-100/90 font-medium mt-1">
+                      Ready to manage and generate election voter slips with precision.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 self-start md:self-auto">
+                    <button
+                      onClick={() => handleTabChange('assembly')}
+                      className="px-4 py-2.5 bg-white text-blue-700 font-bold text-xs md:text-sm rounded-xl shadow-md hover:bg-blue-50 transition-all cursor-pointer"
+                    >
+                      Start Printing →
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               {/* Header / Hero Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

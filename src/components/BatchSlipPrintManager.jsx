@@ -4,19 +4,62 @@ import BatchA4PrintLayout from './BatchA4PrintLayout';
 import VoterSlip from './VoterSlip';
 import VoterSlipOption3 from './VoterSlipOption3';
 import TopupModal from './TopupModal';
-import { printViaWindowPrint, generatePdfFromHtml, logPrintTransaction } from '../utils/printService';
+import { generatePdfFromHtml, logPrintTransaction } from '../utils/printService';
 
 function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNumber, wardNo }) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState('');
-  const [batchImage, setBatchImage] = useState(null);
-  const [selectedOption, setSelectedOption] = useState(1);
-  const [cardsPerPage, setCardsPerPage] = useState(8);
+  // Template format: 
+  // 'simple' (Simple Voter Slip)
+  // 'header' (Voter Slip with Header / banner)
+  // 'symbol' (Voter Slip with Symbol)
+  // 'appeal' (Personal Appeal Letter)
+  // 'alphabetical' (Alphabetical Voter List)
+  const [selectedFormat, setSelectedFormat] = useState('simple');
+
+  // Cards per page settings for formats
+  const [cardsPerPage, setCardsPerPage] = useState(6);
+
+  // Extra pages toggles
+  const [extraPages, setExtraPages] = useState({
+    boothIndex: false,
+    boothSummary: false,
+    countingSheet: false,
+    workCompleted: false
+  });
+
+  // Candidate image / symbol
+  const [bannerImage, setBannerImage] = useState(null);
+  const [symbolImage, setSymbolImage] = useState(null);
+
+  // User balance & settings
   const [userBalance, setUserBalance] = useState(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [settings, setSettings] = useState(null);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
+
+  // Processing state
+  const [isProcessing, setIsProcessing] = useState(false);
+  const cancelProcessingRef = useRef(false);
+
+  // Metrics for processing board
+  const [processingStats, setProcessingStats] = useState({
+    status: 'Ready',
+    progress: 0,
+    startTime: null,
+    endTime: null,
+    estFinishTime: null,
+    timeElapsedStr: '—',
+    timeRemainingStr: '—',
+    speedVotersPerSec: '—',
+    speedPagesPerMin: '—',
+    recordsDone: 0,
+    totalRecords: 0,
+    boothsDone: 0,
+    totalBooths: 1,
+    estimatedPages: 0,
+    pdfsToCreate: 1
+  });
+
+  const timerRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,46 +94,55 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     fetchSettings();
   }, [isOpen]);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setBatchImage(e.target.result);
-      };
-      reader.readAsDataURL(file);
+  const totalVotersCount = voters && Array.isArray(voters) ? voters.length : 0;
+
+  // Calculate estimated pages based on template
+  const effectiveCardsPerPage = useMemo(() => {
+    if (selectedFormat === 'appeal') return 1;
+    if (selectedFormat === 'alphabetical') return 40;
+    return cardsPerPage;
+  }, [selectedFormat, cardsPerPage]);
+
+  const slipPagesCount = totalVotersCount > 0 ? Math.ceil(totalVotersCount / effectiveCardsPerPage) : 1;
+  const extraPagesCount = (extraPages.boothIndex ? 1 : 0) +
+    (extraPages.boothSummary ? 1 : 0) +
+    (extraPages.countingSheet ? 1 : 0) +
+    (extraPages.workCompleted ? 1 : 0);
+  const totalEstimatedPages = slipPagesCount + extraPagesCount;
+
+  const hasImage = Boolean(
+    (selectedFormat === 'header' && bannerImage) ||
+    (selectedFormat === 'symbol' && symbolImage)
+  );
+
+  const ratePerPage = hasImage ? (settings?.rateWithImage ?? 0.12) : (settings?.rateWithoutImage ?? 0.10);
+  const totalCost = Math.round(totalEstimatedPages * ratePerPage * 100) / 100;
+  const isBalanceSufficient = isAdminUser || userBalance === null || userBalance >= totalCost;
+
+  // Sync format changes with sensible default cards per page
+  const handleSelectFormat = (fmt) => {
+    setSelectedFormat(fmt);
+    if (fmt === 'simple') setCardsPerPage(6);
+    else if (fmt === 'header') setCardsPerPage(6);
+    else if (fmt === 'symbol') setCardsPerPage(8);
+    else if (fmt === 'appeal') setCardsPerPage(1);
+    else if (fmt === 'alphabetical') setCardsPerPage(40);
+  };
+
+  const toggleExtraPage = (key) => {
+    setExtraPages(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleStopProcessing = () => {
+    if (isProcessing) {
+      cancelProcessingRef.current = true;
+      setProcessingStats(prev => ({
+        ...prev,
+        status: 'Stopped by user'
+      }));
     }
   };
 
-  const totalVotersCount = voters && Array.isArray(voters) ? voters.length : 0;
-  const maxPages = totalVotersCount > 0 ? Math.ceil(totalVotersCount / cardsPerPage) : 1;
-
-  const [startPage, setStartPage] = useState(1);
-  const [endPage, setEndPage] = useState(10);
-
-  useEffect(() => {
-    if (isOpen) {
-      setStartPage(1);
-      setEndPage(Math.min(maxPages, 10));
-      setIsGenerating(false);
-      setProgress(0);
-      setStatusText('');
-    }
-  }, [isOpen, maxPages]);
-
-  const hasImage = Boolean(selectedOption !== 2 && batchImage);
-  const ratePerPage = hasImage ? (settings?.rateWithImage ?? 0.12) : (settings?.rateWithoutImage ?? 0.10);
-
-  // Safe numerical calculations: From Page to To Page
-  const currentStartPage = Math.max(1, Math.min(maxPages, Number(startPage) || 1));
-  const currentEndPage = Math.max(currentStartPage, Math.min(maxPages, Number(endPage) || currentStartPage));
-  const actualPagesToPrint = Math.max(1, currentEndPage - currentStartPage + 1);
-
-  const totalSlips = Math.min(totalVotersCount, actualPagesToPrint * cardsPerPage);
-  const totalCost = Math.round(actualPagesToPrint * ratePerPage * 100) / 100;
-  const isBalanceSufficient = isAdminUser || userBalance === null || userBalance >= totalCost;
-
-  // On-demand slip mapping for requested pages (avoids mapping 24,000 voters in memory)
   const mapVoterToSlip = (voter) => {
     if (!voter) return null;
     const rawGender = voter.FGENDER || voter.MSEX || voter.GENDER || voter.SEX || '';
@@ -99,193 +151,373 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     const vFName = voter.V_FNAME_EN ? `${voter.V_FNAME_EN} ${voter.V_LNAME_EN || ''}`.trim() : (voter.V_FNAME_HI || '');
     const fFName = voter.VR_FNAME_EN ? `${voter.VR_FNAME_EN} ${voter.VR_LNAME_EN || ''}`.trim() : (voter.VR_FNAME_HI || '');
 
-    const rawWard = voter.WARDNO !== undefined && voter.WARDNO !== null && String(voter.WARDNO).trim() !== '' ? voter.WARDNO : (
-      voter['PANCHAYAT WARD NO'] || voter.WARD_NO || voter['WARD NO'] || voter.WARD || voter.NWARDNO || voter._meta_ward || voter.ward
-    );
-    const wardStr = rawWard !== undefined && rawWard !== null ? String(rawWard).trim() : '';
-    const resolvedWard = (wardStr && wardStr.toLowerCase() !== 'all' && wardStr.toLowerCase() !== 'null' && wardStr.toLowerCase() !== 'undefined') 
-      ? wardStr 
-      : (wardNo && String(wardNo).trim().toLowerCase() !== 'all' ? String(wardNo).trim() : '-');
-
-    const rawPart = voter.BOOTH_NO !== undefined && voter.BOOTH_NO !== null && String(voter.BOOTH_NO).trim() !== '' ? voter.BOOTH_NO : (
-      voter.PARTNO || voter.PART_NO || voter['PART NO'] || voter.BOOTH || voter._meta_booth || voter.booth
-    );
-    const partStr = rawPart !== undefined && rawPart !== null ? String(rawPart).trim() : '';
-    const resolvedPart = (partStr && partStr.toLowerCase() !== 'all' && partStr.toLowerCase() !== 'null' && partStr.toLowerCase() !== 'undefined')
-      ? partStr
-      : (boothNumber && String(boothNumber).trim().toLowerCase() !== 'all' ? String(boothNumber).trim() : '-');
+    const resolvedPart = voter.PART_NO || voter.PART || boothNumber || '-';
+    const resolvedWard = voter.WARD_NO || voter.WARD || wardNo || '-';
 
     return {
       wardNo: resolvedWard,
       partNo: resolvedPart,
-      serialNo: voter.SRNO || voter.SNO || voter.SERIAL_NO || voter.SLNOINPART || voter.ID || voter.VID || '1',
-      idNumber: voter.VID || voter.IDCARD || voter.EPIC || voter.EPIC_NO || '-',
-      voterName: voter.EFVNAME || voter.FVNAME || voter.VOTER_NAME || vFName || '-',
-      fatherHusbandName: voter.EFRNAME || voter.FRNAME || voter.RELATIVE_NAME || fFName || '-',
+      serialNo: voter.SLNOINPART || voter.SL_NO || voter.SERIAL_NO || '-',
+      idNumber: voter.IDCARD_NO || voter.EPIC_NO || voter.VOTER_ID || '-',
+      voterName: vFName || '-',
+      fatherHusbandName: fFName || '-',
       houseNo: voter.HOUSE_NO || voter.FHOUSENO || voter.MHOUSENO || voter.HOUSENO || '0',
       gender: mappedGender,
       age: voter.AGE || voter.FAGE || voter.MAGE || '18',
       pollingStation: voter.PS_EN || voter.PS_HI || `${assemblyName || ''} ${resolvedPart !== '-' ? '- Booth ' + resolvedPart : ''}`.trim(),
-      topImage: selectedOption === 1 ? batchImage : null,
-      symbolImage: selectedOption === 3 ? batchImage : null,
+      topImage: selectedFormat === 'header' ? bannerImage : null,
+      symbolImage: selectedFormat === 'symbol' ? symbolImage : null,
     };
   };
 
-  const getPageSlips = (pageIndex) => {
-    if (!voters || !Array.isArray(voters)) return [];
-    const startIndex = pageIndex * cardsPerPage;
-    const endIndex = startIndex + cardsPerPage;
-    const pageVoters = voters.slice(startIndex, endIndex);
-    return pageVoters.map(mapVoterToSlip).filter(Boolean);
-  };
-
-  const previewSlipsData = useMemo(() => {
-    return getPageSlips(0);
-  }, [voters, cardsPerPage, selectedOption, batchImage, assemblyName, boothNumber, wardNo]);
-
-  const handlePrintGenerate = async (mode = 'print') => {
-    const isPreviewMode = mode === 'preview' || mode === true;
-    const isDownloadOnly = mode === 'download';
-
+  // Main start processing function
+  const handleStartProcessing = async () => {
     if (!voters || voters.length === 0) {
       alert('No voter data available to print.');
       return;
     }
 
-    const printPageCount = isPreviewMode ? 1 : actualPagesToPrint;
-    const printStartPageIndex = isPreviewMode ? 0 : currentStartPage - 1;
-
-    if (!isPreviewMode && printPageCount > 100) {
-      alert(`For optimal browser performance and to avoid crashes, please print up to 100 pages per batch.\nYou can print in batches (e.g. Pages 1 to 100, then 101 to 200).`);
-      return;
-    }
-
-    if (!isPreviewMode && !isBalanceSufficient) {
+    if (!isBalanceSufficient) {
       alert(`Insufficient credit balance! Required: ₹${totalCost.toFixed(2)}, Available: ₹${userBalance?.toFixed(2)}`);
       return;
     }
 
-    setIsGenerating(true);
-    setProgress(5);
-    setStatusText(`Initializing batch of ${printPageCount} ${printPageCount === 1 ? 'page' : 'pages'}...`);
+    cancelProcessingRef.current = false;
+    setIsProcessing(true);
+
+    const startTime = Date.now();
+    const startTimeFormatted = new Date(startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    setProcessingStats({
+      status: 'Processing voter slips...',
+      progress: 0,
+      startTime: startTimeFormatted,
+      endTime: null,
+      estFinishTime: 'Calculating...',
+      timeElapsedStr: '00:00',
+      timeRemainingStr: 'Calculating...',
+      speedVotersPerSec: '0.0',
+      speedPagesPerMin: '0.0',
+      recordsDone: 0,
+      totalRecords: totalVotersCount,
+      boothsDone: 0,
+      totalBooths: 1,
+      estimatedPages: totalEstimatedPages,
+      pdfsToCreate: 1
+    });
+
+    // Start timer ticker for non-freezing time elapsed
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+      const m = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+      const s = String(elapsedSec % 60).padStart(2, '0');
+      setProcessingStats(prev => ({
+        ...prev,
+        timeElapsedStr: `${m}:${s}`
+      }));
+    }, 1000);
 
     try {
-      // Yield so the browser paints the "Generating..." screen immediately
+      // Yield to let browser render UI immediately without freezing
       await new Promise(r => setTimeout(r, 60));
 
       const ReactDOMServer = await import('react-dom/server');
-      const SlipComp = selectedOption === 3 ? VoterSlipOption3 : VoterSlip;
+      const SlipComp = selectedFormat === 'symbol' ? VoterSlipOption3 : VoterSlip;
 
       const pagesHtml = [];
-      const targetPrepMax = isDownloadOnly ? 30 : 90;
 
-      for (let i = 0; i < printPageCount; i++) {
-        const pageIndex = printStartPageIndex + i;
-        const pageSlips = getPageSlips(pageIndex);
-        if (!pageSlips || pageSlips.length === 0) break;
-
-        setStatusText(`Preparing page ${i + 1} of ${printPageCount}...`);
-
+      // 1. Extra page: Booth Index if selected
+      if (extraPages.boothIndex) {
         pagesHtml.push(
-          ReactDOMServer.renderToString(
-            <BatchA4PrintLayout
-              slipsData={pageSlips}
-              pageNumber={pageIndex + 1}
-              totalPages={printStartPageIndex + printPageCount}
-              SlipComponent={SlipComp}
-              headerData={{
-                title: assemblyName || 'Voters Directory',
-                wardNo: wardNo || '-',
-                partNo: boothNumber || '-'
-              }}
-              cardsPerPage={cardsPerPage}
-            />
-          )
+          `<div class="a4-print-sheet" style="padding:15mm;font-family:sans-serif;">
+            <div style="text-align:center;border-bottom:2px solid #0f172a;padding-bottom:10px;margin-bottom:20px;">
+              <h1 style="font-size:24px;margin:0;color:#0f172a;">Booth Index (Page Nos.)</h1>
+              <p style="margin:5px 0;color:#475569;">${assemblyName || 'Voter Directory'} - Booth ${boothNumber || '1'}</p>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <thead>
+                <tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;text-align:left;">
+                  <th style="padding:8px;">Booth No</th>
+                  <th style="padding:8px;">Booth / Polling Station Name</th>
+                  <th style="padding:8px;text-align:center;">Voters</th>
+                  <th style="padding:8px;text-align:right;">Page Numbers</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                  <td style="padding:10px 8px;font-weight:bold;">${boothNumber || '1'}</td>
+                  <td style="padding:10px 8px;">${assemblyName || 'Polling Station'}</td>
+                  <td style="padding:10px 8px;text-align:center;">${totalVotersCount}</td>
+                  <td style="padding:10px 8px;text-align:right;font-weight:bold;">1 - ${slipPagesCount}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>`
         );
-
-        const currentPct = 5 + Math.round(((i + 1) / printPageCount) * (targetPrepMax - 5));
-        setProgress(currentPct);
-
-        // Yield execution to the browser event loop so UI progress updates smoothly
-        await new Promise(r => setTimeout(r, 15));
       }
 
-      if (pagesHtml.length === 0) {
-        alert('No voter entries found for the selected pages.');
+      // 2. Extra page: Booth summary page if selected
+      if (extraPages.boothSummary) {
+        let maleCount = 0, femaleCount = 0;
+        voters.forEach(v => {
+          const g = (v.FGENDER || v.MSEX || v.GENDER || v.SEX || '').trim().toUpperCase();
+          if (g === 'M' || g === 'पुरुष') maleCount++;
+          else if (g === 'F' || g === 'स्त्री') femaleCount++;
+        });
+
+        pagesHtml.push(
+          `<div class="a4-print-sheet" style="padding:15mm;font-family:sans-serif;">
+            <div style="text-align:center;border-bottom:2px solid #0f172a;padding-bottom:10px;margin-bottom:20px;">
+              <h1 style="font-size:22px;margin:0;color:#0f172a;">Booth Summary Page</h1>
+              <p style="margin:5px 0;color:#475569;">${assemblyName || 'Voter Directory'} - Booth ${boothNumber || '1'}</p>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-bottom:25px;">
+              <div style="border:1px solid #cbd5e1;border-radius:10px;padding:15px;text-align:center;background:#f8fafc;">
+                <div style="font-size:12px;color:#64748b;font-weight:bold;">TOTAL ELECTORS</div>
+                <div style="font-size:28px;font-weight:bold;color:#0f172a;margin-top:5px;">${totalVotersCount}</div>
+              </div>
+              <div style="border:1px solid #cbd5e1;border-radius:10px;padding:15px;text-align:center;background:#eff6ff;">
+                <div style="font-size:12px;color:#3b82f6;font-weight:bold;">MALE ELECTORS</div>
+                <div style="font-size:28px;font-weight:bold;color:#1e40af;margin-top:5px;">${maleCount}</div>
+              </div>
+              <div style="border:1px solid #cbd5e1;border-radius:10px;padding:15px;text-align:center;background:#fdf2f8;">
+                <div style="font-size:12px;color:#ec4899;font-weight:bold;">FEMALE ELECTORS</div>
+                <div style="font-size:28px;font-weight:bold;color:#9d174d;margin-top:5px;">${femaleCount}</div>
+              </div>
+            </div>
+          </div>`
+        );
+      }
+
+      // 3. Render voter slips chunk by chunk with non-freezing event ticks
+      let renderedVotersCount = 0;
+
+      for (let p = 0; p < slipPagesCount; p++) {
+        if (cancelProcessingRef.current) break;
+
+        const startIdx = p * effectiveCardsPerPage;
+        const endIdx = Math.min(totalVotersCount, startIdx + effectiveCardsPerPage);
+        const pageVoters = voters.slice(startIdx, endIdx);
+        const slips = pageVoters.map(mapVoterToSlip).filter(Boolean);
+
+        if (selectedFormat === 'appeal') {
+          // 1 per page Personal Appeal Letter format
+          const slip = slips[0];
+          pagesHtml.push(
+            `<div class="a4-print-sheet" style="padding:15mm;font-family:sans-serif;box-sizing:border-box;">
+              <div style="border:3px solid #ea580c;border-radius:12px;padding:15px;background:#ffffff;">
+                <div style="background:#ea580c;color:#ffffff;padding:12px;text-align:center;border-radius:8px;margin-bottom:15px;">
+                  <h2 style="margin:0;font-size:22px;font-weight:bold;">वार्ड नं. ${slip?.wardNo || '-'} से पार्षद पद हेतु</h2>
+                  <h3 style="margin:5px 0 0 0;font-size:18px;">प्रत्याशी का नाम</h3>
+                </div>
+                <div style="padding:10px;font-size:15px;line-height:1.6;color:#1e293b;">
+                  <p><strong>आदरणीय श्री/श्रीमती:</strong> ${slip?.voterName || '-'}</p>
+                  <p><strong>पिता/पति का नाम:</strong> ${slip?.fatherHusbandName || '-'}</p>
+                  <p><strong>मकान नंबर:</strong> ${slip?.houseNo || '-'}</p>
+                  <p><strong>भाग संख्या:</strong> ${slip?.partNo || '-'} &nbsp; | &nbsp; <strong>क्रम संख्या:</strong> ${slip?.serialNo || '-'}</p>
+                  <p><strong>पहचान पत्र क्रमांक:</strong> ${slip?.idNumber || '-'}</p>
+                  <div style="margin-top:20px;padding:12px;background:#fff7ed;border-left:4px solid #ea580c;border-radius:4px;font-size:14px;">
+                    आपसे विनम्र निवेदन है कि आगामी चुनाव में हमारे योग्य एवं कर्मठ प्रत्याशी को भारी मतों से विजयी बनाकर सेवा का अवसर प्रदान करें।
+                  </div>
+                </div>
+              </div>
+            </div>`
+          );
+        } else if (selectedFormat === 'alphabetical') {
+          // 40 per page Alphabetical Voter List table
+          pagesHtml.push(
+            `<div class="a4-print-sheet" style="padding:8mm;font-family:sans-serif;box-sizing:border-box;">
+              <div style="text-align:center;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:10px;">
+                <h2 style="font-size:16px;margin:0;color:#0f172a;">मतदाता सूची (वर्णमाला अनुसार / Alphabetical List)</h2>
+                <div style="font-size:11px;color:#475569;margin-top:3px;">${assemblyName || ''} - भाग संख्या: ${boothNumber || '-'} - Page ${p + 1} of ${slipPagesCount}</div>
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+                <thead>
+                  <tr style="background:#0f172a;color:#ffffff;text-align:left;">
+                    <th style="padding:4px 6px;">क्र.सं.</th>
+                    <th style="padding:4px 6px;">मतदाता का नाम</th>
+                    <th style="padding:4px 6px;">पिता / पति का नाम</th>
+                    <th style="padding:4px 6px;text-align:center;">मकान</th>
+                    <th style="padding:4px 6px;text-align:center;">लिंग</th>
+                    <th style="padding:4px 6px;text-align:center;">आयु</th>
+                    <th style="padding:4px 6px;text-align:right;">पहचान पत्र क्र.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${slips.map((s, idx) => `
+                    <tr style="border-bottom:1px solid #e2e8f0;background:${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                      <td style="padding:3.5px 6px;font-weight:bold;">${s.serialNo}</td>
+                      <td style="padding:3.5px 6px;font-weight:600;">${s.voterName}</td>
+                      <td style="padding:3.5px 6px;">${s.fatherHusbandName}</td>
+                      <td style="padding:3.5px 6px;text-align:center;">${s.houseNo}</td>
+                      <td style="padding:3.5px 6px;text-align:center;">${s.gender}</td>
+                      <td style="padding:3.5px 6px;text-align:center;">${s.age}</td>
+                      <td style="padding:3.5px 6px;text-align:right;font-family:monospace;font-weight:bold;">${s.idNumber}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>`
+          );
+        } else {
+          // Standard A4 Layout Grid (Simple, Header, Symbol)
+          pagesHtml.push(
+            ReactDOMServer.renderToString(
+              <BatchA4PrintLayout
+                slipsData={slips}
+                pageNumber={p + 1}
+                totalPages={slipPagesCount}
+                SlipComponent={SlipComp}
+                headerData={{
+                  title: assemblyName || 'मतदाता सूची पर्ची',
+                  wardNo: wardNo || '-',
+                  partNo: boothNumber || '-'
+                }}
+                cardsPerPage={effectiveCardsPerPage}
+              />
+            )
+          );
+        }
+
+        renderedVotersCount += pageVoters.length;
+
+        // Calculate dynamic real-time speed & estimated finish time
+        const now = Date.now();
+        const elapsedSec = Math.max(0.1, (now - startTime) / 1000);
+        const votersPerSec = (renderedVotersCount / elapsedSec).toFixed(1);
+        const pagesPerMin = ((p + 1) / (elapsedSec / 60)).toFixed(1);
+
+        const remainingVoters = totalVotersCount - renderedVotersCount;
+        const estRemainingSec = Number(votersPerSec) > 0 ? Math.ceil(remainingVoters / Number(votersPerSec)) : 0;
+        const remM = String(Math.floor(estRemainingSec / 60)).padStart(2, '0');
+        const remS = String(estRemainingSec % 60).padStart(2, '0');
+
+        const estFinishTimestamp = new Date(now + estRemainingSec * 1000);
+        const estFinishTimeStr = estFinishTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const currentProgress = Math.round(((p + 1) / totalEstimatedPages) * 70);
+
+        setProcessingStats(prev => ({
+          ...prev,
+          status: `Processing page ${p + 1} of ${slipPagesCount}...`,
+          progress: currentProgress,
+          estFinishTime: estFinishTimeStr,
+          timeRemainingStr: `${remM}:${remS}`,
+          speedVotersPerSec: votersPerSec,
+          speedPagesPerMin: pagesPerMin,
+          recordsDone: renderedVotersCount,
+          boothsDone: p === slipPagesCount - 1 ? 1 : 0
+        }));
+
+        // Yield to browser execution cycle so UI stays fluid and non-freezing
+        await new Promise(r => setTimeout(r, 20));
+      }
+
+      // 4. Extra page: Counting Sheet (OMR)
+      if (extraPages.countingSheet && !cancelProcessingRef.current) {
+        pagesHtml.push(
+          `<div class="a4-print-sheet" style="padding:10mm;font-family:sans-serif;box-sizing:border-box;">
+            <div style="text-align:center;border-bottom:2px solid #0f172a;padding-bottom:8px;margin-bottom:12px;">
+              <h2 style="font-size:18px;margin:0;color:#0f172a;">Counting Sheet (OMR)</h2>
+              <div style="font-size:11px;color:#475569;">${assemblyName || ''} - Booth: ${boothNumber || '1'}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(10, 1fr);gap:4px;font-size:10px;text-align:center;">
+              ${Array.from({ length: Math.min(1000, totalVotersCount) }, (_, i) => `
+                <div style="border:1px solid #cbd5e1;padding:4px 2px;border-radius:3px;background:#ffffff;">
+                  <span style="font-weight:bold;color:#475569;">${i + 1}</span>
+                  <div style="width:12px;height:12px;border-radius:50%;border:1px solid #94a3b8;margin:2px auto 0 auto;"></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>`
+        );
+      }
+
+      // 5. Extra page: Work completed page
+      if (extraPages.workCompleted && !cancelProcessingRef.current) {
+        pagesHtml.push(
+          `<div class="a4-print-sheet" style="padding:25mm;font-family:sans-serif;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="width:80px;height:80px;border-radius:50%;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:20px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+              ✓
+            </div>
+            <h1 style="font-size:32px;font-weight:900;color:#0f172a;margin:0 0 10px 0;">Your Work is Completed!</h1>
+            <p style="font-size:16px;color:#64748b;margin:0 0 25px 0;">
+              Total <strong>${totalVotersCount}</strong> voters processed successfully from Booth <strong>${boothNumber || '1'}</strong>.
+            </p>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:15px 30px;font-size:13px;color:#475569;">
+              Generated on ${new Date().toLocaleDateString()} • Voter Directory Pro
+            </div>
+          </div>`
+        );
+      }
+
+      if (cancelProcessingRef.current) {
+        setProcessingStats(prev => ({ ...prev, status: 'Stopped' }));
         return;
       }
 
-      const actualSlipsCount = Math.min(voters.length, pagesHtml.length * cardsPerPage);
+      // Final step: Convert to PDF and automatically trigger download
+      setProcessingStats(prev => ({
+        ...prev,
+        status: 'Building final PDF & downloading automatically...',
+        progress: 80
+      }));
 
-      if (isPreviewMode) {
-        setStatusText('Generating preview PDF...');
-        setProgress(70);
-        await generatePdfFromHtml({
-          pagesHtml,
-          filename: `preview-batch-voter-slip.pdf`,
-          onProgress: (p) => {
-            setProgress(70 + Math.round(p * 0.3));
-          },
-          scale: 1.4,
-          quality: 0.85
-        });
-        setProgress(100);
-      } else if (isDownloadOnly) {
-        setStatusText('Building PDF file for download...');
-        await generatePdfFromHtml({
-          pagesHtml,
-          filename: `batch-voter-slips-p${currentStartPage}-to-p${currentStartPage + pagesHtml.length - 1}.pdf`,
-          onProgress: (p) => {
-            setProgress(30 + Math.round(p * 0.7));
-            setStatusText(`Rendering page ${Math.ceil((p / 100) * pagesHtml.length)} of ${pagesHtml.length}...`);
-          },
-          scale: 1.4,
-          quality: 0.85
-        });
-        setStatusText('Recording print transaction...');
-        await logPrintTransaction({
-          optionType: `Batch Slips Option ${selectedOption}`,
-          wardNo: wardNo || '-',
-          partNo: boothNumber || '-',
-          serialNo: `${currentStartPage}-${currentStartPage + pagesHtml.length - 1}`,
-          voterName: 'Batch Print',
-          pagesCount: pagesHtml.length,
-          cardsPerPage: cardsPerPage,
-          slipsCount: actualSlipsCount,
-          hasImage: hasImage
-        });
-        setProgress(100);
-      } else {
-        setStatusText('Opening browser print dialog...');
-        setProgress(95);
-        await printViaWindowPrint({
-          htmlContent: pagesHtml.join(''),
-          title: `batch-voter-slips-p${currentStartPage}-to-p${currentStartPage + pagesHtml.length - 1}`
-        });
-        setStatusText('Recording print transaction...');
-        await logPrintTransaction({
-          optionType: `Batch Slips Option ${selectedOption}`,
-          wardNo: wardNo || '-',
-          partNo: boothNumber || '-',
-          serialNo: `${currentStartPage}-${currentStartPage + pagesHtml.length - 1}`,
-          voterName: 'Batch Print',
-          pagesCount: pagesHtml.length,
-          cardsPerPage: cardsPerPage,
-          slipsCount: actualSlipsCount,
-          hasImage: hasImage
-        });
-        setProgress(100);
-      }
+      const finalPdfFilename = `Voter-Slips-Booth-${boothNumber || '1'}-${selectedFormat}.pdf`;
 
-      if (!isPreviewMode) {
-        onClose();
-      }
+      await generatePdfFromHtml({
+        pagesHtml,
+        filename: finalPdfFilename,
+        onProgress: (p) => {
+          setProcessingStats(prev => ({
+            ...prev,
+            progress: 80 + Math.round(p * 0.2),
+            status: `Building PDF download (${p}%)...`
+          }));
+        },
+        scale: 1.0,
+        quality: 0.65
+      });
+
+      // Record print transaction in backend
+      setProcessingStats(prev => ({
+        ...prev,
+        status: 'Logging print transaction...',
+        progress: 99
+      }));
+
+      await logPrintTransaction({
+        optionType: `Batch Slips - ${selectedFormat}`,
+        wardNo: wardNo || '-',
+        partNo: boothNumber || '-',
+        serialNo: `1-${totalVotersCount}`,
+        voterName: 'Batch Print',
+        pagesCount: pagesHtml.length,
+        cardsPerPage: effectiveCardsPerPage,
+        slipsCount: totalVotersCount,
+        hasImage: hasImage
+      });
+
+      const finishTimestamp = new Date();
+      setProcessingStats(prev => ({
+        ...prev,
+        status: 'Completed! File downloaded.',
+        progress: 100,
+        timeRemainingStr: '00:00',
+        endTime: finishTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      }));
+
     } catch (err) {
-      console.error('Batch print generation error:', err);
-      alert('Error during batch print: ' + (err.message || 'Unknown error'));
+      console.error('Batch process error:', err);
+      alert('Error during processing: ' + (err.message || 'Unknown error'));
+      setProcessingStats(prev => ({
+        ...prev,
+        status: 'Error: ' + (err.message || 'Processing failed')
+      }));
     } finally {
-      setIsGenerating(false);
-      setStatusText('');
+      if (timerRef.current) clearInterval(timerRef.current);
+      setIsProcessing(false);
     }
   };
 
@@ -293,362 +525,626 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
   return (
     <>
-      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6">
-        <div className="bg-white rounded-3xl p-5 sm:p-8 w-full shadow-2xl max-h-[90vh] overflow-y-auto max-w-5xl flex flex-col lg:flex-row gap-8">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto">
+        <div className="relative w-full max-w-7xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[96vh]">
 
-          {/* Left Column: Form & Actions */}
-          <div className="flex-1 min-w-[300px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Batch Print Slips</h2>
+          {/* Top Modal Header */}
+          <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                  <span>Batch Slip Print & PDF Generator</span>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    Pro Engine
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {assemblyName || 'Constituency'} • Booth: <strong className="text-white">{boothNumber || 'All'}</strong> • Total Voters: <strong className="text-emerald-400">{totalVotersCount}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
               {userBalance !== null && !isAdminUser && (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200/80 rounded-full text-xs font-bold text-emerald-700">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
                   <span>Wallet:</span>
-                  <span className="font-extrabold">₹{userBalance.toFixed(2)}</span>
+                  <span className="font-mono text-sm text-white">₹{userBalance.toFixed(2)}</span>
                 </div>
               )}
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
-
-            {isGenerating ? (
-              <div className="space-y-6 py-6 px-4 bg-slate-50/70 rounded-2xl border border-slate-200/80">
-                <div className="flex flex-col items-center justify-center text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-100/80 border border-indigo-200 flex items-center justify-center shadow-inner">
-                    <svg className="w-6 h-6 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-800">
-                      Generating {actualPagesToPrint} {actualPagesToPrint === 1 ? 'Page' : 'Pages'}... Please wait.
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {statusText || `Pages ${currentStartPage} to ${currentEndPage} (${totalSlips} voter slips)`}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="w-full bg-slate-200 rounded-full h-3.5 overflow-hidden shadow-inner">
-                    <div
-                      className="bg-gradient-to-r from-indigo-500 via-blue-600 to-indigo-600 h-3.5 rounded-full transition-all duration-200 ease-out"
-                      style={{ width: `${Math.max(5, Math.min(100, progress))}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
-                    <span className="animate-pulse text-indigo-600">
-                      {progress < 95 ? '⚡ Processing slips in background...' : '🖨️ Finalizing output...'}
-                    </span>
-                    <span className="font-extrabold text-slate-700 font-mono">{Math.round(progress)}% Complete</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Cards Per Page */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Cards per Page</label>
-                  <select
-                    value={cardsPerPage}
-                    onChange={(e) => setCardsPerPage(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white text-sm"
-                  >
-                    <option value={8}>8 Cards (Standard 2x4 Grid)</option>
-                    {selectedOption !== 1 && <option value={10}>10 Cards (Compact 2x5 Grid)</option>}
-                    {selectedOption !== 1 && <option value={12}>12 Cards (Dense 2x6 Grid)</option>}
-                  </select>
-                </div>
-
-                {/* Clean, Easy Page Range Selector */}
-                <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/80 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Select Page Range
-                    </label>
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      Total Available: <strong className="text-slate-800">{maxPages} Pages</strong> ({totalVotersCount} voters)
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 items-center">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">From Page</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max={maxPages}
-                        value={startPage}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setStartPage(val === '' ? '' : Math.max(1, Math.min(maxPages, parseInt(val, 10) || 1)));
-                        }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
-                        placeholder="1"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">To Page</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max={maxPages}
-                        value={endPage}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setEndPage(val === '' ? '' : Math.max(1, Math.min(maxPages, parseInt(val, 10) || 1)));
-                        }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
-                        placeholder="10"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Clean summary and simple "Next 10 Pages" shortcut */}
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200 text-slate-600">
-                    <span>
-                      Printing: <strong className="text-indigo-600 font-bold">{actualPagesToPrint} Pages</strong> ({totalSlips} voter slips)
-                    </span>
-
-                    {currentEndPage < maxPages && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextStart = Math.min(maxPages, currentEndPage + 1);
-                          const nextEnd = Math.min(maxPages, nextStart + 9);
-                          setStartPage(nextStart);
-                          setEndPage(nextEnd);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                      >
-                        Next 10 Pages ➔
-                      </button>
-                    )}
-                  </div>
-
-                  {actualPagesToPrint > 100 && (
-                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
-                      ⚠️ You selected {actualPagesToPrint} pages. To prevent browser freezing, please print up to 100 pages per batch.
-                    </div>
-                  )}
-                </div>
-
-                {/* Template Selection */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Select Template</label>
-                  <select
-                    value={selectedOption}
-                    onChange={(e) => {
-                      const newOption = Number(e.target.value);
-                      setSelectedOption(newOption);
-                      if (newOption === 1 && cardsPerPage > 8) {
-                        setCardsPerPage(8);
-                      }
-                    }}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-white text-sm"
-                  >
-                    <option value={1}>Option 1 (Top Banner Image)</option>
-                    <option value={2}>Option 2 (Standard Template - Text Only)</option>
-                    <option value={3}>Option 3 (Right Symbol Image)</option>
-                  </select>
-                </div>
-
-                {/* Optional Image Attachment */}
-                {selectedOption !== 2 && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      {selectedOption === 1 ? 'Top Banner Image (Optional)' : 'Symbol Image (Optional)'}
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="w-full rounded-xl border border-slate-300 p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                    />
-                    {batchImage && (
-                      <div className="mt-1.5 flex items-center justify-between text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                        <span>✓ Image attached (+2 paisa rate applies)</span>
-                        <button type="button" onClick={() => setBatchImage(null)} className="text-rose-500 hover:text-rose-700">Remove</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Credit Cost Estimate Card */}
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs space-y-1.5">
-                  <div className="flex justify-between items-center text-slate-600">
-                    <span>Batch Print Type:</span>
-                    <span className="font-bold text-slate-800">
-                      {hasImage ? '🖼️ With Image (12 Paisa / Page)' : '📄 Without Image (10 Paisa / Page)'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-600">
-                    <span>Rate per Page:</span>
-                    <span className="font-mono font-semibold text-slate-800">₹{ratePerPage.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-600">
-                    <span>Pages to Print:</span>
-                    <span className="font-bold text-slate-800">{actualPagesToPrint} <span className="text-[11px] font-normal text-slate-500">({totalSlips} slips)</span></span>
-                  </div>
-                  <div className="border-t border-slate-200 pt-2 flex justify-between items-center font-extrabold text-sm">
-                    <span className="text-slate-800">Total Deduction:</span>
-                    <span className="text-indigo-600 font-mono text-base">₹{totalCost.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {/* Insufficient balance warning & Quick Top-Up */}
-                {!isBalanceSufficient && (
-                  <div className="bg-gradient-to-r from-amber-50 to-rose-50 border border-rose-200/80 text-rose-800 p-3.5 rounded-2xl text-xs space-y-2.5 shadow-sm">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-rose-100 flex items-center justify-center shrink-0 mt-0.5 text-rose-600 font-bold">
-                        ₹
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold text-sm text-rose-900">Insufficient Wallet Balance!</div>
-                        <div className="text-slate-600 mt-0.5 leading-relaxed">
-                          You need <strong className="text-rose-700">₹{totalCost.toFixed(2)}</strong> for {actualPagesToPrint} {actualPagesToPrint === 1 ? 'page' : 'pages'}, but your balance is <strong className="text-emerald-700">₹{(userBalance || 0).toFixed(2)}</strong>.
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setIsTopupOpen(true)}
-                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>Recharge Wallet via UPI QR Code</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Area: Tip + Hero Button + Secondary Row */}
-                <div className="pt-2 border-t border-slate-200/80 space-y-2.5">
-                  {/* Tip Callout */}
-                  <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200/80 text-amber-900 shadow-sm">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-800 text-xs font-bold">⚡</span>
-                    <p className="text-[11px] leading-snug text-slate-700">
-                      <strong className="text-slate-900">Instant Download:</strong> Click <span className="font-semibold text-indigo-700">Print / Save as PDF</span> and select <span className="font-bold text-slate-900">"Save as PDF"</span> in the browser pop-up to save in 1 second!
-                    </p>
-                  </div>
-
-                  {/* Primary Hero Button */}
-                  <button
-                    type="button"
-                    onClick={() => handlePrintGenerate('print')}
-                    disabled={!actualPagesToPrint || actualPagesToPrint < 1 || actualPagesToPrint > 100 || !isBalanceSufficient}
-                    className="w-full py-3.5 px-5 rounded-2xl font-bold text-white bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:via-blue-500 hover:to-indigo-600 shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-between group"
-                    title="Instant window.print popup - Save as PDF or Print directly"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
-                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                      </div>
-                      <div className="text-left">
-                        <div className="text-sm font-extrabold tracking-wide text-white">Print / Save as PDF</div>
-                        <div className="text-[11px] font-medium text-indigo-100">Instant pop-up • Ready to download</div>
-                      </div>
-                    </div>
-                    <div className="px-3.5 py-1.5 rounded-xl bg-white/20 backdrop-blur-sm text-sm font-black font-mono tracking-tight text-white border border-white/25">
-                      ₹{totalCost.toFixed(2)}
-                    </div>
-                  </button>
-
-                  {/* Secondary Actions Row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-0.5">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="py-2.5 px-3 rounded-xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 text-center text-xs transition-colors"
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handlePrintGenerate('download')}
-                      disabled={!actualPagesToPrint || actualPagesToPrint < 1 || actualPagesToPrint > 100 || !isBalanceSufficient}
-                      className="py-2.5 px-3 rounded-xl font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm text-center text-xs transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                      title="Generate and download .pdf file directly"
-                    >
-                      <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      <span>Download PDF</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handlePrintGenerate('preview')}
-                      className="col-span-2 sm:col-span-1 py-2.5 px-3 rounded-xl font-bold text-indigo-600 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/80 text-center text-xs transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <span>Free Preview (1p)</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Topup Modal */}
-          <TopupModal
-            isOpen={isTopupOpen}
-            onClose={() => setIsTopupOpen(false)}
-            requiredAmount={totalCost}
-            currentBalance={userBalance || 0}
-            onRechargeSuccess={() => {
-              const token = localStorage.getItem('userToken');
-              if (token) {
-                fetch(`${API_BASE_URL}/api/me`, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                })
-                  .then(r => r.json())
-                  .then(d => {
-                    if (d && !d.error) {
-                      setUserBalance(Number(d.credits) || 0);
-                    }
-                  })
-                  .catch(() => {});
-              }
-            }}
-          />
+          {/* Modal Scrollable Body */}
+          <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
 
-          {/* Right Column: Live Preview */}
-          <div className="hidden lg:flex flex-[1.2] flex-col items-center justify-start bg-slate-100 border border-slate-200 rounded-2xl p-4 overflow-hidden relative">
-            <h3 className="text-sm font-bold text-slate-500 mb-4 w-full text-center uppercase tracking-wider">Page 1 Live Preview</h3>
-            <div className="w-full flex-1 flex justify-center items-start custom-scrollbar overflow-y-auto py-2">
-              <div className="flex justify-center shadow-md bg-white pointer-events-none" style={{ width: '210mm', height: '296.5mm', zoom: 0.45 }}>
-                {previewSlipsData && previewSlipsData.length > 0 && (
-                  <BatchA4PrintLayout
-                    slipsData={previewSlipsData}
-                    pageNumber={1}
-                    totalPages={actualPagesToPrint}
-                    SlipComponent={selectedOption === 3 ? VoterSlipOption3 : VoterSlip}
-                    headerData={{
-                      title: assemblyName || 'Voters Directory',
-                      wardNo: wardNo || '-',
-                      partNo: boothNumber || '-'
-                    }}
-                    cardsPerPage={cardsPerPage}
-                  />
-                )}
+            {/* 1. TOP CARDS: Print Formats / Design Options */}
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+
+                {/* 1. Simple Voter Slip */}
+                <div
+                  onClick={() => handleSelectFormat('simple')}
+                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'simple' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'simple' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {selectedFormat === 'simple' && '✓'}
+                    </div>
+                    <span className="text-xs font-black text-slate-900 leading-tight">Simple Voter Slip</span>
+                  </div>
+
+                  {/* Thumbnail Preview mockup */}
+                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
+                    <div className="grid grid-cols-2 gap-1 flex-1">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="border border-slate-300 bg-white rounded-[2px] p-1 flex flex-col justify-between text-[6px]">
+                          <div className="border-b border-slate-200 pb-0.5 font-bold truncate">मतदाता पर्ची</div>
+                          <div className="space-y-0.5 text-slate-400">
+                            <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
+                            <div className="w-3/4 h-1 bg-slate-200 rounded-xs"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1 mt-auto">
+                    <select
+                      value={cardsPerPage}
+                      onChange={(e) => setCardsPerPage(Number(e.target.value))}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 outline-none w-full"
+                    >
+                      <option value={6}>6 per page</option>
+                      <option value={8}>8 per page</option>
+                      <option value={10}>10 per page</option>
+                      <option value={12}>12 per page</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 2. Voter Slip with Header (banner) */}
+                <div
+                  onClick={() => handleSelectFormat('header')}
+                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'header' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'header' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {selectedFormat === 'header' && '✓'}
+                    </div>
+                    <span className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Header (banner)</span>
+                  </div>
+
+                  {/* Thumbnail Preview mockup */}
+                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
+                    <div className="grid grid-cols-2 gap-1 flex-1">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="border border-slate-300 bg-white rounded-[2px] overflow-hidden flex flex-col text-[6px]">
+                          <div className="h-4 bg-orange-500 text-white flex items-center justify-center font-bold text-[5px] truncate px-0.5">
+                            प्रत्याशी का नाम
+                          </div>
+                          <div className="p-1 space-y-0.5 text-slate-400">
+                            <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
+                            <div className="w-2/3 h-1 bg-slate-200 rounded-xs"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1 mt-auto">
+                    <select
+                      value={cardsPerPage}
+                      onChange={(e) => setCardsPerPage(Number(e.target.value))}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 outline-none w-full"
+                    >
+                      <option value={6}>6 per page</option>
+                      <option value={8}>8 per page</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 3. Voter Slip with Symbol */}
+                <div
+                  onClick={() => handleSelectFormat('symbol')}
+                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'symbol' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'symbol' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {selectedFormat === 'symbol' && '✓'}
+                    </div>
+                    <span className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Symbol</span>
+                  </div>
+
+                  {/* Thumbnail Preview mockup */}
+                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
+                    <div className="grid grid-cols-2 gap-1 flex-1">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="border border-slate-300 bg-white rounded-[2px] p-1 flex items-center justify-between text-[6px]">
+                          <div className="space-y-0.5 text-slate-400 w-3/4">
+                            <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
+                            <div className="w-1/2 h-1 bg-slate-200 rounded-xs"></div>
+                          </div>
+                          <div className="w-3.5 h-3.5 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-[6px] text-emerald-700">
+                            ★
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1 mt-auto">
+                    <select
+                      value={cardsPerPage}
+                      onChange={(e) => setCardsPerPage(Number(e.target.value))}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 outline-none w-full"
+                    >
+                      <option value={8}>8 per page</option>
+                      <option value={10}>10 per page</option>
+                      <option value={12}>12 per page</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 4. Personal Appeal Letter */}
+                <div
+                  onClick={() => handleSelectFormat('appeal')}
+                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'appeal' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'appeal' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {selectedFormat === 'appeal' && '✓'}
+                    </div>
+                    <span className="text-xs font-black text-slate-900 leading-tight">Personal Appeal Letter</span>
+                  </div>
+
+                  {/* Thumbnail Preview mockup */}
+                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
+                    <div className="h-full border border-orange-300 bg-white rounded p-1 flex flex-col justify-between">
+                      <div className="bg-orange-500 text-white font-bold text-[6px] text-center py-1 rounded">
+                        प्रत्याशी का नाम अपील
+                      </div>
+                      <div className="space-y-1 p-1">
+                        <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
+                        <div className="w-5/6 h-1 bg-slate-200 rounded-xs"></div>
+                        <div className="w-2/3 h-1 bg-slate-200 rounded-xs"></div>
+                      </div>
+                      <div className="text-[6px] text-slate-400 border-t border-slate-100 pt-0.5 text-right font-medium">हस्ताक्षर</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1 mt-auto">
+                    <div className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-100 text-slate-600 text-center w-full">
+                      1 per page
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Alphabetical Voter List */}
+                <div
+                  onClick={() => handleSelectFormat('alphabetical')}
+                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'alphabetical' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'alphabetical' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {selectedFormat === 'alphabetical' && '✓'}
+                    </div>
+                    <span className="text-xs font-black text-slate-900 leading-tight">Alphabetical Voter List</span>
+                  </div>
+
+                  {/* Thumbnail Preview mockup */}
+                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
+                    <div className="h-full border border-slate-300 bg-white rounded p-1 flex flex-col">
+                      <div className="bg-slate-800 text-white text-[5px] font-bold px-1 py-0.5 mb-1 flex justify-between">
+                        <span>नाम</span>
+                        <span>EPIC</span>
+                      </div>
+                      <div className="space-y-0.5 flex-1">
+                        {[...Array(6)].map((_, i) => (
+                          <div key={i} className="flex justify-between items-center text-[5px] border-b border-slate-100 pb-0.5">
+                            <span className="w-8 h-1 bg-slate-200 rounded-xs"></span>
+                            <span className="w-5 h-1 bg-slate-300 rounded-xs"></span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1 mt-auto">
+                    <div className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-100 text-slate-600 text-center w-full">
+                      40 voters / page
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
+
+            {/* Banner/Symbol upload if applicable */}
+            {(selectedFormat === 'header' || selectedFormat === 'symbol') && (
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-700">
+                    {selectedFormat === 'header' ? 'Candidate Top Header / Banner:' : 'Candidate Party Symbol:'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          if (selectedFormat === 'header') setBannerImage(ev.target.result);
+                          else setSymbolImage(ev.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="text-xs file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-bold hover:file:bg-blue-100"
+                  />
+                </div>
+                {(bannerImage || symbolImage) && (
+                  <span className="text-emerald-600 font-bold flex items-center gap-1">
+                    ✓ Image attached (+2 paisa rate)
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* 2. EXTRA PAGES TOGGLES (click to switch on / off) */}
+            <div>
+              <div className="text-xs font-bold text-slate-900 mb-3 flex items-center gap-2">
+                <span>Extra pages in every PDF</span>
+                <span className="text-slate-400 font-medium text-[11px]">(click to switch on / off)</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+
+                {/* 1. Booth index */}
+                <div
+                  onClick={() => toggleExtraPage('boothIndex')}
+                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.boothIndex ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.boothIndex ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {extraPages.boothIndex && '✓'}
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 leading-tight">Booth index (page nos.)</span>
+                  </div>
+
+                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex flex-col justify-center">
+                    <div className="h-3 bg-blue-900 rounded-xs mb-1.5"></div>
+                    <div className="space-y-1">
+                      <div className="h-1 bg-slate-300 rounded-xs w-full"></div>
+                      <div className="h-1 bg-slate-200 rounded-xs w-4/5"></div>
+                      <div className="h-1 bg-slate-200 rounded-xs w-full"></div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 leading-snug">
+                    First page: every booth with page number from – to
+                  </p>
+                </div>
+
+                {/* 2. Booth summary page */}
+                <div
+                  onClick={() => toggleExtraPage('boothSummary')}
+                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.boothSummary ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.boothSummary ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {extraPages.boothSummary && '✓'}
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 leading-tight">Booth summary page</span>
+                  </div>
+
+                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex flex-col justify-center">
+                    <div className="h-2.5 bg-slate-800 rounded-xs mb-1.5 w-1/2 mx-auto"></div>
+                    <div className="grid grid-cols-3 gap-1">
+                      <div className="h-5 bg-blue-100 rounded border border-blue-200"></div>
+                      <div className="h-5 bg-pink-100 rounded border border-pink-200"></div>
+                      <div className="h-5 bg-emerald-100 rounded border border-emerald-200"></div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 leading-snug">
+                    Before every booth: voters, male / female, deleted, age groups
+                  </p>
+                </div>
+
+                {/* 3. Counting sheet (OMR) */}
+                <div
+                  onClick={() => toggleExtraPage('countingSheet')}
+                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.countingSheet ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.countingSheet ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {extraPages.countingSheet && '✓'}
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 leading-tight">Counting sheet (OMR)</span>
+                  </div>
+
+                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex items-center justify-center">
+                    <div className="grid grid-cols-6 gap-1 w-full opacity-60">
+                      {[...Array(18)].map((_, i) => (
+                        <div key={i} className="h-2 rounded-full border border-slate-400"></div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 leading-snug">
+                    Numbers 1, 2, 3 ... down the columns over the full page
+                  </p>
+                </div>
+
+                {/* 4. "Work completed" page */}
+                <div
+                  onClick={() => toggleExtraPage('workCompleted')}
+                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.workCompleted ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.workCompleted ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                      }`}>
+                      {extraPages.workCompleted && '✓'}
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 leading-tight">"Work completed" page</span>
+                  </div>
+
+                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex flex-col items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold mb-1">
+                      ✓
+                    </div>
+                    <div className="text-[8px] font-bold text-slate-700">Your work is completed</div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 leading-snug">
+                    Last page: Total voters converted from N files
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            {/* 3. SECTION 4 · PROCESSING DASHBOARD & METRICS (EXACTLY LIKE SCREENSHOT) */}
+            <div className="pt-3 border-t border-slate-200 space-y-4">
+
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-900">
+                  4 · Processing
+                </h3>
+                <span className="text-xs font-semibold text-slate-500">
+                  Total Deduction: <strong className="text-indigo-600 font-mono">₹{totalCost.toFixed(2)}</strong> ({totalEstimatedPages} pages)
+                </span>
+              </div>
+
+              {/* Start / Stop and Top Metric Tiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                {/* START BUTTON */}
+                <button
+                  type="button"
+                  onClick={handleStartProcessing}
+                  disabled={isProcessing || !isBalanceSufficient}
+                  className="py-3 px-4 rounded-xl font-black text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-2 text-sm tracking-wider cursor-pointer"
+                >
+                  <span>▶</span>
+                  <span>START</span>
+                </button>
+
+                {/* STOP BUTTON */}
+                <button
+                  type="button"
+                  onClick={handleStopProcessing}
+                  disabled={!isProcessing}
+                  className="py-3 px-4 rounded-xl font-bold text-rose-600 bg-white hover:bg-rose-50 border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                >
+                  <span>■</span>
+                  <span>Stop</span>
+                </button>
+
+                {/* ESTIMATED TIME */}
+                <div className="p-3 bg-blue-950 text-white rounded-xl shadow-inner flex flex-col justify-between">
+                  <span className="text-[9px] font-bold tracking-wider uppercase text-blue-200">ESTIMATED TIME</span>
+                  <span className="text-lg font-mono font-bold mt-1">
+                    {processingStats.timeRemainingStr !== '—' && processingStats.timeRemainingStr !== '00:00' ? processingStats.timeRemainingStr : '—'}
+                  </span>
+                </div>
+
+                {/* ESTIMATED PAGES */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] font-bold tracking-wider uppercase text-slate-400">ESTIMATED PAGES</span>
+                  <span className="text-lg font-mono font-bold text-slate-900 mt-1">
+                    {totalEstimatedPages}
+                  </span>
+                </div>
+
+                {/* RECORDS TO PRINT */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] font-bold tracking-wider uppercase text-slate-400">RECORDS TO PRINT</span>
+                  <span className="text-lg font-mono font-bold text-slate-900 mt-1">
+                    {totalVotersCount}
+                  </span>
+                </div>
+
+                {/* PDFS TO CREATE */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] font-bold tracking-wider uppercase text-slate-400">PDFS TO CREATE</span>
+                  <span className="text-lg font-mono font-bold text-slate-900 mt-1">
+                    1
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar Container */}
+              <div className="space-y-1.5">
+                <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden border border-slate-200 shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-500 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${Math.max(isProcessing ? 5 : 0, Math.min(100, processingStats.progress))}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
+                  <span className="text-blue-700 font-bold">{processingStats.status}</span>
+                  <span className="font-mono font-bold text-slate-700">{processingStats.progress}%</span>
+                </div>
+              </div>
+
+              {/* 8 Stats Display Tiles (Exact 2x4 Layout from Screenshot) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+                {/* START TIME */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">START TIME</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.startTime || '—'}
+                  </p>
+                </div>
+
+                {/* EST. FINISH / END TIME */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">EST. FINISH / END TIME</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.endTime || processingStats.estFinishTime || '—'}
+                  </p>
+                </div>
+
+                {/* TIME ELAPSED */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">TIME ELAPSED</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.timeElapsedStr}
+                  </p>
+                </div>
+
+                {/* TIME REMAINING */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">TIME REMAINING</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.timeRemainingStr}
+                  </p>
+                </div>
+
+                {/* SPEED (VOTERS / SEC) */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">SPEED (VOTERS / SEC)</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.speedVotersPerSec}
+                  </p>
+                </div>
+
+                {/* SPEED (PAGES / MIN) */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">SPEED (PAGES / MIN)</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.speedPagesPerMin}
+                  </p>
+                </div>
+
+                {/* RECORDS DONE */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">RECORDS DONE</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.recordsDone > 0 ? `${processingStats.recordsDone} / ${totalVotersCount}` : '—'}
+                  </p>
+                </div>
+
+                {/* BOOTHS DONE */}
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">BOOTHS DONE</p>
+                  <p className="text-sm font-mono font-bold text-slate-800 mt-1">
+                    {processingStats.boothsDone} / {processingStats.totalBooths}
+                  </p>
+                </div>
+
+              </div>
+
+              {/* Insufficient balance warning if needed */}
+              {!isBalanceSufficient && (
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-800 font-semibold">
+                  <span>Insufficient balance (Need: ₹{totalCost.toFixed(2)}, Available: ₹{(userBalance || 0).toFixed(2)})</span>
+                  <button
+                    onClick={() => setIsTopupOpen(true)}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                  >
+                    Recharge Balance
+                  </button>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+
+          {/* Modal Footer */}
+          <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+            <div>
+              Auto-download triggers immediately upon completing 100% processing without page freezing.
+            </div>
             <button
-              onClick={() => handlePrintGenerate('preview')}
-              className="mt-4 px-6 py-2.5 rounded-xl font-bold text-indigo-600 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-sm transition-all text-center text-sm"
+              type="button"
+              onClick={onClose}
+              disabled={isProcessing}
+              className="px-4 py-2 rounded-xl bg-white border border-slate-300 font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50 cursor-pointer"
             >
-              Download Free Preview PDF (1 Page)
+              Close
             </button>
           </div>
 
         </div>
       </div>
+
+      {/* Topup Modal */}
+      <TopupModal
+        isOpen={isTopupOpen}
+        onClose={() => setIsTopupOpen(false)}
+        requiredAmount={totalCost}
+        currentBalance={userBalance || 0}
+        onRechargeSuccess={() => {
+          const token = localStorage.getItem('userToken');
+          if (token) {
+            fetch(`${API_BASE_URL}/api/me`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(r => r.json())
+              .then(d => {
+                if (d && !d.error) {
+                  setUserBalance(Number(d.credits) || 0);
+                }
+              })
+              .catch(() => { });
+          }
+        }}
+      />
     </>
   );
 }
