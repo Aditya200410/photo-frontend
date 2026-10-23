@@ -16,7 +16,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
   const [selectedFormat, setSelectedFormat] = useState('simple');
 
   // Cards per page settings for formats
-  const [cardsPerPage, setCardsPerPage] = useState(6);
+  const [cardsPerPage, setCardsPerPage] = useState(8);
 
   // Extra pages toggles
   const [extraPages, setExtraPages] = useState({
@@ -151,8 +151,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
   // Sync format changes with sensible default cards per page
   const handleSelectFormat = (fmt) => {
     setSelectedFormat(fmt);
-    if (fmt === 'simple') setCardsPerPage(6);
-    else if (fmt === 'header') setCardsPerPage(6);
+    if (fmt === 'simple') setCardsPerPage(8);
+    else if (fmt === 'header') setCardsPerPage(8);
     else if (fmt === 'symbol') setCardsPerPage(8);
     else if (fmt === 'appeal') setCardsPerPage(1);
     else if (fmt === 'alphabetical') setCardsPerPage(40);
@@ -180,8 +180,15 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     const vFName = voter.V_FNAME_EN ? `${voter.V_FNAME_EN} ${voter.V_LNAME_EN || ''}`.trim() : (voter.V_FNAME_HI || '');
     const fFName = voter.VR_FNAME_EN ? `${voter.VR_FNAME_EN} ${voter.VR_LNAME_EN || ''}`.trim() : (voter.VR_FNAME_HI || '');
 
-    const resolvedPart = voter.PART_NO || voter.PART || boothNumber || '-';
-    const resolvedWard = voter.WARD_NO || voter.WARD || wardNo || '-';
+    const rawWard = voter.WARDNO || voter.WARD_NO || voter['WARD NO'] || voter['PANCHAYAT WARD NO'] || voter.WARD || voter.NWARDNO || voter._meta_ward || voter.ward || wardNo;
+    const resolvedWard = (rawWard !== undefined && rawWard !== null && String(rawWard).trim() !== '' && String(rawWard).trim().toLowerCase() !== 'all') 
+      ? String(rawWard).trim() 
+      : (wardNo && String(wardNo).trim().toLowerCase() !== 'all' ? String(wardNo).trim() : '-');
+
+    const rawPart = voter.PART_NO || voter.BOOTH_NO || voter.PARTNO || voter['PART NO'] || voter.PART || voter.BOOTH || voter._meta_booth || voter.booth || boothNumber;
+    const resolvedPart = (rawPart !== undefined && rawPart !== null && String(rawPart).trim() !== '' && String(rawPart).trim().toLowerCase() !== 'all') 
+      ? String(rawPart).trim() 
+      : (boothNumber && String(boothNumber).trim().toLowerCase() !== 'all' ? String(boothNumber).trim() : '-');
 
     return {
       wardNo: resolvedWard,

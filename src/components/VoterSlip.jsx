@@ -10,15 +10,19 @@ const cleanVal = (val, fallback = '-') => {
 };
 
 const VoterSlip = forwardRef(({ data = {}, style = {} }, ref) => {
-  const wardNo = cleanVal(data.wardNo);
-  const partNo = cleanVal(data.partNo);
+  const wardNo = cleanVal(
+    data.wardNo || data.WARDNO || data.WARD_NO || data['WARD NO'] || data['PANCHAYAT WARD NO'] || data.WARD || data.ward
+  );
+  const partNo = cleanVal(
+    data.partNo || data.PART_NO || data.BOOTH_NO || data.PARTNO || data['PART NO'] || data.PART || data.booth
+  );
   const serialNo = cleanVal(data.serialNo, '1');
   const idNumber = cleanVal(data.idNumber);
   const voterName = data.voterName || '-';
   const fatherHusbandName = data.fatherHusbandName || '-';
   const houseNo = data.houseNo || '0';
   const gender = data.gender || '-';
-  const age = data.age ? `${data.age} वर्ष` : '-';
+  const age = data.age ? `${String(data.age).replace(/वर्ष/g, '').trim()}` : '-';
   const pollingStation = data.pollingStation || '-';
   const hasTopImage = Boolean(data.topImage);
 
@@ -29,206 +33,179 @@ const VoterSlip = forwardRef(({ data = {}, style = {} }, ref) => {
         width: '100%', 
         height: '100%',
         backgroundColor: '#ffffff', 
-        color: '#0f172a', 
-        fontFamily: "'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, 'Noto Sans Devanagari', Arial, sans-serif", 
+        color: '#000000', 
+        fontFamily: "'Noto Sans Devanagari', 'Segoe UI', 'Arial', sans-serif", 
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        border: '1.5px solid #0f172a',
-        borderRadius: '3px',
+        border: '2px solid #000000',
+        borderRadius: '0px',
         overflow: 'hidden',
         position: 'relative',
+        padding: '0px',
         ...style
       }}
     >
-      {/* 1. Header: Either Candidate/Party Image Banner OR Official Voter Slip Header */}
-      {hasTopImage ? (
+      {/* 1. Header: Candidate Banner Image if provided */}
+      {hasTopImage && (
         <div style={{ 
           width: '100%', 
-          height: '56px',
+          height: '62px',
           flexShrink: 0,
-          backgroundColor: '#f1f5f9', 
-          borderBottom: '1.5px solid #0f172a',
+          backgroundColor: '#ffffff', 
+          borderBottom: '1.5px solid #000000',
           position: 'relative',
           overflow: 'hidden'
         }}>
           <img 
             src={data.topImage} 
-            alt="Banner" 
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} 
+            alt="Candidate Banner" 
+            style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} 
           />
-        </div>
-      ) : (
-        <div style={{
-          width: '100%',
-          height: '22px',
-          flexShrink: 0,
-          backgroundColor: '#0f172a',
-          color: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 8px',
-          boxSizing: 'border-box',
-          borderBottom: '1.5px solid #0f172a'
-        }}>
-          <span style={{ fontSize: '10px', fontWeight: '800', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>मतदाता सूचना पर्ची</span>
-            <span style={{ fontSize: '8.5px', color: '#94a3b8', fontWeight: '600' }}>(VOTER SLIP)</span>
-          </span>
-          <span style={{ fontSize: '9px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase' }}>
-            {data.assemblyName || data.cityName || 'निर्वाचन'}
-          </span>
         </div>
       )}
 
-      {/* 2. Key Metrics Bar: Ward, Part, Serial No, EPIC ID */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '0.85fr 0.95fr 1.25fr 1.55fr', 
-        backgroundColor: '#f8fafc',
-        borderBottom: '1px solid #0f172a',
-        alignItems: 'stretch',
-        flexShrink: 0,
-        height: hasTopImage ? '36px' : '42px',
-        boxSizing: 'border-box'
-      }}>
-        {/* Ward No */}
-        <div style={{ 
-          borderRight: '1px solid #cbd5e1', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          padding: '1px 2px'
+      {/* 2. Cut Instruction Line (shown when topImage exists) */}
+      {hasTopImage && (
+        <div style={{
+          width: '100%',
+          textAlign: 'center',
+          fontSize: '8.5px',
+          fontWeight: '900',
+          color: '#000000',
+          padding: '1.5px 0',
+          borderBottom: '1.5px solid #000000',
+          backgroundColor: '#ffffff',
+          letterSpacing: '0.2px',
+          flexShrink: 0
         }}>
-          <span style={{ fontSize: '8px', color: '#64748b', fontWeight: '700', lineHeight: 1 }}>वार्ड न०</span>
-          <span style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', lineHeight: 1.15, marginTop: '1px' }}>{wardNo}</span>
+          मतदान केंद्र जाने से पहले ऊपर वाले इस भाग को काट दे
         </div>
+      )}
 
-        {/* Part No */}
-        <div style={{ 
-          borderRight: '1px solid #cbd5e1', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          padding: '1px 2px'
-        }}>
-          <span style={{ fontSize: '8px', color: '#64748b', fontWeight: '700', lineHeight: 1 }}>भाग संख्या</span>
-          <span style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', lineHeight: 1.15, marginTop: '1px' }}>{partNo}</span>
-        </div>
-
-        {/* Serial No (Large, bold, prominent highlight) */}
-        <div style={{ 
-          borderRight: '1px solid #cbd5e1', 
-          backgroundColor: '#eff6ff',
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          padding: '1px 2px'
-        }}>
-          <span style={{ fontSize: '8px', color: '#1d4ed8', fontWeight: '800', lineHeight: 1 }}>क्रम संख्या</span>
-          <span style={{ fontSize: '15px', fontWeight: '900', color: '#1d4ed8', lineHeight: 1.1, marginTop: '1px' }}>
-            {serialNo}
-          </span>
-        </div>
-
-        {/* EPIC ID */}
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          padding: '1px 4px'
-        }}>
-          <span style={{ fontSize: '8px', color: '#64748b', fontWeight: '700', lineHeight: 1 }}>पहचान पत्र क्र०</span>
-          <span style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a', fontFamily: 'monospace', letterSpacing: '0.4px', lineHeight: 1.15, marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {idNumber}
-          </span>
-        </div>
-      </div>
-
-      {/* 3. Elector Details (Structured table rows) */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        flex: 1, 
+      {/* 3. Main Slip Body */}
+      <div style={{
+        padding: '5px 7px 4px 7px',
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
         justifyContent: 'space-between',
+        fontSize: '11px',
+        lineHeight: 1.35,
+        color: '#000000',
         boxSizing: 'border-box'
       }}>
-        {/* Row 1: Elector's Name */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '4px 8px', 
-          borderBottom: '1px solid #e2e8f0',
-          backgroundColor: '#ffffff'
-        }}>
-          <span style={{ fontSize: '10.5px', color: '#475569', width: '92px', flexShrink: 0, fontWeight: '700' }}>
+        {/* Row 1: वार्ड नं० and भाग नं० */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>वार्ड नं० :</span>
+            <div style={{
+              border: '1.5px solid #000000',
+              minWidth: '55px',
+              padding: '0px 8px',
+              height: '19px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '900',
+              fontSize: '12px'
+            }}>
+              {wardNo}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>भाग नं० :</span>
+            <div style={{
+              border: '1.5px solid #000000',
+              minWidth: '45px',
+              padding: '0px 8px',
+              height: '19px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '900',
+              fontSize: '12px'
+            }}>
+              {partNo}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: क्रम संख्या and EPIC Number */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>क्रम संख्या :</span>
+            <div style={{
+              border: '1.5px solid #000000',
+              minWidth: '65px',
+              padding: '0px 8px',
+              height: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '900',
+              fontSize: '13.5px'
+            }}>
+              {serialNo}
+            </div>
+          </div>
+
+          <div style={{
+            fontWeight: '900',
+            fontSize: '12.5px',
+            fontFamily: "'Segoe UI', Roboto, monospace",
+            letterSpacing: '0.4px',
+            color: '#000000'
+          }}>
+            {idNumber}
+          </div>
+        </div>
+
+        {/* Row 3: मतदाता का नाम */}
+        <div style={{ display: 'flex', alignItems: 'baseline', marginTop: '2px' }}>
+          <span style={{ fontWeight: 'bold', fontSize: '11.5px', whiteSpace: 'nowrap', marginRight: '5px' }}>
             मतदाता का नाम :
           </span>
-          <span style={{ fontSize: hasTopImage ? '13.5px' : '15px', fontWeight: '900', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontWeight: '900', fontSize: '13.5px', color: '#000000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {voterName}
           </span>
         </div>
 
-        {/* Row 2: Relative's Name */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '3.5px 8px', 
-          borderBottom: '1px solid #e2e8f0',
-          backgroundColor: '#ffffff'
-        }}>
-          <span style={{ fontSize: '10px', color: '#475569', width: '92px', flexShrink: 0, fontWeight: '700' }}>
-            पिता / पति :
+        {/* Row 4: पिता / पति का नाम */}
+        <div style={{ display: 'flex', alignItems: 'baseline', marginTop: '1px' }}>
+          <span style={{ fontWeight: 'bold', fontSize: '11px', whiteSpace: 'nowrap', marginRight: '5px' }}>
+            पिता / पति का नाम :
           </span>
-          <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontWeight: '700', fontSize: '12px', color: '#000000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {fatherHusbandName}
           </span>
         </div>
 
-        {/* Row 3: House No, Gender, Age */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1.2fr 1fr 1fr', 
-          borderBottom: '1px solid #0f172a',
-          backgroundColor: '#f8fafc',
-          padding: '3px 8px',
-          alignItems: 'center',
-          boxSizing: 'border-box'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ color: '#64748b', fontWeight: '700', marginRight: '3px', fontSize: '9.5px' }}>मकान:</span>
-            <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '11.5px' }}>{houseNo}</span>
+        {/* Row 5: मकान नं०, लिंग, आयु */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1px' }}>
+          <div>
+            <span style={{ fontWeight: 'bold', fontSize: '11px' }}>मकान नं० : </span>
+            <span style={{ fontWeight: '800', fontSize: '11.5px' }}>{houseNo}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', borderLeft: '1px solid #e2e8f0', paddingLeft: '6px' }}>
-            <span style={{ color: '#64748b', fontWeight: '700', marginRight: '3px', fontSize: '9.5px' }}>लिंग:</span>
-            <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '11.5px' }}>{gender}</span>
+
+          <div>
+            <span style={{ fontWeight: 'bold', fontSize: '11px' }}>लिंग: </span>
+            <span style={{ fontWeight: '700', fontSize: '11.5px' }}>{gender}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', borderLeft: '1px solid #e2e8f0', paddingLeft: '6px' }}>
-            <span style={{ color: '#64748b', fontWeight: '700', marginRight: '3px', fontSize: '9.5px' }}>आयु:</span>
-            <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '11.5px' }}>{age}</span>
+
+          <div>
+            <span style={{ fontWeight: 'bold', fontSize: '11px' }}>आयु: </span>
+            <span style={{ fontWeight: '800', fontSize: '11.5px' }}>{age}</span>
           </div>
         </div>
 
-        {/* Row 4: Polling Station */}
-        <div style={{ 
-          backgroundColor: '#f1f5f9', 
-          padding: '4px 8px', 
-          display: 'flex', 
-          alignItems: 'flex-start',
-          gap: '4px',
-          flex: 1,
-          minHeight: '26px',
-          boxSizing: 'border-box'
-        }}>
-          <span style={{ fontSize: '9px', color: '#475569', fontWeight: '800', whiteSpace: 'nowrap', flexShrink: 0, marginTop: '1px' }}>
+        {/* Row 6: मतदान केंद्र */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', marginTop: '1px', lineHeight: 1.25 }}>
+          <span style={{ fontWeight: 'bold', fontSize: '10.5px', whiteSpace: 'nowrap', marginRight: '4px', flexShrink: 0 }}>
             मतदान केंद्र :
           </span>
-          <span style={{ fontSize: '10.5px', lineHeight: '1.2', fontWeight: '700', color: '#0f172a', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <span style={{ fontWeight: '700', fontSize: '10.5px', color: '#000000', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {pollingStation}
           </span>
         </div>
