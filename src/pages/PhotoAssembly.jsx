@@ -159,17 +159,28 @@ function PhotoAssembly({ onBack }) {
     setIsTemplateModalOpen(false);
     if (!selectedVoter) return;
 
+    const rawWard = selectedVoter.WARDNO || selectedVoter.WARD_NO || selectedVoter['WARD NO'] || selectedVoter.WARD || selectedVoter._meta_ward || selectedVoter.ward;
+    const cleanWard = (rawWard && String(rawWard).trim().toLowerCase() !== 'all') ? String(rawWard).trim() : '-';
+
+    const rawPart = selectedVoter.MPARTNO || selectedVoter.BOOTH_NO || selectedVoter.PART_NO || selectedVoter.PARTNO || selectedVoter['PART NO'] || selectedVoter.BOOTH || selectedVoter._meta_booth || selectedVoter.booth;
+    const cleanPart = (rawPart && String(rawPart).trim().toLowerCase() !== 'all') ? String(rawPart).trim() : (boothNumber && String(boothNumber).trim().toLowerCase() !== 'all' ? String(boothNumber).trim() : '-');
+
+    const vFName = selectedVoter.V_FNAME_EN ? `${selectedVoter.V_FNAME_EN} ${selectedVoter.V_LNAME_EN || ''}`.trim() : (selectedVoter.V_FNAME_HI || '');
+    const fFName = selectedVoter.VR_FNAME_EN ? `${selectedVoter.VR_FNAME_EN} ${selectedVoter.VR_LNAME_EN || ''}`.trim() : (selectedVoter.VR_FNAME_HI || '');
+
+    const resolvedPS = selectedVoter.PS_EN || selectedVoter.PS_HI || selectedVoter.MPSNAME || selectedVoter.PSLOCATION || `${assemblyName || ''} ${cleanPart !== '-' ? '- Booth ' + cleanPart : ''}`.trim();
+
     const mappedData = {
-      wardNo: '-', // Not in assembly
-      partNo: boothNumber,
-      serialNo: selectedVoter.ID || selectedVoter.VID || '1',
-      idNumber: selectedVoter.VID || '-',
-      voterName: selectedVoter.EFVNAME || selectedVoter.FVNAME || '-',
-      fatherHusbandName: selectedVoter.EFRNAME || selectedVoter.FRNAME || '-',
-      houseNo: selectedVoter.MHOUSENO || '0',
-      gender: selectedVoter.MSEX === 'M' || selectedVoter.MSEX === 'पुरुष' ? 'पुरुष' : (selectedVoter.MSEX === 'F' || selectedVoter.MSEX === 'स्त्री' ? 'स्त्री' : selectedVoter.MSEX),
-      age: selectedVoter.MAGE || '18',
-      pollingStation: `${assemblyName} - ${boothNumber}`,
+      wardNo: cleanWard,
+      partNo: cleanPart,
+      serialNo: selectedVoter.SRNO2 || selectedVoter.SRNO1 || selectedVoter.SLNOINPART || selectedVoter.SL_NO || selectedVoter.SRNO || selectedVoter.SNO || selectedVoter.ID || selectedVoter.VID || '1',
+      idNumber: selectedVoter.IDCARD_NO || selectedVoter.EPIC_NO || selectedVoter.VID || selectedVoter.EPIC || selectedVoter.IDCARD || '-',
+      voterName: selectedVoter.EFVNAME || selectedVoter.FVNAME || selectedVoter.VOTER_NAME || vFName || '-',
+      fatherHusbandName: selectedVoter.EFRNAME || selectedVoter.FRNAME || selectedVoter.RELATIVE_NAME || fFName || '-',
+      houseNo: selectedVoter.HOUSE_NO || selectedVoter.MHOUSENO || selectedVoter.FHOUSENO || selectedVoter.HOUSENO || '0',
+      gender: selectedVoter.MSEX === 'M' || selectedVoter.MSEX === 'पुरुष' ? 'पुरुष' : (selectedVoter.MSEX === 'F' || selectedVoter.MSEX === 'स्त्री' ? 'स्त्री' : selectedVoter.MSEX || selectedVoter.GENDER || '-'),
+      age: selectedVoter.MAGE || selectedVoter.AGE || selectedVoter.FAGE || '18',
+      pollingStation: resolvedPS,
       topImage: null,
       symbolImage: null,
       symbolName: 'कमल का फूल'

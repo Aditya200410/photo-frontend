@@ -182,8 +182,8 @@ function PhotoNagarNigam({ onBack }) {
     const mappedData = {
       wardNo: cleanWard,
       partNo: cleanPart,
-      serialNo: selectedVoter.SRNO || selectedVoter.SNO || selectedVoter.SERIAL_NO || selectedVoter.SLNOINPART || selectedVoter.ID || selectedVoter.VID || '1',
-      idNumber: selectedVoter.VID || selectedVoter.IDCARD || selectedVoter.EPIC || '-',
+      serialNo: selectedVoter.SLNOINPART || selectedVoter.SL_NO || selectedVoter.SRNO || selectedVoter.SNO || selectedVoter.SERIAL_NO || selectedVoter.ID || selectedVoter.VID || '1',
+      idNumber: selectedVoter.IDCARD_NO || selectedVoter.EPIC_NO || selectedVoter.VID || selectedVoter.IDCARD || selectedVoter.EPIC || selectedVoter.VOTER_ID || '-',
       voterName: selectedVoter.EFVNAME || selectedVoter.FVNAME || selectedVoter.VOTER_NAME || vFName || '-',
       fatherHusbandName: selectedVoter.EFRNAME || selectedVoter.FRNAME || selectedVoter.RELATIVE_NAME || fFName || '-',
       houseNo: selectedVoter.FHOUSENO || selectedVoter.HOUSE_NO || selectedVoter.MHOUSENO || selectedVoter.HOUSENO || '0',

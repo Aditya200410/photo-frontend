@@ -62,8 +62,8 @@ function SlipPrintManager({ isOpen, onClose, optionNumber, voterData }) {
         pagesHtml,
         filename: `voter-slips-${numPages}-pages.pdf`,
         onProgress: (p) => setProgress(p),
-        scale: 1.4,
-        quality: 0.85
+        scale: 2.0,
+        quality: 0.95
       });
     } else {
       // Instant window.print popup

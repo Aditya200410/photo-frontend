@@ -30,8 +30,10 @@ const VoterSlip = forwardRef(({ data = {}, style = {} }, ref) => {
     <div 
       ref={ref}
       style={{ 
-        width: '100%', 
-        height: '100%',
+        width: style.width || '380px', 
+        height: style.height || 'auto',
+        minHeight: hasTopImage ? '280px' : '205px',
+        maxWidth: '100%',
         backgroundColor: '#ffffff', 
         color: '#000000', 
         fontFamily: "'Noto Sans Devanagari', 'Segoe UI', 'Arial', sans-serif", 
