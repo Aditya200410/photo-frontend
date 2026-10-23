@@ -4,7 +4,7 @@ import BatchA4PrintLayout from './BatchA4PrintLayout';
 import VoterSlip from './VoterSlip';
 import VoterSlipOption3 from './VoterSlipOption3';
 import TopupModal from './TopupModal';
-import { generatePdfFromHtml, logPrintTransaction } from '../utils/printService';
+import { generatePdfFromHtml, printViaWindowPrint, logPrintTransaction } from '../utils/printService';
 
 function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNumber, wardNo }) {
   // Template format: 
@@ -103,12 +103,41 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     return cardsPerPage;
   }, [selectedFormat, cardsPerPage]);
 
-  const slipPagesCount = totalVotersCount > 0 ? Math.ceil(totalVotersCount / effectiveCardsPerPage) : 1;
+  // Page Range Selection ('all' or 'custom')
+  const [pageRangeMode, setPageRangeMode] = useState('all'); // 'all' or 'custom'
+  const [customStartPage, setCustomStartPage] = useState(1);
+  const [customEndPage, setCustomEndPage] = useState(1);
+
+  // Sync customEndPage whenever total slip pages change
+  const totalRawSlipPages = totalVotersCount > 0 ? Math.ceil(totalVotersCount / effectiveCardsPerPage) : 1;
+
+  useEffect(() => {
+    if (pageRangeMode === 'all') {
+      setCustomStartPage(1);
+      setCustomEndPage(totalRawSlipPages);
+    }
+  }, [totalRawSlipPages, pageRangeMode]);
+
+  // Validated range
+  const validStartPage = Math.max(1, Math.min(Number(customStartPage) || 1, totalRawSlipPages));
+  const validEndPage = Math.max(validStartPage, Math.min(Number(customEndPage) || totalRawSlipPages, totalRawSlipPages));
+
+  // Determine active pages and corresponding voters slice
+  const activeSlipPagesCount = pageRangeMode === 'all' 
+    ? totalRawSlipPages 
+    : (validEndPage - validStartPage + 1);
+
   const extraPagesCount = (extraPages.boothIndex ? 1 : 0) +
     (extraPages.boothSummary ? 1 : 0) +
     (extraPages.countingSheet ? 1 : 0) +
     (extraPages.workCompleted ? 1 : 0);
-  const totalEstimatedPages = slipPagesCount + extraPagesCount;
+
+  const totalEstimatedPages = activeSlipPagesCount + extraPagesCount;
+
+  // Active records to print based on page selection
+  const activeRecordsCount = pageRangeMode === 'all' 
+    ? totalVotersCount 
+    : Math.min(totalVotersCount, activeSlipPagesCount * effectiveCardsPerPage);
 
   const hasImage = Boolean(
     (selectedFormat === 'header' && bannerImage) ||
@@ -293,13 +322,18 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
       // 3. Render voter slips chunk by chunk with non-freezing event ticks
       let renderedVotersCount = 0;
 
-      for (let p = 0; p < slipPagesCount; p++) {
+      const startPageLoop = pageRangeMode === 'all' ? 0 : (validStartPage - 1);
+      const endPageLoop = pageRangeMode === 'all' ? totalRawSlipPages : validEndPage;
+
+      for (let p = startPageLoop; p < endPageLoop; p++) {
         if (cancelProcessingRef.current) break;
 
         const startIdx = p * effectiveCardsPerPage;
         const endIdx = Math.min(totalVotersCount, startIdx + effectiveCardsPerPage);
         const pageVoters = voters.slice(startIdx, endIdx);
         const slips = pageVoters.map(mapVoterToSlip).filter(Boolean);
+
+        const currentSlipPageNumber = p + 1;
 
         if (selectedFormat === 'appeal') {
           // 1 per page Personal Appeal Letter format
@@ -330,7 +364,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
             `<div class="a4-print-sheet" style="padding:8mm;font-family:sans-serif;box-sizing:border-box;">
               <div style="text-align:center;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:10px;">
                 <h2 style="font-size:16px;margin:0;color:#0f172a;">मतदाता सूची (वर्णमाला अनुसार / Alphabetical List)</h2>
-                <div style="font-size:11px;color:#475569;margin-top:3px;">${assemblyName || ''} - भाग संख्या: ${boothNumber || '-'} - Page ${p + 1} of ${slipPagesCount}</div>
+                <div style="font-size:11px;color:#475569;margin-top:3px;">${assemblyName || ''} - भाग संख्या: ${boothNumber || '-'} - Page ${currentSlipPageNumber} of ${totalRawSlipPages}</div>
               </div>
               <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
                 <thead>
@@ -366,8 +400,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
             ReactDOMServer.renderToString(
               <BatchA4PrintLayout
                 slipsData={slips}
-                pageNumber={p + 1}
-                totalPages={slipPagesCount}
+                pageNumber={currentSlipPageNumber}
+                totalPages={totalRawSlipPages}
                 SlipComponent={SlipComp}
                 headerData={{
                   title: assemblyName || 'मतदाता सूची पर्ची',
@@ -386,9 +420,10 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         const now = Date.now();
         const elapsedSec = Math.max(0.1, (now - startTime) / 1000);
         const votersPerSec = (renderedVotersCount / elapsedSec).toFixed(1);
-        const pagesPerMin = ((p + 1) / (elapsedSec / 60)).toFixed(1);
+        const pagesProcessedSoFar = (p - startPageLoop + 1);
+        const pagesPerMin = (pagesProcessedSoFar / (elapsedSec / 60)).toFixed(1);
 
-        const remainingVoters = totalVotersCount - renderedVotersCount;
+        const remainingVoters = activeRecordsCount - renderedVotersCount;
         const estRemainingSec = Number(votersPerSec) > 0 ? Math.ceil(remainingVoters / Number(votersPerSec)) : 0;
         const remM = String(Math.floor(estRemainingSec / 60)).padStart(2, '0');
         const remS = String(estRemainingSec % 60).padStart(2, '0');
@@ -396,18 +431,18 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         const estFinishTimestamp = new Date(now + estRemainingSec * 1000);
         const estFinishTimeStr = estFinishTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-        const currentProgress = Math.round(((p + 1) / totalEstimatedPages) * 70);
+        const currentProgress = Math.round((pagesProcessedSoFar / totalEstimatedPages) * 70);
 
         setProcessingStats(prev => ({
           ...prev,
-          status: `Processing page ${p + 1} of ${slipPagesCount}...`,
+          status: `Processing page ${currentSlipPageNumber} (${pagesProcessedSoFar} of ${activeSlipPagesCount} selected)...`,
           progress: currentProgress,
           estFinishTime: estFinishTimeStr,
           timeRemainingStr: `${remM}:${remS}`,
           speedVotersPerSec: votersPerSec,
           speedPagesPerMin: pagesPerMin,
           recordsDone: renderedVotersCount,
-          boothsDone: p === slipPagesCount - 1 ? 1 : 0
+          boothsDone: p === endPageLoop - 1 ? 1 : 0
         }));
 
         // Yield to browser execution cycle so UI stays fluid and non-freezing
@@ -464,7 +499,8 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         progress: 80
       }));
 
-      const finalPdfFilename = `Voter-Slips-Booth-${boothNumber || '1'}-${selectedFormat}.pdf`;
+      const rangeSuffix = pageRangeMode === 'custom' ? `-Pages-${validStartPage}-to-${validEndPage}` : '';
+      const finalPdfFilename = `Voter-Slips-Booth-${boothNumber || '1'}-${selectedFormat}${rangeSuffix}.pdf`;
 
       await generatePdfFromHtml({
         pagesHtml,
@@ -473,11 +509,11 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
           setProcessingStats(prev => ({
             ...prev,
             progress: 80 + Math.round(p * 0.2),
-            status: `Building PDF download (${p}%)...`
+            status: `Building high-definition PDF (${p}%)...`
           }));
         },
-        scale: 1.0,
-        quality: 0.65
+        scale: 2.0,
+        quality: 0.95
       });
 
       // Record print transaction in backend
@@ -488,14 +524,14 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
       }));
 
       await logPrintTransaction({
-        optionType: `Batch Slips - ${selectedFormat}`,
+        optionType: `Batch Slips - ${selectedFormat}${pageRangeMode === 'custom' ? ` (Pages ${validStartPage}-${validEndPage})` : ''}`,
         wardNo: wardNo || '-',
         partNo: boothNumber || '-',
-        serialNo: `1-${totalVotersCount}`,
+        serialNo: pageRangeMode === 'custom' ? `Pages ${validStartPage}-${validEndPage}` : `1-${totalVotersCount}`,
         voterName: 'Batch Print',
         pagesCount: pagesHtml.length,
         cardsPerPage: effectiveCardsPerPage,
-        slipsCount: totalVotersCount,
+        slipsCount: activeRecordsCount,
         hasImage: hasImage
       });
 
@@ -936,6 +972,135 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
               </div>
             </div>
 
+            {/* PAGE RANGE SELECTION OPTIONS */}
+            <div className="p-4 bg-gradient-to-r from-slate-50 via-blue-50/20 to-indigo-50/20 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                      Page Range Selection
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Total pages available: <strong className="text-slate-800">{totalRawSlipPages}</strong> ({totalVotersCount} total voters)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Range Mode Toggles */}
+                <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-slate-200 shadow-2xs self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setPageRangeMode('all')}
+                    disabled={isProcessing}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      pageRangeMode === 'all'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    All Pages ({totalRawSlipPages})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPageRangeMode('custom');
+                      if (customEndPage > totalRawSlipPages) setCustomEndPage(totalRawSlipPages);
+                    }}
+                    disabled={isProcessing}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      pageRangeMode === 'custom'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    Custom Range
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom Range Inputs */}
+              {pageRangeMode === 'custom' && (
+                <div className="pt-2 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-blue-200">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-bold text-slate-700">From Page:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max={totalRawSlipPages}
+                        value={customStartPage}
+                        disabled={isProcessing}
+                        onChange={(e) => {
+                          const val = Math.max(1, Math.min(totalRawSlipPages, Number(e.target.value) || 1));
+                          setCustomStartPage(val);
+                          if (val > customEndPage) setCustomEndPage(val);
+                        }}
+                        className="w-20 px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 text-center focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      />
+                    </div>
+
+                    <span className="text-xs font-bold text-slate-400">to</span>
+
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-bold text-slate-700">To Page:</label>
+                      <input
+                        type="number"
+                        min={customStartPage || 1}
+                        max={totalRawSlipPages}
+                        value={customEndPage}
+                        disabled={isProcessing}
+                        onChange={(e) => {
+                          const val = Math.max(Number(customStartPage) || 1, Math.min(totalRawSlipPages, Number(e.target.value) || 1));
+                          setCustomEndPage(val);
+                        }}
+                        className="w-20 px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 text-center focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      />
+                    </div>
+
+                    <span className="text-xs font-semibold text-slate-500">
+                      (of {totalRawSlipPages} max)
+                    </span>
+                  </div>
+
+                  {/* Range summary pill */}
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                      Printing {activeSlipPagesCount} pages (~{activeRecordsCount} voters)
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => {
+                        setCustomStartPage(1);
+                        setCustomEndPage(Math.min(100, totalRawSlipPages));
+                      }}
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                    >
+                      1 to 100
+                    </button>
+                    {totalRawSlipPages >= 200 && (
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={() => {
+                          setCustomStartPage(1);
+                          setCustomEndPage(200);
+                        }}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                      >
+                        1 to 200
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* 3. SECTION 4 · PROCESSING DASHBOARD & METRICS (EXACTLY LIKE SCREENSHOT) */}
             <div className="pt-3 border-t border-slate-200 space-y-4">
 
@@ -950,15 +1115,101 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
               {/* Start / Stop and Top Metric Tiles */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                {/* START BUTTON */}
+                {/* START PDF DOWNLOAD BUTTON */}
                 <button
                   type="button"
                   onClick={handleStartProcessing}
                   disabled={isProcessing || !isBalanceSufficient}
-                  className="py-3 px-4 rounded-xl font-black text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-2 text-sm tracking-wider cursor-pointer"
+                  className="py-3 px-3 rounded-xl font-black text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm tracking-wide cursor-pointer"
+                  title="Generate high-resolution PDF download"
                 >
                   <span>▶</span>
-                  <span>START</span>
+                  <span>START PDF</span>
+                </button>
+
+                {/* DIRECT PRINT BUTTON (100% Vector Crystal Clear) */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!voters || voters.length === 0) return alert('No voter data available to print.');
+                    if (!isBalanceSufficient) return alert(`Insufficient balance! Need ₹${totalCost.toFixed(2)}`);
+
+                    setIsProcessing(true);
+                    setProcessingStats(prev => ({
+                      ...prev,
+                      status: 'Preparing 100% Vector Print dialog...',
+                      progress: 50
+                    }));
+
+                    try {
+                      const ReactDOMServer = await import('react-dom/server');
+                      const SlipComp = selectedFormat === 'symbol' ? VoterSlipOption3 : VoterSlip;
+
+                      const startPageLoop = pageRangeMode === 'all' ? 0 : (validStartPage - 1);
+                      const endPageLoop = pageRangeMode === 'all' ? totalRawSlipPages : validEndPage;
+                      const pagesHtml = [];
+
+                      for (let p = startPageLoop; p < endPageLoop; p++) {
+                        const startIdx = p * effectiveCardsPerPage;
+                        const endIdx = Math.min(totalVotersCount, startIdx + effectiveCardsPerPage);
+                        const pageVoters = voters.slice(startIdx, endIdx);
+                        const slips = pageVoters.map(mapVoterToSlip).filter(Boolean);
+
+                        pagesHtml.push(
+                          ReactDOMServer.renderToString(
+                            <BatchA4PrintLayout
+                              slipsData={slips}
+                              pageNumber={p + 1}
+                              totalPages={totalRawSlipPages}
+                              SlipComponent={SlipComp}
+                              headerData={{
+                                title: assemblyName || 'मतदाता सूची पर्ची',
+                                wardNo: wardNo || '-',
+                                partNo: boothNumber || '-'
+                              }}
+                              cardsPerPage={effectiveCardsPerPage}
+                            />
+                          )
+                        );
+                      }
+
+                      await printViaWindowPrint({
+                        htmlContent: pagesHtml.join('\n'),
+                        title: `Voter Slips - Booth ${boothNumber || '1'}`
+                      });
+
+                      await logPrintTransaction({
+                        optionType: `Batch Slips Direct Print - ${selectedFormat}${pageRangeMode === 'custom' ? ` (Pages ${validStartPage}-${validEndPage})` : ''}`,
+                        wardNo: wardNo || '-',
+                        partNo: boothNumber || '-',
+                        serialNo: pageRangeMode === 'custom' ? `Pages ${validStartPage}-${validEndPage}` : `1-${totalVotersCount}`,
+                        voterName: 'Batch Direct Print',
+                        pagesCount: pagesHtml.length,
+                        cardsPerPage: effectiveCardsPerPage,
+                        slipsCount: activeRecordsCount,
+                        hasImage: hasImage
+                      });
+
+                      setProcessingStats(prev => ({
+                        ...prev,
+                        status: 'Print dialog opened!',
+                        progress: 100
+                      }));
+                    } catch (e) {
+                      console.error('Direct print failed', e);
+                      alert('Direct print failed: ' + e.message);
+                    } finally {
+                      setIsProcessing(false);
+                    }
+                  }}
+                  disabled={isProcessing || !isBalanceSufficient}
+                  className="py-3 px-3 rounded-xl font-black text-white bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm tracking-wide cursor-pointer"
+                  title="Direct 100% Vector Print (Crystal clear print quality)"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  <span>DIRECT PRINT</span>
                 </button>
 
                 {/* STOP BUTTON */}
@@ -966,7 +1217,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                   type="button"
                   onClick={handleStopProcessing}
                   disabled={!isProcessing}
-                  className="py-3 px-4 rounded-xl font-bold text-rose-600 bg-white hover:bg-rose-50 border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                  className="py-3 px-3 rounded-xl font-bold text-rose-600 bg-white hover:bg-rose-50 border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-1 text-xs sm:text-sm cursor-pointer"
                 >
                   <span>■</span>
                   <span>Stop</span>
@@ -992,7 +1243,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] font-bold tracking-wider uppercase text-slate-400">RECORDS TO PRINT</span>
                   <span className="text-lg font-mono font-bold text-slate-900 mt-1">
-                    {totalVotersCount}
+                    {activeRecordsCount}
                   </span>
                 </div>
 
@@ -1074,7 +1325,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs">
                   <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">RECORDS DONE</p>
                   <p className="text-sm font-mono font-bold text-slate-800 mt-1">
-                    {processingStats.recordsDone > 0 ? `${processingStats.recordsDone} / ${totalVotersCount}` : '—'}
+                    {processingStats.recordsDone > 0 ? `${processingStats.recordsDone} / ${activeRecordsCount}` : '—'}
                   </p>
                 </div>
 

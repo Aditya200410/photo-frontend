@@ -176,30 +176,48 @@ export const generatePdfFromHtml = async ({
   tempContainer.style.backgroundColor = '#ffffff';
   tempContainer.style.zIndex = '-99999';
   tempContainer.style.opacity = '1';
+  tempContainer.style.fontSmooth = 'always';
+  tempContainer.style.webkitFontSmoothing = 'antialiased';
   document.body.appendChild(tempContainer);
+
+  const effectiveScale = scale || 2.0;
+  const effectiveQuality = quality || 0.95;
 
   try {
     for (let i = 0; i < total; i++) {
       tempContainer.innerHTML = pagesHtml[i];
 
-      // Instant micro-yield for CSS application
-      await new Promise(r => setTimeout(r, 4));
+      // Instant micro-yield for CSS application and font rendering
+      await new Promise(r => setTimeout(r, 10));
 
       const canvas = await html2canvas(tempContainer, {
-        scale: 1.0,
+        scale: effectiveScale,
         width: 794,
         height: 1122,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        imageTimeout: 300,
+        imageTimeout: 1000,
         windowWidth: 794,
-        windowHeight: 1122
+        windowHeight: 1122,
+        onclone: (clonedDoc) => {
+          // Enhance font rendering in cloned document
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            * {
+              -webkit-font-smoothing: antialiased !important;
+              -moz-osx-font-smoothing: grayscale !important;
+              text-rendering: geometricPrecision !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.65);
+      // Export at high quality JPEG (0.95)
+      const imgData = canvas.toDataURL('image/jpeg', effectiveQuality);
       if (i > 0) pdf.addPage('a4', 'p');
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
 
       // Free canvas pixel data immediately
       canvas.width = 0;
