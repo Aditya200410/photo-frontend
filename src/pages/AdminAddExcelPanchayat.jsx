@@ -31,6 +31,9 @@ function AdminAddExcelPanchayat() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        if (data.generatedPdfs) {
+          setFiles(prev => prev.map(f => f.id === fileId ? { ...f, generatedPdfs: data.generatedPdfs } : f));
+        }
         alert('PDF slips generated successfully across all formats!');
         fetchFiles();
       } else {
