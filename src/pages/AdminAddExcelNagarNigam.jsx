@@ -19,6 +19,28 @@ function AdminAddExcelNagarNigam() {
   const [allStates, setAllStates] = useState([]);
   const [allDistricts, setAllDistricts] = useState([]);
   const [editingFile, setEditingFile] = useState(null);
+  const [generatingId, setGeneratingId] = useState(null);
+
+  const handleGeneratePdfs = async (fileId) => {
+    try {
+      setGeneratingId(fileId);
+      const res = await fetch(`${API_BASE_URL}/api/excel-files/${fileId}/generate-pdfs`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('PDF slips generated successfully across all formats!');
+        fetchFiles();
+      } else {
+        alert(data.error || 'Failed to generate PDFs.');
+      }
+    } catch (err) {
+      console.error('Error generating PDFs:', err);
+      alert('Error connecting to server for PDF generation.');
+    } finally {
+      setGeneratingId(null);
+    }
+  };
 
   useEffect(() => {
     setAllStates(State.getStatesOfCountry('IN'));
@@ -249,6 +271,77 @@ function AdminAddExcelNagarNigam() {
                       </div>
                     </div>
                   )}
+
+                  {/* Ready Voter Slip PDFs Status & Download Section */}
+                  <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-200">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <svg className="w-4 h-4 text-rose-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                          Ready Voter Slip PDFs:
+                        </span>
+                        {file.generatedPdfs && Object.keys(file.generatedPdfs).length > 0 ? (
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
+                            ✓ Generated ({Object.keys(file.generatedPdfs).length} formats)
+                          </span>
+                        ) : (
+                          <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-300">
+                            Not Generated
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handleGeneratePdfs(file.id)}
+                        disabled={generatingId === file.id}
+                        className="text-xs font-bold px-3 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg shadow-sm disabled:opacity-50 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        {generatingId === file.id ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Generating (low MB)...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            <span>{file.generatedPdfs && Object.keys(file.generatedPdfs).length > 0 ? 'Regenerate PDFs' : 'Generate PDFs Now'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {file.generatedPdfs && Object.keys(file.generatedPdfs).length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                        {[
+                          { id: 'simple', label: 'Simple Voter Slip (6/page)' },
+                          { id: 'header', label: 'Voter Slip with Header (6/page)' },
+                          { id: 'symbol', label: 'Voter Slip with Symbol (8/page)' },
+                          { id: 'appeal', label: 'Personal Appeal Letter (1/page)' },
+                          { id: 'alphabetical', label: 'Alphabetical Voter List (40/page)' }
+                        ].map(fmt => {
+                          const item = file.generatedPdfs[fmt.id];
+                          if (!item) return null;
+                          return (
+                            <a
+                              key={fmt.id}
+                              href={`${API_BASE_URL}/api/download/print_slips/${item.fileName}`}
+                              download
+                              className="p-2 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex items-center justify-between group shadow-2xs"
+                              title={`Download ${fmt.label} (${item.pages} pages, ${item.sizeStr})`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="text-[11px] font-bold text-slate-800 truncate group-hover:text-emerald-700">{fmt.label}</div>
+                                <div className="text-[10px] text-slate-500 font-semibold">{item.pages} pages • <strong className="text-emerald-700 font-bold">{item.sizeStr}</strong></div>
+                              </div>
+                              <span className="w-6 h-6 rounded-md bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                              </span>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
                   <span className="bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold hidden xl:inline-block">Nagar Nigam</span>

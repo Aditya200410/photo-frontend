@@ -262,6 +262,13 @@ function PhotoGramPanchayat({ onBack }) {
     return found?.no || '';
   }, [panchayatMatchedFiles, panchayatName, availableSamitis, selectedSamiti]);
 
+  const activeExcelFile = useMemo(() => {
+    return panchayatMatchedFiles.find(f => f.booths && f.booths.includes(boothNumber)) ||
+      panchayatMatchedFiles[0] ||
+      districtFiles[0] ||
+      null;
+  }, [panchayatMatchedFiles, boothNumber, districtFiles]);
+
   // --- Handlers for Cascade ---
   const handleStateChange = (e) => {
     setSelectedState(e.target.value);
@@ -734,16 +741,64 @@ function PhotoGramPanchayat({ onBack }) {
                       Displaying verified parameters from Panchayat Directory
                     </p>
                   </div>
-                  <button
-                    onClick={generatePDF}
-                    disabled={isGenerating || filteredVoters.length === 0}
-                    className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                    Print Slips / Batch PDF ({filteredVoters.length})
-                  </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {activeExcelFile && activeExcelFile.generatedPdfs && Object.keys(activeExcelFile.generatedPdfs).length > 0 && (
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-violet-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span>Instant Download PDF (Server)</span>
+                          <svg className="w-3.5 h-3.5 ml-1 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div className="absolute right-0 mt-1.5 w-72 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-50 hidden group-hover:block transition-all">
+                          <div className="px-3 py-1.5 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            Instant Pre-Generated Formats
+                          </div>
+                          {[
+                            { id: 'simple', label: 'Simple Voter Slip (6/page)' },
+                            { id: 'header', label: 'Voter Slip with Header (6/page)' },
+                            { id: 'symbol', label: 'Voter Slip with Symbol (8/page)' },
+                            { id: 'appeal', label: 'Personal Appeal Letter (1/page)' },
+                            { id: 'alphabetical', label: 'Alphabetical Voter List (40/page)' }
+                          ].map(fmt => {
+                            const item = activeExcelFile.generatedPdfs[fmt.id];
+                            if (!item) return null;
+                            return (
+                              <a
+                                key={fmt.id}
+                                href={`${API_BASE_URL}/api/download/print_slips/${item.fileName}`}
+                                download
+                                className="px-3 py-2 hover:bg-violet-50 flex items-center justify-between text-left text-xs transition-colors group/item"
+                              >
+                                <div>
+                                  <div className="font-semibold text-slate-800 group-hover/item:text-violet-700">{fmt.label}</div>
+                                  <div className="text-[10px] text-slate-400 font-medium">{item.pages} pgs • <span className="text-emerald-600 font-bold">{item.sizeStr}</span></div>
+                                </div>
+                                <span className="w-6 h-6 rounded bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 ml-2">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                </span>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={generatePDF}
+                      disabled={isGenerating || filteredVoters.length === 0}
+                      className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                      Print Slips / Batch PDF ({filteredVoters.length})
+                    </button>
+                  </div>
                 </div>
 
                 {/* In-Page Quick Filters */}
