@@ -6,7 +6,7 @@ import VoterSlipOption3 from './VoterSlipOption3';
 import TopupModal from './TopupModal';
 import { generatePdfFromHtml, printViaWindowPrint, logPrintTransaction } from '../utils/printService';
 
-function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNumber, wardNo }) {
+function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNumber, wardNo, activeExcelFile }) {
   // Template format: 
   // 'simple' (Simple Voter Slip)
   // 'header' (Voter Slip with Header / banner)
@@ -253,6 +253,80 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
         timeElapsedStr: `${m}:${s}`
       }));
     }, 1000);
+
+    // Check if pre-generated PDF exists from backend for this format
+    const serverPdf = activeExcelFile?.generatedPdfs?.[selectedFormat];
+    const canUseServerPdf = Boolean(
+      serverPdf &&
+      serverPdf.fileName &&
+      pageRangeMode === 'all' &&
+      !extraPages.boothIndex &&
+      !extraPages.boothSummary &&
+      !extraPages.countingSheet &&
+      !extraPages.workCompleted
+    );
+
+    if (canUseServerPdf) {
+      try {
+        setProcessingStats(prev => ({
+          ...prev,
+          status: 'Fetching pre-generated PDF from server...',
+          progress: 50,
+          estimatedPages: serverPdf.pages || totalEstimatedPages
+        }));
+
+        // Trigger direct backend download
+        const downloadUrl = `${API_BASE_URL}/api/download/print_slips/${serverPdf.fileName}`;
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.setAttribute('download', serverPdf.fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        // Record print transaction in backend
+        setProcessingStats(prev => ({
+          ...prev,
+          status: 'Logging print transaction...',
+          progress: 90
+        }));
+
+        await logPrintTransaction({
+          optionType: `Batch Slips (Server PDF) - ${selectedFormat}`,
+          wardNo: wardNo || '-',
+          partNo: boothNumber || '-',
+          serialNo: `1-${totalVotersCount}`,
+          voterName: 'Batch Print (Backend Pre-generated)',
+          pagesCount: serverPdf.pages || totalEstimatedPages,
+          cardsPerPage: effectiveCardsPerPage,
+          slipsCount: totalVotersCount,
+          hasImage: hasImage
+        });
+
+        const finishTimestamp = new Date();
+        setProcessingStats(prev => ({
+          ...prev,
+          status: 'Downloaded directly from server!',
+          progress: 100,
+          recordsDone: totalVotersCount,
+          timeRemainingStr: '00:00',
+          endTime: finishTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        }));
+
+        return;
+      } catch (err) {
+        console.error('Server PDF download error:', err);
+        alert('Server download error: ' + (err.message || 'Failed to download pre-generated PDF'));
+        setProcessingStats(prev => ({
+          ...prev,
+          status: 'Error downloading server PDF: ' + err.message
+        }));
+        return;
+      } finally {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setIsProcessing(false);
+      }
+    }
 
     try {
       // Yield to let browser render UI immediately without freezing
@@ -1127,11 +1201,18 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                   type="button"
                   onClick={handleStartProcessing}
                   disabled={isProcessing || !isBalanceSufficient}
-                  className="py-3 px-3 rounded-xl font-black text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm tracking-wide cursor-pointer"
-                  title="Generate high-resolution PDF download"
+                  className="py-3 px-3 rounded-xl font-black text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex flex-col items-center justify-center gap-0.5 text-xs sm:text-sm tracking-wide cursor-pointer"
+                  title={activeExcelFile?.generatedPdfs?.[selectedFormat] ? "Direct download pre-generated PDF from server" : "Generate high-resolution PDF download"}
                 >
-                  <span>▶</span>
-                  <span>START PDF</span>
+                  <div className="flex items-center gap-1.5">
+                    <span>▶</span>
+                    <span>START PDF</span>
+                  </div>
+                  {activeExcelFile?.generatedPdfs?.[selectedFormat] && (
+                    <span className="text-[10px] text-emerald-300 font-normal">
+                      ⚡ Backend PDF ({activeExcelFile.generatedPdfs[selectedFormat].pages || 0} pgs)
+                    </span>
+                  )}
                 </button>
 
                 {/* DIRECT PRINT BUTTON (100% Vector Crystal Clear) */}

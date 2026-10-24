@@ -1286,6 +1286,7 @@ function PhotoGramPanchayat({ onBack }) {
         assemblyName={panchayatName}
         wardNo={wardNumber && wardNumber !== 'All' ? wardNumber : ''}
         boothNumber={boothNumber && boothNumber !== 'All' ? boothNumber : ''}
+        activeExcelFile={activeExcelFile}
       />
     </>
   );

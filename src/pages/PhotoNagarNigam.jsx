@@ -820,6 +820,7 @@ function PhotoNagarNigam({ onBack }) {
         assemblyName={cityName}
         wardNo={wardNumber && wardNumber !== 'All' ? wardNumber : ''}
         boothNumber={boothNumber && boothNumber !== 'All' ? boothNumber : ''}
+        activeExcelFile={activeExcelFile}
       />
     </>
   );

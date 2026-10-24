@@ -760,6 +760,7 @@ function PhotoAssembly({ onBack }) {
         assemblyName={assemblyName}
         boothNumber={boothNumber}
         wardNo="-"
+        activeExcelFile={activeExcelFile}
       />
     </>
   );
