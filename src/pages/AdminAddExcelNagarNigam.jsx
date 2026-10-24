@@ -27,7 +27,16 @@ function AdminAddExcelNagarNigam() {
       const res = await fetch(`${API_BASE_URL}/api/excel-files/${fileId}/generate-pdfs`, {
         method: 'POST'
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        console.error('Non-JSON response from server:', text);
+        alert(`Server error (${res.status}): The server returned an HTML error or timed out during PDF generation. Please check server logs or restart the backend.`);
+        return;
+      }
+
       if (res.ok && data.success) {
         if (data.generatedPdfs) {
           setFiles(prev => prev.map(f => f.id === fileId ? { ...f, generatedPdfs: data.generatedPdfs } : f));
@@ -39,7 +48,7 @@ function AdminAddExcelNagarNigam() {
       }
     } catch (err) {
       console.error('Error generating PDFs:', err);
-      alert('Error connecting to server for PDF generation.');
+      alert('Error connecting to server for PDF generation: ' + (err.message || ''));
     } finally {
       setGeneratingId(null);
     }
