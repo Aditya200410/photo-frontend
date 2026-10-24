@@ -444,7 +444,7 @@ function PhotoGramPanchayat({ onBack }) {
           valA = a['PC NAME'] || a.PC_NAME || '';
           valB = b['PC NAME'] || b.PC_NAME || '';
         }
-        
+
         // Handle numeric fields
         const numericKeys = ['AGE', 'SERIAL_NO', 'SNO', 'SLNOINPART', 'WARDNO', 'BOOTH_NO', 'PARTNO'];
         if (numericKeys.includes(sortConfig.key)) {
@@ -456,7 +456,7 @@ function PhotoGramPanchayat({ onBack }) {
             return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
           }
         }
-        
+
         // String comparison with natural sorting
         valA = (valA ?? '').toString().trim();
         valB = (valB ?? '').toString().trim();
@@ -745,6 +745,7 @@ function PhotoGramPanchayat({ onBack }) {
                     {activeExcelFile && activeExcelFile.generatedPdfs && Object.keys(activeExcelFile.generatedPdfs).length > 0 && (
                       <div className="relative group">
                         <button
+
                           type="button"
                           className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-violet-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
                         >
@@ -803,7 +804,7 @@ function PhotoGramPanchayat({ onBack }) {
 
                 {/* In-Page Quick Filters */}
                 <div className="bg-slate-50/80 backdrop-blur-sm p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 mb-6 shadow-sm w-full max-w-full min-w-0 transition-all duration-200">
-                  <div 
+                  <div
                     onClick={() => setIsMobileFiltersOpen(prev => !prev)}
                     className="flex items-center justify-between cursor-pointer sm:cursor-default select-none pb-2.5 sm:pb-3.5 border-b border-slate-200/60"
                   >
@@ -964,7 +965,7 @@ function PhotoGramPanchayat({ onBack }) {
                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
                         {(() => {
                           const renderSortableHeader = (label, key) => (
-                            <th 
+                            <th
                               className="p-3 cursor-pointer hover:bg-slate-200/60 transition-colors group select-none"
                               onClick={() => {
                                 let direction = 'asc';
