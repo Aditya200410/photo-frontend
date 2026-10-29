@@ -4,7 +4,9 @@ import BatchA4PrintLayout from './BatchA4PrintLayout';
 import VoterSlip from './VoterSlip';
 import VoterSlipOption3 from './VoterSlipOption3';
 import TopupModal from './TopupModal';
+import html2canvas from 'html2canvas-pro';
 import { generatePdfFromHtml, printViaWindowPrint, logPrintTransaction } from '../utils/printService';
+import { downloadPdfWithImageOverlay } from '../utils/pdfImageOverlay';
 
 function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNumber, wardNo, activeExcelFile }) {
   // Template format: 
@@ -29,6 +31,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
   // Candidate image / symbol
   const [bannerImage, setBannerImage] = useState(null);
   const [symbolImage, setSymbolImage] = useState(null);
+  const [isExportingImage, setIsExportingImage] = useState(false);
 
   // User balance & settings
   const [userBalance, setUserBalance] = useState(null);
@@ -275,14 +278,45 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
           estimatedPages: serverPdf.pages || totalEstimatedPages
         }));
 
-        // Trigger direct backend download
+        // Trigger direct backend download or paste uploaded image if provided
         const downloadUrl = `${API_BASE_URL}/api/download/print_slips/${serverPdf.fileName}`;
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.setAttribute('download', serverPdf.fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        const activeImg = (selectedFormat === 'header' && bannerImage)
+          ? bannerImage
+          : (selectedFormat === 'symbol' && symbolImage)
+            ? symbolImage
+            : null;
+
+        if (activeImg) {
+          setProcessingStats(prev => ({
+            ...prev,
+            status: 'Pasting candidate image across all pages...',
+            progress: 65
+          }));
+
+          const safeBooth = (boothNumber || '1').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+          const outputFilename = `Voter-Slips-Booth-${safeBooth}-${selectedFormat}-With-Image.pdf`;
+
+          await downloadPdfWithImageOverlay({
+            pdfUrl: downloadUrl,
+            imageDataUrl: activeImg,
+            formatId: selectedFormat,
+            outputFilename,
+            onProgress: (pct, msg) => {
+              setProcessingStats(prev => ({
+                ...prev,
+                status: msg,
+                progress: Math.min(90, Math.max(50, pct))
+              }));
+            }
+          });
+        } else {
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.setAttribute('download', serverPdf.fileName);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
 
         // Record print transaction in backend
         setProcessingStats(prev => ({
@@ -638,6 +672,75 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     }
   };
 
+  // Export current voter slip sheet / layout as PNG Image
+  const handleDownloadSheetImage = async () => {
+    if (!voters || voters.length === 0) {
+      alert('No voter data available to export as image.');
+      return;
+    }
+
+    try {
+      setIsExportingImage(true);
+      const ReactDOMServer = await import('react-dom/server');
+      const SlipComp = selectedFormat === 'symbol' ? VoterSlipOption3 : VoterSlip;
+
+      const startIdx = pageRangeMode === 'custom' ? (validStartPage - 1) * effectiveCardsPerPage : 0;
+      const endIdx = Math.min(totalVotersCount, startIdx + effectiveCardsPerPage);
+      const pageVoters = voters.slice(startIdx, endIdx);
+      const slips = pageVoters.map(mapVoterToSlip).filter(Boolean);
+
+      const pageHtml = ReactDOMServer.renderToString(
+        <BatchA4PrintLayout
+          slipsData={slips}
+          pageNumber={pageRangeMode === 'custom' ? validStartPage : 1}
+          totalPages={totalRawSlipPages}
+          SlipComponent={SlipComp}
+          headerData={{
+            title: assemblyName || 'मतदाता सूची पर्ची',
+            wardNo: wardNo || '-',
+            partNo: boothNumber || '-'
+          }}
+          cardsPerPage={effectiveCardsPerPage}
+        />
+      );
+
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.top = '0px';
+      tempContainer.style.left = '-10000px';
+      tempContainer.style.width = '794px';
+      tempContainer.style.backgroundColor = '#ffffff';
+      tempContainer.style.zIndex = '-99999';
+      tempContainer.innerHTML = pageHtml;
+      document.body.appendChild(tempContainer);
+
+      await new Promise(r => setTimeout(r, 60));
+
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2.5,
+        width: 794,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      document.body.removeChild(tempContainer);
+
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      link.download = `Voter-Slips-Booth-${boothNumber || '1'}-${selectedFormat}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error downloading slip sheet image:', err);
+      alert('Error generating image: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsExportingImage(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -736,25 +839,43 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 {/* 2. Voter Slip with Header (banner) */}
                 <div
                   onClick={() => handleSelectFormat('header')}
-                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'header' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'header' ? 'border-purple-600 shadow-lg ring-2 ring-purple-500/20' : 'border-slate-200 hover:border-slate-300'
                     }`}
                 >
+                  <div className="flex items-start justify-between gap-1 mb-2">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border bg-purple-100 text-purple-700 border-purple-200">
+                      6 Per Page
+                    </span>
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
+                      Campaign
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'header' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 ${selectedFormat === 'header' ? 'bg-purple-600 text-white' : 'border-2 border-slate-300'
                       }`}>
                       {selectedFormat === 'header' && '✓'}
                     </div>
-                    <span className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Header (banner)</span>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Header</h4>
+                      <p className="text-[10px] text-slate-500 font-medium">हेडर / बैनर मतदाता पर्ची</p>
+                    </div>
                   </div>
 
                   {/* Thumbnail Preview mockup */}
                   <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
                     <div className="grid grid-cols-2 gap-1 flex-1">
                       {[...Array(6)].map((_, i) => (
-                        <div key={i} className="border border-slate-300 bg-white rounded-[2px] overflow-hidden flex flex-col text-[6px]">
-                          <div className="h-4 bg-orange-500 text-white flex items-center justify-center font-bold text-[5px] truncate px-0.5">
-                            प्रत्याशी का नाम
-                          </div>
+                        <div key={i} className="border border-purple-300 bg-white rounded-[2px] overflow-hidden flex flex-col text-[6px]">
+                          {bannerImage ? (
+                            <div className="h-4 w-full bg-slate-100 overflow-hidden flex items-center justify-center">
+                              <img src={bannerImage} alt="Header" className="w-full h-full object-fill block" />
+                            </div>
+                          ) : (
+                            <div className="h-4 bg-orange-500 text-white flex items-center justify-center font-bold text-[5px] truncate px-0.5">
+                              प्रत्याशी का नाम
+                            </div>
+                          )}
                           <div className="p-1 space-y-0.5 text-slate-400">
                             <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
                             <div className="w-2/3 h-1 bg-slate-200 rounded-xs"></div>
@@ -780,28 +901,44 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                 {/* 3. Voter Slip with Symbol */}
                 <div
                   onClick={() => handleSelectFormat('symbol')}
-                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'symbol' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
+                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'symbol' ? 'border-emerald-600 shadow-lg ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-slate-300'
                     }`}
                 >
+                  <div className="flex items-start justify-between gap-1 mb-2">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border bg-emerald-100 text-emerald-700 border-emerald-200">
+                      8 Per Page
+                    </span>
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Compact
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'symbol' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 ${selectedFormat === 'symbol' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
                       }`}>
                       {selectedFormat === 'symbol' && '✓'}
                     </div>
-                    <span className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Symbol</span>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Symbol</h4>
+                      <p className="text-[10px] text-slate-500 font-medium">चुनाव चिन्ह मतदाता पर्ची</p>
+                    </div>
                   </div>
 
                   {/* Thumbnail Preview mockup */}
                   <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
                     <div className="grid grid-cols-2 gap-1 flex-1">
                       {[...Array(6)].map((_, i) => (
-                        <div key={i} className="border border-slate-300 bg-white rounded-[2px] p-1 flex items-center justify-between text-[6px]">
+                        <div key={i} className="border border-emerald-300 bg-white rounded-[2px] p-1 flex items-center justify-between text-[6px]">
                           <div className="space-y-0.5 text-slate-400 w-3/4">
                             <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
                             <div className="w-1/2 h-1 bg-slate-200 rounded-xs"></div>
                           </div>
-                          <div className="w-3.5 h-3.5 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-[6px] text-emerald-700">
-                            ★
+                          <div className="w-3.5 h-3.5 rounded bg-emerald-50 border border-emerald-300 flex items-center justify-center text-[6px] text-emerald-700 overflow-hidden">
+                            {symbolImage ? (
+                              <img src={symbolImage} alt="Symbol" className="w-full h-full object-contain block" />
+                            ) : (
+                              <span>★</span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1195,7 +1332,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
               </div>
 
               {/* Start / Stop and Top Metric Tiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
                 {/* START PDF DOWNLOAD BUTTON */}
                 <button
                   type="button"
@@ -1298,6 +1435,20 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
                   <span>DIRECT PRINT</span>
+                </button>
+
+                {/* DOWNLOAD IMAGE (PNG) BUTTON */}
+                <button
+                  type="button"
+                  onClick={handleDownloadSheetImage}
+                  disabled={isProcessing || isExportingImage}
+                  className="py-3 px-3 rounded-xl font-black text-amber-950 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm tracking-wide cursor-pointer"
+                  title="Download voter slips sheet directly as Image (PNG) with uploaded Banner / Symbol"
+                >
+                  <svg className="w-4 h-4 text-amber-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>{isExportingImage ? 'EXPORTING...' : 'DOWNLOAD IMAGE'}</span>
                 </button>
 
                 {/* STOP BUTTON */}

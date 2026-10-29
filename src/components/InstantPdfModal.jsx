@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import API_BASE_URL from '../config';
+import html2canvas from 'html2canvas-pro';
+import { downloadPdfWithImageOverlay } from '../utils/pdfImageOverlay';
 
 const FORMAT_DETAILS = [
   {
@@ -61,12 +63,82 @@ const FORMAT_DETAILS = [
 
 export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, title, subtitle }) {
   const [selectedFormatId, setSelectedFormatId] = useState('simple');
+  const [headerImage, setHeaderImage] = useState(null);
+  const [symbolImage, setSymbolImage] = useState(null);
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [isPastingPdf, setIsPastingPdf] = useState(false);
+  const [overlayStatus, setOverlayStatus] = useState('');
+  const mockupRef = useRef(null);
 
   if (!isOpen) return null;
 
   const generatedPdfs = activeExcelFile?.generatedPdfs || {};
   const currentFormat = FORMAT_DETAILS.find(f => f.id === selectedFormatId) || FORMAT_DETAILS[0];
   const currentPdfData = generatedPdfs[selectedFormatId];
+
+  // Active image for currently selected format
+  const currentActiveImage = (selectedFormatId === 'header' && headerImage)
+    ? headerImage
+    : (selectedFormatId === 'symbol' && symbolImage)
+      ? symbolImage
+      : null;
+
+  const handleDownloadPdf = async (e) => {
+    if (!currentPdfData?.fileName) return;
+
+    // If an image is selected for header or symbol, paste it across the server PDF
+    if (currentActiveImage) {
+      if (e) e.preventDefault();
+      try {
+        setIsPastingPdf(true);
+        const serverPdfUrl = `${API_BASE_URL}/api/download/print_slips/${currentPdfData.fileName}`;
+        const safeTitle = (title || 'Voter-Slips').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const outputFilename = `${safeTitle}-${selectedFormatId}-With-Image.pdf`;
+
+        await downloadPdfWithImageOverlay({
+          pdfUrl: serverPdfUrl,
+          imageDataUrl: currentActiveImage,
+          formatId: selectedFormatId,
+          outputFilename,
+          onProgress: (pct, msg) => {
+            setOverlayStatus(msg);
+          }
+        });
+      } catch (err) {
+        console.error('Error pasting image to PDF:', err);
+        alert('Error stamping image to PDF: ' + (err.message || 'Unknown error'));
+      } finally {
+        setIsPastingPdf(false);
+        setOverlayStatus('');
+      }
+    }
+  };
+
+  const handleDownloadMockupImage = async () => {
+    if (!mockupRef.current) return;
+    try {
+      setIsDownloadingImage(true);
+      const canvas = await html2canvas(mockupRef.current, {
+        scale: 2.5,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false
+      });
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      const safeTitle = (title || 'voter-slip').replace(/[^a-zA-Z0-9_-]/g, '_');
+      link.download = `${safeTitle}-${currentFormat.id}-preview.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error exporting slip image:', err);
+      alert('Error generating slip image preview: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsDownloadingImage(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
@@ -195,24 +267,100 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
                 </p>
               </div>
 
-              {/* Download Action right at the preview header */}
-              {currentPdfData?.fileName && (
-                <a
-                  href={`${API_BASE_URL}/api/download/print_slips/${currentPdfData.fileName}`}
-                  download
-                  className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-black text-white bg-gradient-to-r ${currentFormat.accentColor} shadow-md shadow-violet-500/20 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs sm:text-sm`}
+              {/* Action buttons at preview header */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadMockupImage}
+                  disabled={isDownloadingImage}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-black text-slate-800 bg-amber-400 hover:bg-amber-300 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm cursor-pointer disabled:opacity-50"
+                  title="Download current slip layout preview as high-resolution PNG image"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  <svg className="w-4 h-4 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span>Download Complete PDF ({currentPdfData.pages} pgs • {currentPdfData.sizeStr})</span>
-                </a>
-              )}
+                  <span>{isDownloadingImage ? 'Generating Image...' : 'Download Slip Image (PNG)'}</span>
+                </button>
+
+                {currentPdfData?.fileName && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    disabled={isPastingPdf}
+                    className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-black text-white bg-gradient-to-r ${currentFormat.accentColor} shadow-md shadow-violet-500/20 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer disabled:opacity-50`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>
+                      {isPastingPdf
+                        ? (overlayStatus || 'Pasting Image on PDF...')
+                        : currentActiveImage
+                          ? `Download PDF with Image (${currentPdfData.pages} pgs)`
+                          : `Download Complete PDF (${currentPdfData.pages} pgs • ${currentPdfData.sizeStr})`}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Option to Add Image for Header or Symbol format */}
+            {(currentFormat.id === 'header' || currentFormat.id === 'symbol') && (
+              <div className="mb-4 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-violet-600"></span>
+                    {currentFormat.id === 'header'
+                      ? 'Add Header / Banner Image (हेडर बैनर फोटो):'
+                      : 'Add Election Symbol Image (चुनाव चिन्ह फोटो):'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          if (currentFormat.id === 'header') {
+                            setHeaderImage(ev.target.result);
+                          } else {
+                            setSymbolImage(ev.target.result);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="text-xs file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-violet-100 file:text-violet-800 file:font-bold hover:file:bg-violet-200 cursor-pointer"
+                  />
+                </div>
+
+                {((currentFormat.id === 'header' && headerImage) || (currentFormat.id === 'symbol' && symbolImage)) && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-700 font-black flex items-center gap-1 text-[11px] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                      ✓ Image Added to Slip
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (currentFormat.id === 'header') setHeaderImage(null);
+                        else setSymbolImage(null);
+                      }}
+                      className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* A4 Sheet Mockup Simulation */}
             <div className="w-full flex justify-center py-2">
-              <div className="w-full max-w-sm sm:max-w-md bg-white border-2 border-slate-300 rounded-xl shadow-lg p-3 sm:p-4 aspect-[1/1.414] flex flex-col justify-between overflow-hidden">
+              <div
+                ref={mockupRef}
+                className="w-full max-w-sm sm:max-w-md bg-white border-2 border-slate-300 rounded-xl shadow-lg p-3 sm:p-4 aspect-[1/1.414] flex flex-col justify-between overflow-hidden"
+              >
                 {/* Simulated A4 Header */}
                 <div className="border-b-2 border-slate-800 pb-1.5 mb-2 flex items-center justify-between text-[8px] sm:text-[9px] font-bold text-slate-800">
                   <span className="truncate">{title || 'मतदाता सूची पर्ची 2026'}</span>
@@ -255,9 +403,15 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
                   <div className="grid grid-cols-2 gap-1.5 sm:gap-2 flex-1">
                     {[...Array(6)].map((_, i) => (
                       <div key={i} className="border border-purple-300 rounded overflow-hidden flex flex-col justify-between bg-white text-[7px] sm:text-[8px]">
-                        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-[7px] text-center py-0.5 px-1 truncate">
-                          ★ प्रत्याशी का नाम एवं चुनाव चिन्ह ★
-                        </div>
+                        {headerImage ? (
+                          <div className="h-5 sm:h-6 w-full border-b border-purple-300 overflow-hidden bg-slate-50 flex items-center justify-center">
+                            <img src={headerImage} alt="Header" className="w-full h-full object-fill block" />
+                          </div>
+                        ) : (
+                          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-[7px] text-center py-0.5 px-1 truncate">
+                            ★ प्रत्याशी का नाम एवं चुनाव चिन्ह ★
+                          </div>
+                        )}
                         <div className="p-1 space-y-0.5 text-slate-500">
                           <div className="flex justify-between">
                             <span className="font-bold text-slate-700">मतदाता:</span>
@@ -288,8 +442,12 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
                           <div className="w-12 h-1 bg-slate-200 rounded"></div>
                           <div className="text-[6px] text-slate-400">वार्ड {i + 1} • म० {i + 10}</div>
                         </div>
-                        <div className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-300 flex items-center justify-center font-bold text-emerald-700 text-[8px] shrink-0">
-                           कमल
+                        <div className="w-6 h-6 rounded-md bg-emerald-50 border border-emerald-300 flex items-center justify-center font-bold text-emerald-700 text-[8px] shrink-0 overflow-hidden p-0.5">
+                          {symbolImage ? (
+                            <img src={symbolImage} alt="Symbol" className="w-full h-full object-contain block" />
+                          ) : (
+                            <span>कमल</span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -377,22 +535,41 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
+                onClick={handleDownloadMockupImage}
+                disabled={isDownloadingImage}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+                title="Download current slip layout preview image"
+              >
+                <svg className="w-3.5 h-3.5 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>{isDownloadingImage ? 'Exporting...' : 'Download Slip Image'}</span>
+              </button>
+              <button
+                type="button"
                 onClick={onClose}
                 className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer"
               >
                 Close
               </button>
               {currentPdfData?.fileName ? (
-                <a
-                  href={`${API_BASE_URL}/api/download/print_slips/${currentPdfData.fileName}`}
-                  download
-                  className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-white bg-gradient-to-r ${currentFormat.accentColor} shadow-md shadow-violet-500/20 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 text-xs cursor-pointer`}
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={isPastingPdf}
+                  className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-white bg-gradient-to-r ${currentFormat.accentColor} shadow-md shadow-violet-500/20 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 text-xs cursor-pointer disabled:opacity-50`}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  <span>Download Now</span>
-                </a>
+                  <span>
+                    {isPastingPdf
+                      ? (overlayStatus || 'Pasting Image...')
+                      : currentActiveImage
+                        ? 'Download PDF with Image'
+                        : 'Download Now'}
+                  </span>
+                </button>
               ) : (
                 <button
                   disabled
