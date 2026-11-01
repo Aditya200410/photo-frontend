@@ -39,9 +39,9 @@ function PhotoNagarNigam({ onBack }) {
       if (filters.sex) {
         const vSex = (v.FGENDER || '').toUpperCase();
         if (filters.sex === 'M') {
-          sexMatch = vSex === 'M' || vSex === 'पुरुष';
+          sexMatch = vSex === 'M' || vSex === 'à¤ªà¥à¤°à¥à¤·';
         } else if (filters.sex === 'F') {
-          sexMatch = vSex === 'F' || vSex === 'स्त्री';
+          sexMatch = vSex === 'F' || vSex === 'à¤¸à¥à¤¤à¥à¤°à¥€';
         }
       }
 
@@ -191,12 +191,12 @@ function PhotoNagarNigam({ onBack }) {
       voterName: selectedVoter.EFVNAME || selectedVoter.FVNAME || selectedVoter.VOTER_NAME || vFName || '-',
       fatherHusbandName: selectedVoter.EFRNAME || selectedVoter.FRNAME || selectedVoter.RELATIVE_NAME || fFName || '-',
       houseNo: selectedVoter.FHOUSENO || selectedVoter.HOUSE_NO || selectedVoter.MHOUSENO || selectedVoter.HOUSENO || '0',
-      gender: selectedVoter.FGENDER === 'M' || selectedVoter.FGENDER === 'पुरुष' || selectedVoter.SEX === 'M' || selectedVoter.SEX === 'पुरुष' ? 'पुरुष' : (selectedVoter.FGENDER === 'F' || selectedVoter.FGENDER === 'स्त्री' || selectedVoter.SEX === 'F' || selectedVoter.SEX === 'स्त्री' ? 'स्त्री' : selectedVoter.FGENDER || selectedVoter.SEX || '-'),
+      gender: selectedVoter.FGENDER === 'M' || selectedVoter.FGENDER === 'à¤ªà¥à¤°à¥à¤·' || selectedVoter.SEX === 'M' || selectedVoter.SEX === 'à¤ªà¥à¤°à¥à¤·' ? 'à¤ªà¥à¤°à¥à¤·' : (selectedVoter.FGENDER === 'F' || selectedVoter.FGENDER === 'à¤¸à¥à¤¤à¥à¤°à¥€' || selectedVoter.SEX === 'F' || selectedVoter.SEX === 'à¤¸à¥à¤¤à¥à¤°à¥€' ? 'à¤¸à¥à¤¤à¥à¤°à¥€' : selectedVoter.FGENDER || selectedVoter.SEX || '-'),
       age: selectedVoter.FAGE || selectedVoter.AGE || selectedVoter.MAGE || '18',
       pollingStation: selectedVoter.PS_EN || selectedVoter.PS_HI || `${cityName} ${cleanWard !== '-' ? '- Ward ' + cleanWard : ''} ${cleanPart !== '-' ? '- Booth ' + cleanPart : ''}`.trim(),
       topImage: null,
       symbolImage: null,
-      symbolName: 'कमल का फूल'
+      symbolName: 'à¤•à¤®à¤² à¤•à¤¾ à¤«à¥‚à¤²'
     };
 
     setMappedVoterData(mappedData);
@@ -507,7 +507,7 @@ function PhotoNagarNigam({ onBack }) {
                       </button>
                     ) : (
                       <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl flex items-center gap-1.5 font-medium">
-                        <span>⚠️ Pre-generated PDF not generated in Admin for this file.</span>
+                        <span>âš ï¸ Pre-generated PDF not generated in Admin for this file.</span>
                       </div>
                     )}
                   </div>
@@ -545,8 +545,8 @@ function PhotoNagarNigam({ onBack }) {
                           }}
                           className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer px-2 py-1 rounded-lg hover:bg-rose-50"
                         >
-                          <span className="hidden sm:inline">Reset All Filters ✕</span>
-                          <span className="sm:hidden">Reset ✕</span>
+                          <span className="hidden sm:inline">Reset All Filters âœ•</span>
+                          <span className="sm:hidden">Reset âœ•</span>
                         </button>
                       )}
 
@@ -641,8 +641,8 @@ function PhotoNagarNigam({ onBack }) {
                           className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                         >
                           <option value="">All Genders</option>
-                          <option value="M">Male (पुरुष)</option>
-                          <option value="F">Female (महिला)</option>
+                          <option value="M">Male (à¤ªà¥à¤°à¥à¤·)</option>
+                          <option value="F">Female (à¤®à¤¹à¤¿à¤²à¤¾)</option>
                         </select>
                       </div>
                     </div>
@@ -655,7 +655,7 @@ function PhotoNagarNigam({ onBack }) {
                     <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
-                    Horizontal scroll enabled • Tap any column to sort
+                    Horizontal scroll enabled â€¢ Tap any column to sort
                   </span>
                 </div>
                 <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white block">
@@ -713,11 +713,11 @@ function PhotoNagarNigam({ onBack }) {
                           </td>
                           <td className="p-3.5">
                             <span className="font-bold text-slate-800">{v.FAGE || '-'} Y</span>
-                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${(v.FGENDER === 'M' || v.FGENDER === 'पुरुष')
+                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${(v.FGENDER === 'M' || v.FGENDER === 'à¤ªà¥à¤°à¥à¤·')
                                 ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                 : 'bg-pink-50 text-pink-700 border border-pink-200'
                               }`}>
-                              {v.FGENDER === 'M' || v.FGENDER === 'पुरुष' ? 'Male' : (v.FGENDER === 'F' || v.FGENDER === 'स्त्री' ? 'Female' : v.FGENDER || '-')}
+                              {v.FGENDER === 'M' || v.FGENDER === 'à¤ªà¥à¤°à¥à¤·' ? 'Male' : (v.FGENDER === 'F' || v.FGENDER === 'à¤¸à¥à¤¤à¥à¤°à¥€' ? 'Female' : v.FGENDER || '-')}
                             </span>
                           </td>
                           <td className="p-3.5 font-mono text-slate-600">{v.FHOUSENO || '-'}</td>
@@ -785,7 +785,7 @@ function PhotoNagarNigam({ onBack }) {
         onClose={() => setIsInstantPdfModalOpen(false)}
         activeExcelFile={activeExcelFile}
         title={cityName || 'Nagar Nigam Voter Directory'}
-        subtitle={`Ward: ${wardNumber || 'All'} • Booth: ${boothNumber || 'All'}`}
+        subtitle={`Ward: ${wardNumber || 'All'} â€¢ Booth: ${boothNumber || 'All'}`}
       />
     </>
   );

@@ -275,7 +275,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     const serverPdf = activeExcelFile?.generatedPdfs?.[selectedFormat] || 
       (legacyFallbackMap[selectedFormat] ? activeExcelFile?.generatedPdfs?.[legacyFallbackMap[selectedFormat]] : null);
 
-    const canUseServerPdf = Boolean(
+    const canUseServerPdf = false && Boolean(
       serverPdf &&
       serverPdf.fileName &&
       pageRangeMode === 'all' &&
@@ -285,7 +285,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
       !extraPages.workCompleted
     );
 
-    if (canUseServerPdf) {
+    if (false && canUseServerPdf) {
       try {
         setProcessingStats(prev => ({
           ...prev,
@@ -1049,127 +1049,6 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
               </div>
             )}
 
-            {/* 2. EXTRA PAGES TOGGLES (click to switch on / off) */}
-            <div>
-              <div className="text-xs font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <span>Extra pages in every PDF</span>
-                <span className="text-slate-400 font-medium text-[11px]">(click to switch on / off)</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-
-                {/* 1. Booth index */}
-                <div
-                  onClick={() => toggleExtraPage('boothIndex')}
-                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.boothIndex ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.boothIndex ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {extraPages.boothIndex && '✓'}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 leading-tight">Booth index (page nos.)</span>
-                  </div>
-
-                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex flex-col justify-center">
-                    <div className="h-3 bg-blue-900 rounded-xs mb-1.5"></div>
-                    <div className="space-y-1">
-                      <div className="h-1 bg-slate-300 rounded-xs w-full"></div>
-                      <div className="h-1 bg-slate-200 rounded-xs w-4/5"></div>
-                      <div className="h-1 bg-slate-200 rounded-xs w-full"></div>
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    First page: every booth with page number from – to
-                  </p>
-                </div>
-
-                {/* 2. Booth summary page */}
-                <div
-                  onClick={() => toggleExtraPage('boothSummary')}
-                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.boothSummary ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.boothSummary ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {extraPages.boothSummary && '✓'}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 leading-tight">Booth summary page</span>
-                  </div>
-
-                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex flex-col justify-center">
-                    <div className="h-2.5 bg-slate-800 rounded-xs mb-1.5 w-1/2 mx-auto"></div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="h-5 bg-blue-100 rounded border border-blue-200"></div>
-                      <div className="h-5 bg-pink-100 rounded border border-pink-200"></div>
-                      <div className="h-5 bg-emerald-100 rounded border border-emerald-200"></div>
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Before every booth: voters, male / female, deleted, age groups
-                  </p>
-                </div>
-
-                {/* 3. Counting sheet (OMR) */}
-                <div
-                  onClick={() => toggleExtraPage('countingSheet')}
-                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.countingSheet ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.countingSheet ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {extraPages.countingSheet && '✓'}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 leading-tight">Counting sheet (OMR)</span>
-                  </div>
-
-                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex items-center justify-center">
-                    <div className="grid grid-cols-6 gap-1 w-full opacity-60">
-                      {[...Array(18)].map((_, i) => (
-                        <div key={i} className="h-2 rounded-full border border-slate-400"></div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Numbers 1, 2, 3 ... down the columns over the full page
-                  </p>
-                </div>
-
-                {/* 4. "Work completed" page */}
-                <div
-                  onClick={() => toggleExtraPage('workCompleted')}
-                  className={`p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white flex flex-col justify-between ${extraPages.workCompleted ? 'border-blue-600 shadow-md ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${extraPages.workCompleted ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {extraPages.workCompleted && '✓'}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 leading-tight">"Work completed" page</span>
-                  </div>
-
-                  <div className="w-full h-20 bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 flex flex-col items-center justify-center">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold mb-1">
-                      ✓
-                    </div>
-                    <div className="text-[8px] font-bold text-slate-700">Your work is completed</div>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Last page: Total voters converted from N files
-                  </p>
-                </div>
-
-              </div>
-            </div>
-
             {/* PAGE RANGE SELECTION OPTIONS */}
             <div className="p-4 bg-gradient-to-r from-slate-50 via-blue-50/20 to-indigo-50/20 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1312,7 +1191,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
               </div>
 
               {/* Start / Stop and Top Metric Tiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                 {/* START PDF DOWNLOAD BUTTON */}
                 <button
                   type="button"
@@ -1325,110 +1204,6 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
                     <span>▶</span>
                     <span>START PDF</span>
                   </div>
-                  {activeExcelFile?.generatedPdfs?.[selectedFormat] && (
-                    <span className="text-[10px] text-emerald-300 font-normal">
-                      ⚡ Backend PDF ({activeExcelFile.generatedPdfs[selectedFormat].pages || 0} pgs)
-                    </span>
-                  )}
-                </button>
-
-                {/* DIRECT PRINT BUTTON (100% Vector Crystal Clear) */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!voters || voters.length === 0) return alert('No voter data available to print.');
-                    if (!isBalanceSufficient) return alert(`Insufficient balance! Need ₹${totalCost.toFixed(2)}`);
-
-                    setIsProcessing(true);
-                    setProcessingStats(prev => ({
-                      ...prev,
-                      status: 'Preparing 100% Vector Print dialog...',
-                      progress: 50
-                    }));
-
-                    try {
-                      const ReactDOMServer = await import('react-dom/server');
-                      const SlipComp = selectedFormat === 'symbol' ? VoterSlipOption3 : VoterSlip;
-
-                      const startPageLoop = pageRangeMode === 'all' ? 0 : (validStartPage - 1);
-                      const endPageLoop = pageRangeMode === 'all' ? totalRawSlipPages : validEndPage;
-                      const pagesHtml = [];
-
-                      for (let p = startPageLoop; p < endPageLoop; p++) {
-                        const startIdx = p * effectiveCardsPerPage;
-                        const endIdx = Math.min(totalVotersCount, startIdx + effectiveCardsPerPage);
-                        const pageVoters = voters.slice(startIdx, endIdx);
-                        const slips = pageVoters.map(mapVoterToSlip).filter(Boolean);
-
-                        pagesHtml.push(
-                          ReactDOMServer.renderToString(
-                            <BatchA4PrintLayout
-                              slipsData={slips}
-                              pageNumber={p + 1}
-                              totalPages={totalRawSlipPages}
-                              SlipComponent={SlipComp}
-                              headerData={{
-                                title: assemblyName || 'मतदाता सूची पर्ची',
-                                wardNo: wardNo || '-',
-                                partNo: boothNumber || '-'
-                              }}
-                              cardsPerPage={effectiveCardsPerPage}
-                            />
-                          )
-                        );
-                      }
-
-                      await printViaWindowPrint({
-                        htmlContent: pagesHtml.join('\n'),
-                        title: `Voter Slips - Booth ${boothNumber || '1'}`
-                      });
-
-                      await logPrintTransaction({
-                        optionType: `Batch Slips Direct Print - ${selectedFormat}${pageRangeMode === 'custom' ? ` (Pages ${validStartPage}-${validEndPage})` : ''}`,
-                        wardNo: wardNo || '-',
-                        partNo: boothNumber || '-',
-                        serialNo: pageRangeMode === 'custom' ? `Pages ${validStartPage}-${validEndPage}` : `1-${totalVotersCount}`,
-                        voterName: 'Batch Direct Print',
-                        pagesCount: pagesHtml.length,
-                        cardsPerPage: effectiveCardsPerPage,
-                        slipsCount: activeRecordsCount,
-                        hasImage: hasImage
-                      });
-
-                      setProcessingStats(prev => ({
-                        ...prev,
-                        status: 'Print dialog opened!',
-                        progress: 100
-                      }));
-                    } catch (e) {
-                      console.error('Direct print failed', e);
-                      alert('Direct print failed: ' + e.message);
-                    } finally {
-                      setIsProcessing(false);
-                    }
-                  }}
-                  disabled={isProcessing || !isBalanceSufficient}
-                  className="py-3 px-3 rounded-xl font-black text-white bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm tracking-wide cursor-pointer"
-                  title="Direct 100% Vector Print (Crystal clear print quality)"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
-                  <span>DIRECT PRINT</span>
-                </button>
-
-                {/* DOWNLOAD IMAGE (PNG) BUTTON */}
-                <button
-                  type="button"
-                  onClick={handleDownloadSheetImage}
-                  disabled={isProcessing || isExportingImage}
-                  className="py-3 px-3 rounded-xl font-black text-amber-950 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm tracking-wide cursor-pointer"
-                  title="Download voter slips sheet directly as Image (PNG) with uploaded Banner / Symbol"
-                >
-                  <svg className="w-4 h-4 text-amber-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span>{isExportingImage ? 'EXPORTING...' : 'DOWNLOAD IMAGE'}</span>
                 </button>
 
                 {/* STOP BUTTON */}

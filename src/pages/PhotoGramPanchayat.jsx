@@ -841,7 +841,7 @@ function PhotoGramPanchayat({ onBack }) {
                               onClick={() => {
                                 setScopeFilter('zila');
                                 setIsScopeMenuOpen(false);
-                                setSelectedZpWard('');
+                                setSelectedZpWard(availableZpWards[0] || '');
                                 setPageCount(1);
                               }}
                               className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'zila' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
@@ -854,7 +854,7 @@ function PhotoGramPanchayat({ onBack }) {
                               onClick={() => {
                                 setScopeFilter('samiti');
                                 setIsScopeMenuOpen(false);
-                                setSelectedPsWard('');
+                                setSelectedPsWard(availablePsWards[0] || '');
                                 setPageCount(1);
                               }}
                               className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'samiti' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
@@ -867,7 +867,7 @@ function PhotoGramPanchayat({ onBack }) {
                               onClick={() => {
                                 setScopeFilter('panchayat');
                                 setIsScopeMenuOpen(false);
-                                setSelectedScopePanchayat('');
+                                setSelectedScopePanchayat(availableScopePanchayats[0] || '');
                                 setPageCount(1);
                               }}
                               className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'panchayat' ? 'bg-violet-100 text-violet-800 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
@@ -964,6 +964,24 @@ function PhotoGramPanchayat({ onBack }) {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
+                    {/* Download Filtered Slips Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsBatchPrintModalOpen(true)}
+                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-5 py-3 rounded-2xl font-black shadow-xl shadow-teal-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-sm cursor-pointer group"
+                      title="Download slips for only currently filtered records"
+                    >
+                      <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <span>Download Filter Slip</span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
+                        {filteredVoters.length.toLocaleString('en-IN')} Voters
+                      </span>
+                    </button>
+
                     {activeExcelFile && activeExcelFile.generatedPdfs && Object.keys(activeExcelFile.generatedPdfs).length > 0 ? (
                       <button
                         type="button"

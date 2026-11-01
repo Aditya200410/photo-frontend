@@ -33,9 +33,9 @@ function PhotoAssembly({ onBack }) {
       if (filters.sex) {
         const vSex = (v.MSEX || '').toUpperCase();
         if (filters.sex === 'M') {
-          sexMatch = vSex === 'M' || vSex === 'पुरुष';
+          sexMatch = vSex === 'M' || vSex === 'à¤ªà¥à¤°à¥à¤·';
         } else if (filters.sex === 'F') {
-          sexMatch = vSex === 'F' || vSex === 'स्त्री';
+          sexMatch = vSex === 'F' || vSex === 'à¤¸à¥à¤¤à¥à¤°à¥€';
         }
       }
 
@@ -182,12 +182,12 @@ function PhotoAssembly({ onBack }) {
       voterName: selectedVoter.EFVNAME || selectedVoter.FVNAME || selectedVoter.VOTER_NAME || vFName || '-',
       fatherHusbandName: selectedVoter.EFRNAME || selectedVoter.FRNAME || selectedVoter.RELATIVE_NAME || fFName || '-',
       houseNo: selectedVoter.HOUSE_NO || selectedVoter.MHOUSENO || selectedVoter.FHOUSENO || selectedVoter.HOUSENO || '0',
-      gender: selectedVoter.MSEX === 'M' || selectedVoter.MSEX === 'पुरुष' ? 'पुरुष' : (selectedVoter.MSEX === 'F' || selectedVoter.MSEX === 'स्त्री' ? 'स्त्री' : selectedVoter.MSEX || selectedVoter.GENDER || '-'),
+      gender: selectedVoter.MSEX === 'M' || selectedVoter.MSEX === 'à¤ªà¥à¤°à¥à¤·' ? 'à¤ªà¥à¤°à¥à¤·' : (selectedVoter.MSEX === 'F' || selectedVoter.MSEX === 'à¤¸à¥à¤¤à¥à¤°à¥€' ? 'à¤¸à¥à¤¤à¥à¤°à¥€' : selectedVoter.MSEX || selectedVoter.GENDER || '-'),
       age: selectedVoter.MAGE || selectedVoter.AGE || selectedVoter.FAGE || '18',
       pollingStation: resolvedPS,
       topImage: null,
       symbolImage: null,
-      symbolName: 'कमल का फूल'
+      symbolName: 'à¤•à¤®à¤² à¤•à¤¾ à¤«à¥‚à¤²'
     };
 
     setMappedVoterData(mappedData);
@@ -473,7 +473,7 @@ function PhotoAssembly({ onBack }) {
                       </button>
                     ) : (
                       <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl flex items-center gap-1.5 font-medium">
-                        <span>⚠️ Pre-generated PDF not generated in Admin for this file.</span>
+                        <span>âš ï¸ Pre-generated PDF not generated in Admin for this file.</span>
                       </div>
                     )}
                   </div>
@@ -498,7 +498,7 @@ function PhotoAssembly({ onBack }) {
                           }}
                           className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer bg-white px-2 py-1 rounded-md shadow-sm border border-rose-100"
                         >
-                          Reset ✕
+                          Reset âœ•
                         </button>
                       )}
                       <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -580,8 +580,8 @@ function PhotoAssembly({ onBack }) {
                         className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       >
                         <option value="">All Genders</option>
-                        <option value="M">Male (पुरुष)</option>
-                        <option value="F">Female (महिला)</option>
+                        <option value="M">Male (à¤ªà¥à¤°à¥à¤·)</option>
+                        <option value="F">Female (à¤®à¤¹à¤¿à¤²à¤¾)</option>
                       </select>
                     </div>
                   </div>
@@ -594,7 +594,7 @@ function PhotoAssembly({ onBack }) {
                     <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
-                    Horizontal scroll enabled • Tap any column to sort
+                    Horizontal scroll enabled â€¢ Tap any column to sort
                   </span>
                 </div>
                 <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white block">
@@ -652,11 +652,11 @@ function PhotoAssembly({ onBack }) {
                           </td>
                           <td className="p-3.5">
                             <span className="font-bold text-slate-800">{v.MAGE || '-'} Y</span>
-                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${(v.MSEX === 'M' || v.MSEX === 'पुरुष')
+                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${(v.MSEX === 'M' || v.MSEX === 'à¤ªà¥à¤°à¥à¤·')
                                 ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                 : 'bg-pink-50 text-pink-700 border border-pink-200'
                               }`}>
-                              {v.MSEX === 'M' || v.MSEX === 'पुरुष' ? 'Male' : (v.MSEX === 'F' || v.MSEX === 'स्त्री' ? 'Female' : v.MSEX || '-')}
+                              {v.MSEX === 'M' || v.MSEX === 'à¤ªà¥à¤°à¥à¤·' ? 'Male' : (v.MSEX === 'F' || v.MSEX === 'à¤¸à¥à¤¤à¥à¤°à¥€' ? 'Female' : v.MSEX || '-')}
                             </span>
                           </td>
                           <td className="p-3.5 font-mono text-slate-600">{v.MHOUSENO || '-'}</td>
