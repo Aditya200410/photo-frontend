@@ -399,10 +399,14 @@ function AdminAddExcelPanchayat() {
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-800">Pre-Generated Slip PDFs:</span>
-                        {file.generatedPdfs && Object.keys(file.generatedPdfs).length > 0 ? (
+                        {file.generatedPdfs && [
+                          'simple8', 'simple10', 'simple12', 'header6', 'header8', 'alphabetical'
+                        ].filter(k => file.generatedPdfs[k] || (k === 'header6' && file.generatedPdfs.header) || (k === 'simple8' && file.generatedPdfs.symbol)).length > 0 ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                            Generated ({Object.keys(file.generatedPdfs).length} formats)
+                            Generated ({[
+                              'simple8', 'simple10', 'simple12', 'header6', 'header8', 'alphabetical'
+                            ].filter(k => file.generatedPdfs[k] || (k === 'header6' && file.generatedPdfs.header) || (k === 'simple8' && file.generatedPdfs.symbol)).length} formats)
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-300">

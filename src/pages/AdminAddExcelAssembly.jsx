@@ -286,9 +286,13 @@ function AdminAddExcelAssembly() {
                           <svg className="w-4 h-4 text-rose-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                           Ready Voter Slip PDFs:
                         </span>
-                        {file.generatedPdfs && Object.keys(file.generatedPdfs).length > 0 ? (
+                        {file.generatedPdfs && [
+                          'simple8', 'simple10', 'simple12', 'header6', 'header8', 'alphabetical'
+                        ].filter(k => file.generatedPdfs[k] || (k === 'header6' && file.generatedPdfs.header) || (k === 'simple8' && file.generatedPdfs.symbol)).length > 0 ? (
                           <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
-                            ✓ Generated ({Object.keys(file.generatedPdfs).length} formats)
+                            ✓ Generated ({[
+                              'simple8', 'simple10', 'simple12', 'header6', 'header8', 'alphabetical'
+                            ].filter(k => file.generatedPdfs[k] || (k === 'header6' && file.generatedPdfs.header) || (k === 'simple8' && file.generatedPdfs.symbol)).length} formats)
                           </span>
                         ) : (
                           <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-300">

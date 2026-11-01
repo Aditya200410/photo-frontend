@@ -977,7 +977,7 @@ function PhotoGramPanchayat({ onBack }) {
                         </div>
                         <span>Instant Download PDF (Server)</span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
-                          {Object.keys(activeExcelFile.generatedPdfs).length} Formats
+                          {['simple8', 'simple10', 'simple12', 'header6', 'header8', 'alphabetical'].filter(k => activeExcelFile.generatedPdfs[k] || (k === 'header6' && activeExcelFile.generatedPdfs.header) || (k === 'simple8' && activeExcelFile.generatedPdfs.symbol)).length} Formats
                         </span>
                       </button>
                     ) : (
