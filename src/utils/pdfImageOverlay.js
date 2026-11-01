@@ -1,43 +1,43 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
 
 /**
  * Exact layout boxes for:
- * 1) 'header': 6 per page (2 cols x 3 rows) top banner image
- * 2) 'symbol': 8 per page (2 cols x 4 rows) symbol icon box
+ * 1) 'header' / 'header6': 6 per page (2 cols x 3 rows) top banner image
+ * 2) 'header8': 8 per page (2 cols x 4 rows) top banner image
+ * 3) 'symbol': 8 per page (2 cols x 4 rows) symbol icon box
  *
- * Measurements taken directly from Puppeteer rasterized A4 (594.96pt x 841.92pt).
+ * Measurements matching both legacy PDFs (with orange banner) and newly generated PDFs.
  * In pdf-lib, (0, 0) is the bottom-left corner of the page.
  */
 
-// Format: 6 per page Header Banner boxes (width: ~278.8pt, height: ~34.5pt)
-// Puppeteer box: width: 371.95px, height: 46px at 96 DPI -> 278.8pt x 34.5pt
+// Format: 6 per page Header Banner boxes (width: 276.75pt, height: 37.5pt)
+// Wipe box expands slightly (+1pt) to guarantee 100% eradication of orange banner & text
 export const HEADER_SLIP_BOXES = [
   // Row 1 (top): col 0, col 1
-  { x: 14.9, y: 765.2, width: 278.8, height: 34.5 },
-  { x: 301.2, y: 765.2, width: 278.8, height: 34.5 },
+  { x: 15.75, y: 757.0, width: 276.75, height: 37.5 },
+  { x: 302.75, y: 757.0, width: 276.75, height: 37.5 },
   // Row 2 (middle): col 0, col 1
-  { x: 14.9, y: 501.1, width: 278.8, height: 34.5 },
-  { x: 301.2, y: 501.1, width: 278.8, height: 34.5 },
+  { x: 15.75, y: 494.5, width: 276.75, height: 37.5 },
+  { x: 302.75, y: 494.5, width: 276.75, height: 37.5 },
   // Row 3 (bottom): col 0, col 1
-  { x: 14.9, y: 237.0, width: 278.8, height: 34.5 },
-  { x: 301.2, y: 237.0, width: 278.8, height: 34.5 },
+  { x: 15.75, y: 232.0, width: 276.75, height: 37.5 },
+  { x: 302.75, y: 232.0, width: 276.75, height: 37.5 },
 ];
 
 // Format: 8 per page Header Banner boxes (width: ~278.8pt, height: ~27.0pt)
-// Puppeteer box: width: 371.95px, height: 36px at 96 DPI -> 278.8pt x 27.0pt
 export const HEADER8_SLIP_BOXES = [
   // Row 1 (top): col 0, col 1
-  { x: 14.9, y: 772.7, width: 278.8, height: 27.0 },
-  { x: 301.2, y: 772.7, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 765.6, width: 278.8, height: 27.0 },
+  { x: 301.4, y: 765.6, width: 278.8, height: 27.0 },
   // Row 2: col 0, col 1
-  { x: 14.9, y: 575.2, width: 278.8, height: 27.0 },
-  { x: 301.2, y: 575.2, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 569.5, width: 278.8, height: 27.0 },
+  { x: 301.4, y: 569.5, width: 278.8, height: 27.0 },
   // Row 3: col 0, col 1
-  { x: 14.9, y: 377.7, width: 278.8, height: 27.0 },
-  { x: 301.2, y: 377.7, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 373.4, width: 278.8, height: 27.0 },
+  { x: 301.4, y: 373.4, width: 278.8, height: 27.0 },
   // Row 4 (bottom): col 0, col 1
-  { x: 14.9, y: 180.1, width: 278.8, height: 27.0 },
-  { x: 301.2, y: 180.1, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 177.3, width: 278.8, height: 27.0 },
+  { x: 301.4, y: 177.3, width: 278.8, height: 27.0 },
 ];
 
 // Format: 8 per page Symbol boxes (width: ~33pt, height: ~33pt)
@@ -129,9 +129,23 @@ export async function downloadPdfWithImageOverlay({
 
   onProgress(70, `Pasting image on ${totalPages} pages...`);
 
+  const isHeaderMode = formatId === 'header' || formatId === 'header6' || formatId === 'header8';
+
   for (let i = 0; i < totalPages; i++) {
     const page = pages[i];
     for (const box of boxes) {
+      // 1. Wipe out any pre-existing background / orange banner / default text in the header box
+      if (isHeaderMode) {
+        page.drawRectangle({
+          x: box.x - 0.75,
+          y: box.y - 0.75,
+          width: box.width + 1.5,
+          height: box.height + 1.5,
+          color: rgb(1, 1, 1)
+        });
+      }
+
+      // 2. Paste the user's uploaded banner image cleanly into the box
       page.drawImage(embeddedImage, {
         x: box.x,
         y: box.y,

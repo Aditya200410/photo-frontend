@@ -7,7 +7,7 @@ const FORMAT_DETAILS = [
   // --- Without Header Options ---
   {
     id: 'simple8',
-    legacyId: 'simple', // maps to clean simple voter slips without green symbol circle
+    legacyId: 'symbol', // maps to authentic 8 slips per page pregenerated pdf
     group: 'withoutHeader',
     title: 'Without Header',
     hindiTitle: 'बिना हेडर मतदाता पर्ची',

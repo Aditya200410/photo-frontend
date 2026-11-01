@@ -325,14 +325,14 @@ function AdminAddExcelNagarNigam() {
                     {file.generatedPdfs && Object.keys(file.generatedPdfs).length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                         {[
-                          { id: 'simple8', label: 'Without Header (8/page)', category: 'withoutHeader' },
-                          { id: 'simple10', label: 'Without Header (10/page)', category: 'withoutHeader' },
-                          { id: 'simple12', label: 'Without Header (12/page)', category: 'withoutHeader' },
-                          { id: 'header6', label: 'With Header (6/page)', category: 'withHeader' },
-                          { id: 'header8', label: 'With Header (8/page)', category: 'withHeader' },
-                          { id: 'alphabetical', label: 'Alphabetical List (40/page)', category: 'alphabetical' }
+                          { id: 'simple8', legacyFallbackId: 'symbol', label: 'Without Header (8/page)', category: 'withoutHeader' },
+                          { id: 'simple10', legacyFallbackId: null, label: 'Without Header (10/page)', category: 'withoutHeader' },
+                          { id: 'simple12', legacyFallbackId: null, label: 'Without Header (12/page)', category: 'withoutHeader' },
+                          { id: 'header6', legacyFallbackId: 'header', label: 'With Header (6/page)', category: 'withHeader' },
+                          { id: 'header8', legacyFallbackId: 'symbol', label: 'With Header (8/page)', category: 'withHeader' },
+                          { id: 'alphabetical', legacyFallbackId: 'alphabetical', label: 'Alphabetical List (40/page)', category: 'alphabetical' }
                         ].map(fmt => {
-                          const item = file.generatedPdfs[fmt.id];
+                          const item = file.generatedPdfs[fmt.id] || (fmt.legacyFallbackId ? file.generatedPdfs[fmt.legacyFallbackId] : null);
                           if (!item) return null;
                           return (
                             <a
