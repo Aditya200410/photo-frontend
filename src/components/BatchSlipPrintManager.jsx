@@ -378,6 +378,99 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
       }
     }
 
+
+    // FAST SERVER-SIDE NATIVE PDF GENERATION FOR FILTERED DATA
+    // Generates high-definition PDF in seconds via Chrome backend engine
+    try {
+      setProcessingStats(prev => ({
+        ...prev,
+        status: 'Generating high-definition PDF in backend engine...',
+        progress: 25
+      }));
+
+      const activeImg = (hasHeaderFormat && bannerImage)
+        ? bannerImage
+        : (selectedFormat === 'symbol' && symbolImage)
+          ? symbolImage
+          : null;
+
+      const response = await fetch(`${API_BASE_URL}/api/generate-filtered-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          voters,
+          formatId: selectedFormat,
+          meta: {
+            assembly: assemblyName || 'मतदाता सूची पर्ची',
+            ward: wardNo || '-',
+            booth: boothNumber || '-'
+          },
+          bannerImage: activeImg,
+          pageRangeMode,
+          startPage: validStartPage,
+          endPage: validEndPage
+        })
+      });
+
+      if (response.ok) {
+        setProcessingStats(prev => ({
+          ...prev,
+          status: 'Receiving generated PDF file...',
+          progress: 85
+        }));
+
+        const blob = await response.blob();
+        const rangeSuffix = pageRangeMode === 'custom' ? `-Pages-${validStartPage}-to-${validEndPage}` : '';
+        const finalPdfFilename = `Voter-Slips-Booth-${boothNumber || '1'}-${selectedFormat}${rangeSuffix}.pdf`;
+
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.setAttribute('download', finalPdfFilename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+
+        // Record print transaction in backend
+        setProcessingStats(prev => ({
+          ...prev,
+          status: 'Logging print transaction...',
+          progress: 95
+        }));
+
+        await logPrintTransaction({
+          optionType: `Batch Slips (Filtered PDF Engine) - ${selectedFormat}${pageRangeMode === 'custom' ? ` (Pages ${validStartPage}-${validEndPage})` : ''}`,
+          wardNo: wardNo || '-',
+          partNo: boothNumber || '-',
+          serialNo: pageRangeMode === 'custom' ? `Pages ${validStartPage}-${validEndPage}` : `1-${totalVotersCount}`,
+          voterName: 'Batch Print (Filtered)',
+          pagesCount: totalEstimatedPages,
+          cardsPerPage: effectiveCardsPerPage,
+          slipsCount: activeRecordsCount,
+          hasImage: hasImage
+        });
+
+        const finishTimestamp = new Date();
+        setProcessingStats(prev => ({
+          ...prev,
+          status: 'Completed! High-definition PDF downloaded.',
+          progress: 100,
+          recordsDone: activeRecordsCount,
+          timeRemainingStr: '00:00',
+          endTime: finishTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        }));
+
+        return;
+      } else {
+        console.warn('Backend fast PDF generation responded with error, falling back to client-side...', response.status);
+      }
+    } catch (backendPdfErr) {
+      console.warn('Fast backend PDF failed, falling back to client-side engine:', backendPdfErr);
+    }
+
     try {
       // Yield to let browser render UI immediately without freezing
       await new Promise(r => setTimeout(r, 60));

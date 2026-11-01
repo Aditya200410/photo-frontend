@@ -180,8 +180,8 @@ export const generatePdfFromHtml = async ({
   tempContainer.style.webkitFontSmoothing = 'antialiased';
   document.body.appendChild(tempContainer);
 
-  const effectiveScale = scale || 2.0;
-  const effectiveQuality = quality || 0.95;
+  const effectiveScale = scale || 1.0;
+  const effectiveQuality = quality || 0.85;
 
   try {
     for (let i = 0; i < total; i++) {
