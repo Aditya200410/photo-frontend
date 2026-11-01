@@ -20,6 +20,10 @@ function PhotoGramPanchayat({ onBack }) {
   // Scope filter: 'all' | 'zila' | 'samiti' | 'panchayat'
   const [scopeFilter, setScopeFilter] = useState('all');
   const [isScopeMenuOpen, setIsScopeMenuOpen] = useState(false);
+  // Selected sub-level values for scope filter
+  const [selectedZpWard, setSelectedZpWard] = useState('');
+  const [selectedPsWard, setSelectedPsWard] = useState('');
+  const [selectedScopePanchayat, setSelectedScopePanchayat] = useState('');
 
   // Voter data & filters
   const [voters, setVoters] = useState([]);
@@ -428,11 +432,26 @@ function PhotoGramPanchayat({ onBack }) {
       // Scope match
       let scopeMatch = true;
       if (scopeFilter === 'zila') {
-        scopeMatch = Boolean(v['ZILLA PARISHAD NO'] || v['ZILLA PARISHAD NAME'] || v.ZILLA_PARISHAD || v.zpWard || v.district);
+        const rowZp = String(v['ZILLA PARISHAD NO'] ?? v.zpWard ?? v.ZILLA_PARISHAD_NO ?? '').trim();
+        if (selectedZpWard) {
+          scopeMatch = rowZp === String(selectedZpWard).trim();
+        } else {
+          scopeMatch = Boolean(rowZp || v['ZILLA PARISHAD NAME'] || v.ZILLA_PARISHAD);
+        }
       } else if (scopeFilter === 'samiti') {
-        scopeMatch = Boolean(v['PANCHAYAT SAMITI NO'] || v['PANCHAYAT SAMITI NAME'] || v.PANCHAYAT_SAMITI || v.psWard || v.psName);
+        const rowPs = String(v['PANCHAYAT SAMITI NO'] ?? v.psWard ?? v.PANCHAYAT_SAMITI_NO ?? '').trim();
+        if (selectedPsWard) {
+          scopeMatch = rowPs === String(selectedPsWard).trim();
+        } else {
+          scopeMatch = Boolean(rowPs || v['PANCHAYAT SAMITI NAME'] || v.PANCHAYAT_SAMITI || v.psName);
+        }
       } else if (scopeFilter === 'panchayat') {
-        scopeMatch = Boolean(v['PANCHAYAT NAME'] || v.GRAM_PANCHAYAT || v.PANCHAYAT || v.panchayat);
+        const rowGp = String(v['PANCHAYAT NAME'] ?? v.GRAM_PANCHAYAT ?? v.PANCHAYAT ?? v.panchayat ?? '').trim();
+        if (selectedScopePanchayat) {
+          scopeMatch = rowGp.toLowerCase() === String(selectedScopePanchayat).trim().toLowerCase();
+        } else {
+          scopeMatch = Boolean(rowGp);
+        }
       }
 
       return idMatch && nameMatch && relMatch && houseMatch && ageMatch && minAgeMatch && maxAgeMatch && sexMatch && wardMatch && villageMatch && scopeMatch;
@@ -482,7 +501,47 @@ function PhotoGramPanchayat({ onBack }) {
     }
 
     return result;
-  }, [voters, filters, sortConfig]);
+  }, [voters, filters, sortConfig, scopeFilter, selectedZpWard, selectedPsWard, selectedScopePanchayat]);
+
+  // Distinct scope options available in loaded dataset
+  const availableZpWards = useMemo(() => {
+    const set = new Set();
+    voters.forEach(v => {
+      const val = v['ZILLA PARISHAD NO'] ?? v.zpWard ?? v.ZILLA_PARISHAD_NO;
+      if (val !== undefined && val !== null && String(val).trim()) {
+        set.add(String(val).trim());
+      }
+    });
+    return Array.from(set).sort((a, b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      return (!isNaN(na) && !isNaN(nb)) ? na - nb : a.localeCompare(b);
+    });
+  }, [voters]);
+
+  const availablePsWards = useMemo(() => {
+    const set = new Set();
+    voters.forEach(v => {
+      const val = v['PANCHAYAT SAMITI NO'] ?? v.psWard ?? v.PANCHAYAT_SAMITI_NO;
+      if (val !== undefined && val !== null && String(val).trim()) {
+        set.add(String(val).trim());
+      }
+    });
+    return Array.from(set).sort((a, b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      return (!isNaN(na) && !isNaN(nb)) ? na - nb : a.localeCompare(b);
+    });
+  }, [voters]);
+
+  const availableScopePanchayats = useMemo(() => {
+    const set = new Set();
+    voters.forEach(v => {
+      const val = v['PANCHAYAT NAME'] ?? v.GRAM_PANCHAYAT ?? v.PANCHAYAT ?? v.panchayat;
+      if (val !== undefined && val !== null && String(val).trim()) {
+        set.add(String(val).trim());
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [voters]);
 
   useEffect(() => {
     setDisplayedVoters(filteredVoters.slice(0, pageCount * itemsPerPage));
@@ -747,8 +806,9 @@ function PhotoGramPanchayat({ onBack }) {
               <div className="mt-10 pt-8 border-t border-slate-200">
                 {/* KPI Overview Tiles (Total, Active, Deleted) */}
                 {(() => {
-                  const totalCount = voters.length;
-                  const delCount = voters.filter(v => v.IS_DELETED || /delet|विलोपित|हटाया/i.test(String(v.STATUS || v.status || '')) || String(v.STATUS || v.status || '').trim().toUpperCase() === 'D').length;
+                  const currentList = filteredVoters;
+                  const totalCount = currentList.length;
+                  const delCount = currentList.filter(v => v.IS_DELETED || /delet|विलोपित|हटाया/i.test(String(v.STATUS || v.status || '')) || String(v.STATUS || v.status || '').trim().toUpperCase() === 'D').length;
                   const activeCount = totalCount - delCount;
 
                   const scopeLabels = {
@@ -799,7 +859,7 @@ function PhotoGramPanchayat({ onBack }) {
 
                       {/* Filter by Dropdown Bar (As seen in image) */}
                       <div className="pt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                           <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
                             <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -830,7 +890,12 @@ function PhotoGramPanchayat({ onBack }) {
                               <div className="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
                                 <button
                                   type="button"
-                                  onClick={() => { setScopeFilter('zila'); setIsScopeMenuOpen(false); setPageCount(1); }}
+                                  onClick={() => {
+                                    setScopeFilter('zila');
+                                    setIsScopeMenuOpen(false);
+                                    setSelectedZpWard('');
+                                    setPageCount(1);
+                                  }}
                                   className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'zila' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
                                 >
                                   <span className="text-sm">🏛️</span>
@@ -838,7 +903,12 @@ function PhotoGramPanchayat({ onBack }) {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { setScopeFilter('samiti'); setIsScopeMenuOpen(false); setPageCount(1); }}
+                                  onClick={() => {
+                                    setScopeFilter('samiti');
+                                    setIsScopeMenuOpen(false);
+                                    setSelectedPsWard('');
+                                    setPageCount(1);
+                                  }}
                                   className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'samiti' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
                                 >
                                   <span className="text-sm">🏢</span>
@@ -846,7 +916,12 @@ function PhotoGramPanchayat({ onBack }) {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { setScopeFilter('panchayat'); setIsScopeMenuOpen(false); setPageCount(1); }}
+                                  onClick={() => {
+                                    setScopeFilter('panchayat');
+                                    setIsScopeMenuOpen(false);
+                                    setSelectedScopePanchayat('');
+                                    setPageCount(1);
+                                  }}
                                   className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'panchayat' ? 'bg-violet-100 text-violet-800 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
                                 >
                                   <span className="text-sm">🏘️</span>
@@ -855,7 +930,14 @@ function PhotoGramPanchayat({ onBack }) {
                                 <div className="border-t border-slate-100 my-1"></div>
                                 <button
                                   type="button"
-                                  onClick={() => { setScopeFilter('all'); setIsScopeMenuOpen(false); setPageCount(1); }}
+                                  onClick={() => {
+                                    setScopeFilter('all');
+                                    setIsScopeMenuOpen(false);
+                                    setSelectedZpWard('');
+                                    setSelectedPsWard('');
+                                    setSelectedScopePanchayat('');
+                                    setPageCount(1);
+                                  }}
                                   className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'all' ? 'bg-slate-100 text-slate-800 font-bold' : 'text-slate-500 hover:bg-slate-50'}`}
                                 >
                                   <span className="text-sm">🌐</span>
@@ -864,10 +946,59 @@ function PhotoGramPanchayat({ onBack }) {
                               </div>
                             )}
                           </div>
+
+                          {/* Dynamic Ward / Sub-level Selectors based on chosen scope */}
+                          {scopeFilter === 'zila' && availableZpWards.length > 0 && (
+                            <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
+                              <span className="text-slate-500 font-medium">जि.प. वार्ड:</span>
+                              <select
+                                value={selectedZpWard}
+                                onChange={(e) => { setSelectedZpWard(e.target.value); setPageCount(1); }}
+                                className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                              >
+                                <option value="">All Zila Wards ({availableZpWards.length})</option>
+                                {availableZpWards.map(w => (
+                                  <option key={w} value={w}>Ward No {w}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {scopeFilter === 'samiti' && availablePsWards.length > 0 && (
+                            <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
+                              <span className="text-slate-500 font-medium">पं.स. वार्ड:</span>
+                              <select
+                                value={selectedPsWard}
+                                onChange={(e) => { setSelectedPsWard(e.target.value); setPageCount(1); }}
+                                className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                              >
+                                <option value="">All Samiti Wards ({availablePsWards.length})</option>
+                                {availablePsWards.map(w => (
+                                  <option key={w} value={w}>Ward No {w}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {scopeFilter === 'panchayat' && availableScopePanchayats.length > 0 && (
+                            <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
+                              <span className="text-slate-500 font-medium">ग्राम पंचायत:</span>
+                              <select
+                                value={selectedScopePanchayat}
+                                onChange={(e) => { setSelectedScopePanchayat(e.target.value); setPageCount(1); }}
+                                className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                              >
+                                <option value="">All Panchayats ({availableScopePanchayats.length})</option>
+                                {availableScopePanchayats.map(p => (
+                                  <option key={p} value={p}>{p}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
 
                         <div className="text-slate-500 font-semibold">
-                          Showing <strong className="text-slate-800">{filteredVoters.length.toLocaleString('en-IN')}</strong> of {totalCount.toLocaleString('en-IN')}
+                          Showing <strong className="text-slate-800">{filteredVoters.length.toLocaleString('en-IN')}</strong> of {voters.length.toLocaleString('en-IN')}
                         </div>
                       </div>
                     </div>
