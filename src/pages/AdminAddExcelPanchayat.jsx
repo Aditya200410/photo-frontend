@@ -433,11 +433,12 @@ function AdminAddExcelPanchayat() {
                     {file.generatedPdfs && Object.keys(file.generatedPdfs).length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                         {[
-                          { id: 'simple', label: 'Simple Voter Slip (6/page)' },
-                          { id: 'header', label: 'Voter Slip with Header (6/page)' },
-                          { id: 'symbol', label: 'Voter Slip with Symbol (8/page)' },
-                          { id: 'appeal', label: 'Personal Appeal Letter (1/page)' },
-                          { id: 'alphabetical', label: 'Alphabetical Voter List (40/page)' }
+                          { id: 'simple8', label: 'Without Header (8/page)', category: 'withoutHeader' },
+                          { id: 'simple10', label: 'Without Header (10/page)', category: 'withoutHeader' },
+                          { id: 'simple12', label: 'Without Header (12/page)', category: 'withoutHeader' },
+                          { id: 'header6', label: 'With Header (6/page)', category: 'withHeader' },
+                          { id: 'header8', label: 'With Header (8/page)', category: 'withHeader' },
+                          { id: 'alphabetical', label: 'Alphabetical List (40/page)', category: 'alphabetical' }
                         ].map(fmt => {
                           const item = file.generatedPdfs[fmt.id];
                           if (!item) return null;
@@ -446,11 +447,14 @@ function AdminAddExcelPanchayat() {
                               key={fmt.id}
                               href={`${API_BASE_URL}/api/download/print_slips/${item.fileName}`}
                               download
-                              className="p-2 bg-white hover:bg-violet-50 border border-slate-200 hover:border-violet-300 rounded-lg transition-all flex items-center justify-between group shadow-2xs"
+                              className="p-2 bg-white rounded-lg transition-all flex items-center justify-between group shadow-2xs border hover:bg-violet-50 border-slate-200 hover:border-violet-300"
                               title={`Download ${fmt.label} (${item.pages} pages, ${item.sizeStr})`}
                             >
                               <div className="min-w-0 pr-2">
-                                <div className="text-[11px] font-bold text-slate-800 truncate group-hover:text-violet-700">{fmt.label}</div>
+                                <div className="text-[11px] font-bold text-slate-800 truncate group-hover:text-violet-700 flex items-center gap-1">
+                                  <span>{fmt.label}</span>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                </div>
                                 <div className="text-[10px] text-slate-500 font-semibold">{item.pages} pages • <strong className="text-emerald-700 font-bold">{item.sizeStr}</strong></div>
                               </div>
                               <span className="w-6 h-6 rounded-md bg-violet-100 group-hover:bg-violet-600 text-violet-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">

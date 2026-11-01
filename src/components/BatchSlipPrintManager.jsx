@@ -10,12 +10,10 @@ import { downloadPdfWithImageOverlay } from '../utils/pdfImageOverlay';
 
 function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNumber, wardNo, activeExcelFile }) {
   // Template format: 
-  // 'simple' (Simple Voter Slip)
-  // 'header' (Voter Slip with Header / banner)
-  // 'symbol' (Voter Slip with Symbol)
-  // 'appeal' (Personal Appeal Letter)
-  // 'alphabetical' (Alphabetical Voter List)
-  const [selectedFormat, setSelectedFormat] = useState('simple');
+  // Without Header: 'simple8' (8 slip/page), 'simple10' (10 slip/page), 'simple12' (12 slip/page)
+  // With Header: 'header6' (6 slip/page), 'header8' (8 slip/page)
+  // Alphabetical: 'alphabetical' (40 entry/page)
+  const [selectedFormat, setSelectedFormat] = useState('simple8');
 
   // Cards per page settings for formats
   const [cardsPerPage, setCardsPerPage] = useState(8);
@@ -103,6 +101,10 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
   const effectiveCardsPerPage = useMemo(() => {
     if (selectedFormat === 'appeal') return 1;
     if (selectedFormat === 'alphabetical') return 40;
+    if (selectedFormat === 'simple8' || selectedFormat === 'header8') return 8;
+    if (selectedFormat === 'simple10') return 10;
+    if (selectedFormat === 'simple12') return 12;
+    if (selectedFormat === 'header6') return 6;
     return cardsPerPage;
   }, [selectedFormat, cardsPerPage]);
 
@@ -142,8 +144,10 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
     ? totalVotersCount 
     : Math.min(totalVotersCount, activeSlipPagesCount * effectiveCardsPerPage);
 
+  const hasHeaderFormat = selectedFormat === 'header6' || selectedFormat === 'header8' || selectedFormat === 'header';
+
   const hasImage = Boolean(
-    (selectedFormat === 'header' && bannerImage) ||
+    (hasHeaderFormat && bannerImage) ||
     (selectedFormat === 'symbol' && symbolImage)
   );
 
@@ -154,9 +158,11 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
   // Sync format changes with sensible default cards per page
   const handleSelectFormat = (fmt) => {
     setSelectedFormat(fmt);
-    if (fmt === 'simple') setCardsPerPage(8);
-    else if (fmt === 'header') setCardsPerPage(8);
-    else if (fmt === 'symbol') setCardsPerPage(8);
+    if (fmt === 'simple8') setCardsPerPage(8);
+    else if (fmt === 'simple10') setCardsPerPage(10);
+    else if (fmt === 'simple12') setCardsPerPage(12);
+    else if (fmt === 'header6') setCardsPerPage(6);
+    else if (fmt === 'header8') setCardsPerPage(8);
     else if (fmt === 'appeal') setCardsPerPage(1);
     else if (fmt === 'alphabetical') setCardsPerPage(40);
   };
@@ -204,7 +210,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
       gender: mappedGender,
       age: voter.AGE || voter.FAGE || voter.MAGE || '18',
       pollingStation: voter.PS_EN || voter.PS_HI || `${assemblyName || ''} ${resolvedPart !== '-' ? '- Booth ' + resolvedPart : ''}`.trim(),
-      topImage: selectedFormat === 'header' ? bannerImage : null,
+      topImage: hasHeaderFormat ? bannerImage : null,
       symbolImage: selectedFormat === 'symbol' ? symbolImage : null,
     };
   };
@@ -257,8 +263,18 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
       }));
     }, 1000);
 
-    // Check if pre-generated PDF exists from backend for this format
-    const serverPdf = activeExcelFile?.generatedPdfs?.[selectedFormat];
+    // Check if pre-generated PDF exists from backend for this format (or legacy fallback)
+    const legacyFallbackMap = {
+      simple8: 'simple',
+      simple10: 'simple',
+      simple12: 'simple',
+      header6: 'header',
+      header8: 'header',
+      alphabetical: 'alphabetical'
+    };
+    const serverPdf = activeExcelFile?.generatedPdfs?.[selectedFormat] || 
+      (legacyFallbackMap[selectedFormat] ? activeExcelFile?.generatedPdfs?.[legacyFallbackMap[selectedFormat]] : null);
+
     const canUseServerPdf = Boolean(
       serverPdf &&
       serverPdf.fileName &&
@@ -280,7 +296,7 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
 
         // Trigger direct backend download or paste uploaded image if provided
         const downloadUrl = `${API_BASE_URL}/api/download/print_slips/${serverPdf.fileName}`;
-        const activeImg = (selectedFormat === 'header' && bannerImage)
+        const activeImg = (hasHeaderFormat && bannerImage)
           ? bannerImage
           : (selectedFormat === 'symbol' && symbolImage)
             ? symbolImage
@@ -789,283 +805,247 @@ function BatchSlipPrintManager({ isOpen, onClose, voters, assemblyName, boothNum
           <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
 
             {/* 1. TOP CARDS: Print Formats / Design Options */}
-            <div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-
-                {/* 1. Simple Voter Slip */}
-                <div
-                  onClick={() => handleSelectFormat('simple')}
-                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'simple' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'simple' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {selectedFormat === 'simple' && '✓'}
-                    </div>
-                    <span className="text-xs font-black text-slate-900 leading-tight">Simple Voter Slip</span>
-                  </div>
-
-                  {/* Thumbnail Preview mockup */}
-                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
-                    <div className="grid grid-cols-2 gap-1 flex-1">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="border border-slate-300 bg-white rounded-[2px] p-1 flex flex-col justify-between text-[6px]">
-                          <div className="border-b border-slate-200 pb-0.5 font-bold truncate">मतदाता पर्ची</div>
-                          <div className="space-y-0.5 text-slate-400">
-                            <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
-                            <div className="w-3/4 h-1 bg-slate-200 rounded-xs"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1 mt-auto">
-                    <select
-                      value={cardsPerPage}
-                      onChange={(e) => setCardsPerPage(Number(e.target.value))}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 outline-none w-full"
-                    >
-                      <option value={6}>6 per page</option>
-                      <option value={8}>8 per page</option>
-                      <option value={10}>10 per page</option>
-                      <option value={12}>12 per page</option>
-                    </select>
-                  </div>
+            <div className="space-y-4">
+              {/* Group 1: Without Header (8, 10, 12 Slip on A4) */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    📄 Without Header (बिना हेडर) — 8, 10, 12 Slip on A4 Paper
+                  </span>
                 </div>
-
-                {/* 2. Voter Slip with Header (banner) */}
-                <div
-                  onClick={() => handleSelectFormat('header')}
-                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'header' ? 'border-purple-600 shadow-lg ring-2 ring-purple-500/20' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-start justify-between gap-1 mb-2">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border bg-purple-100 text-purple-700 border-purple-200">
-                      6 Per Page
-                    </span>
-                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
-                      Campaign
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 ${selectedFormat === 'header' ? 'bg-purple-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {selectedFormat === 'header' && '✓'}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Header</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">हेडर / बैनर मतदाता पर्ची</p>
-                    </div>
-                  </div>
-
-                  {/* Thumbnail Preview mockup */}
-                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
-                    <div className="grid grid-cols-2 gap-1 flex-1">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="border border-purple-300 bg-white rounded-[2px] overflow-hidden flex flex-col text-[6px]">
-                          {bannerImage ? (
-                            <div className="h-4 w-full bg-slate-100 overflow-hidden flex items-center justify-center">
-                              <img src={bannerImage} alt="Header" className="w-full h-full object-fill block" />
-                            </div>
-                          ) : (
-                            <div className="h-4 bg-orange-500 text-white flex items-center justify-center font-bold text-[5px] truncate px-0.5">
-                              प्रत्याशी का नाम
-                            </div>
-                          )}
-                          <div className="p-1 space-y-0.5 text-slate-400">
-                            <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
-                            <div className="w-2/3 h-1 bg-slate-200 rounded-xs"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1 mt-auto">
-                    <select
-                      value={cardsPerPage}
-                      onChange={(e) => setCardsPerPage(Number(e.target.value))}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 outline-none w-full"
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { id: 'simple8', title: 'Without Header', slips: 8, badge: '8 Per Page', badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200', tag: '8 Slip / A4' },
+                    { id: 'simple10', title: 'Without Header', slips: 10, badge: '10 Per Page', badgeColor: 'bg-blue-100 text-blue-800 border-blue-200', tag: '10 Slip / A4' },
+                    { id: 'simple12', title: 'Without Header', slips: 12, badge: '12 Per Page', badgeColor: 'bg-slate-100 text-slate-800 border-slate-300', tag: '12 Slip / A4' }
+                  ].map(item => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectFormat(item.id)}
+                      className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${
+                        selectedFormat === item.id ? 'border-emerald-600 shadow-lg ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-emerald-300'
+                      }`}
                     >
-                      <option value={6}>6 per page</option>
-                      <option value={8}>8 per page</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 3. Voter Slip with Symbol */}
-                <div
-                  onClick={() => handleSelectFormat('symbol')}
-                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'symbol' ? 'border-emerald-600 shadow-lg ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-start justify-between gap-1 mb-2">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border bg-emerald-100 text-emerald-700 border-emerald-200">
-                      8 Per Page
-                    </span>
-                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      Compact
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 ${selectedFormat === 'symbol' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {selectedFormat === 'symbol' && '✓'}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-900 leading-tight">Voter Slip with Symbol</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">चुनाव चिन्ह मतदाता पर्ची</p>
-                    </div>
-                  </div>
-
-                  {/* Thumbnail Preview mockup */}
-                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
-                    <div className="grid grid-cols-2 gap-1 flex-1">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="border border-emerald-300 bg-white rounded-[2px] p-1 flex items-center justify-between text-[6px]">
-                          <div className="space-y-0.5 text-slate-400 w-3/4">
-                            <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
-                            <div className="w-1/2 h-1 bg-slate-200 rounded-xs"></div>
-                          </div>
-                          <div className="w-3.5 h-3.5 rounded bg-emerald-50 border border-emerald-300 flex items-center justify-center text-[6px] text-emerald-700 overflow-hidden">
-                            {symbolImage ? (
-                              <img src={symbolImage} alt="Symbol" className="w-full h-full object-contain block" />
-                            ) : (
-                              <span>★</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1 mt-auto">
-                    <select
-                      value={cardsPerPage}
-                      onChange={(e) => setCardsPerPage(Number(e.target.value))}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-slate-50 text-slate-700 outline-none w-full"
-                    >
-                      <option value={8}>8 per page</option>
-                      <option value={10}>10 per page</option>
-                      <option value={12}>12 per page</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 4. Personal Appeal Letter */}
-                <div
-                  onClick={() => handleSelectFormat('appeal')}
-                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'appeal' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'appeal' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
-                      {selectedFormat === 'appeal' && '✓'}
-                    </div>
-                    <span className="text-xs font-black text-slate-900 leading-tight">Personal Appeal Letter</span>
-                  </div>
-
-                  {/* Thumbnail Preview mockup */}
-                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
-                    <div className="h-full border border-orange-300 bg-white rounded p-1 flex flex-col justify-between">
-                      <div className="bg-orange-500 text-white font-bold text-[6px] text-center py-1 rounded">
-                        प्रत्याशी का नाम अपील
+                      <div className="flex items-start justify-between gap-1 mb-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${item.badgeColor}`}>
+                          {item.badge}
+                        </span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          {item.tag}
+                        </span>
                       </div>
-                      <div className="space-y-1 p-1">
-                        <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
-                        <div className="w-5/6 h-1 bg-slate-200 rounded-xs"></div>
-                        <div className="w-2/3 h-1 bg-slate-200 rounded-xs"></div>
+
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 ${
+                          selectedFormat === item.id ? 'bg-emerald-600 text-white font-bold' : 'border-2 border-slate-300'
+                        }`}>
+                          {selectedFormat === item.id && '✓'}
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900 leading-tight">{item.title} ({item.slips} Slips)</h4>
+                          <p className="text-[10px] text-slate-500 font-medium">साधारण मतदाता पर्ची</p>
+                        </div>
                       </div>
-                      <div className="text-[6px] text-slate-400 border-t border-slate-100 pt-0.5 text-right font-medium">हस्ताक्षर</div>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center justify-between gap-1 mt-auto">
-                    <div className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-100 text-slate-600 text-center w-full">
-                      1 per page
+                      {/* Mockup */}
+                      <div className="w-full h-24 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden p-1.5 mb-2">
+                        <div className="grid grid-cols-2 gap-1 h-full">
+                          {[...Array(6)].map((_, i) => (
+                            <div key={i} className="border border-slate-300 bg-white rounded-[2px] p-1 flex flex-col justify-between text-[6px]">
+                              <div className="border-b border-slate-200 pb-0.5 font-bold truncate text-slate-700">मतदाता पर्ची #{i + 1}</div>
+                              <div className="space-y-0.5">
+                                <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
+                                <div className="w-2/3 h-1 bg-slate-200 rounded-xs"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] font-bold text-center py-1 bg-slate-50 rounded-lg border border-slate-200 text-slate-700">
+                        {item.slips} Slips / A4 Sheet
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
+              </div>
 
-                {/* 5. Alphabetical Voter List */}
+              {/* Group 2: With Header (6, 8 Slip on A4) */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-purple-900 bg-purple-100/80 px-2.5 py-1 rounded-lg border border-purple-200">
+                    👉🏻 With Header (हेडर / बैनर सहित) — 6, 8 Slip on A4 Paper
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { id: 'header6', title: 'With Header', slips: 6, badge: '6 Per Page', badgeColor: 'bg-purple-100 text-purple-800 border-purple-200', tag: '6 Slip / A4' },
+                    { id: 'header8', title: 'With Header', slips: 8, badge: '8 Per Page', badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200', tag: '8 Slip / A4' }
+                  ].map(item => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectFormat(item.id)}
+                      className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${
+                        selectedFormat === item.id ? 'border-purple-600 shadow-lg ring-2 ring-purple-500/20' : 'border-slate-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-1 mb-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${item.badgeColor}`}>
+                          {item.badge}
+                        </span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
+                          {item.tag}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 ${
+                          selectedFormat === item.id ? 'bg-purple-600 text-white font-bold' : 'border-2 border-slate-300'
+                        }`}>
+                          {selectedFormat === item.id && '✓'}
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900 leading-tight">{item.title} ({item.slips} Slips)</h4>
+                          <p className="text-[10px] text-slate-500 font-medium">हेडर / बैनर मतदाता पर्ची</p>
+                        </div>
+                      </div>
+
+                      {/* Mockup */}
+                      <div className="w-full h-24 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden p-1.5 mb-2">
+                        <div className="grid grid-cols-2 gap-1 h-full">
+                          {[...Array(6)].map((_, i) => (
+                            <div key={i} className="border border-purple-300 bg-white rounded-[2px] overflow-hidden flex flex-col text-[6px]">
+                              {bannerImage ? (
+                                <div className="h-3.5 w-full bg-white overflow-hidden flex items-center justify-center">
+                                  <img src={bannerImage} alt="Header" className="w-full h-full object-fill block" />
+                                </div>
+                              ) : (
+                                <div className="h-3.5 bg-slate-100 text-slate-500 border-b border-slate-200 flex items-center justify-center font-bold text-[5px] truncate px-0.5">
+                                  [Banner Space]
+                                </div>
+                              )}
+                              <div className="p-0.5 space-y-0.5">
+                                <div className="w-full h-1 bg-slate-200 rounded-xs"></div>
+                                <div className="w-2/3 h-1 bg-slate-200 rounded-xs"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] font-bold text-center py-1 bg-purple-50 rounded-lg border border-purple-200 text-purple-900">
+                        {item.slips} Slips with Header / A4 Sheet
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Group 3: Alphabetical (40 Entry / Page) */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-rose-900 bg-rose-100/80 px-2.5 py-1 rounded-lg border border-rose-200">
+                    📋 Alphabetical: 40 Entry / Page (वर्णमाला मतदाता सूची)
+                  </span>
+                </div>
                 <div
                   onClick={() => handleSelectFormat('alphabetical')}
-                  className={`relative rounded-2xl border-2 transition-all p-3 cursor-pointer flex flex-col justify-between bg-white ${selectedFormat === 'alphabetical' ? 'border-blue-600 shadow-lg ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                  className={`relative rounded-2xl border-2 transition-all p-3.5 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white ${
+                    selectedFormat === 'alphabetical' ? 'border-rose-600 shadow-lg ring-2 ring-rose-500/20' : 'border-slate-200 hover:border-rose-300'
+                  }`}
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedFormat === 'alphabetical' ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-                      }`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 ${
+                      selectedFormat === 'alphabetical' ? 'bg-rose-600 text-white font-bold' : 'border-2 border-slate-300'
+                    }`}>
                       {selectedFormat === 'alphabetical' && '✓'}
                     </div>
-                    <span className="text-xs font-black text-slate-900 leading-tight">Alphabetical Voter List</span>
-                  </div>
-
-                  {/* Thumbnail Preview mockup */}
-                  <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex flex-col p-1.5 space-y-1 mb-2">
-                    <div className="h-full border border-slate-300 bg-white rounded p-1 flex flex-col">
-                      <div className="bg-slate-800 text-white text-[5px] font-bold px-1 py-0.5 mb-1 flex justify-between">
-                        <span>नाम</span>
-                        <span>EPIC</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black text-slate-900">Alphabetical Voter List</h4>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-rose-100 text-rose-800 border-rose-200">
+                          40 Entry / Page
+                        </span>
                       </div>
-                      <div className="space-y-0.5 flex-1">
-                        {[...Array(6)].map((_, i) => (
-                          <div key={i} className="flex justify-between items-center text-[5px] border-b border-slate-100 pb-0.5">
-                            <span className="w-8 h-1 bg-slate-200 rounded-xs"></span>
-                            <span className="w-5 h-1 bg-slate-300 rounded-xs"></span>
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-xs text-slate-500 font-medium">
+                        वर्णमाला मतदाता सूची • बूथ डेस्क और त्वरित खोज हेतु वर्णमाला अनुसार व्यवस्थित सूची (40 मतदाता प्रति पेज)
+                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-1 mt-auto">
-                    <div className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-slate-100 text-slate-600 text-center w-full">
-                      40 voters / page
-                    </div>
+                  <div className="text-[11px] font-bold px-3 py-1.5 bg-rose-50 rounded-lg border border-rose-200 text-rose-900 shrink-0 text-center">
+                    40 voters / page
                   </div>
                 </div>
-
               </div>
             </div>
 
-            {/* Banner/Symbol upload if applicable */}
-            {(selectedFormat === 'header' || selectedFormat === 'symbol') && (
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-700">
-                    {selectedFormat === 'header' ? 'Candidate Top Header / Banner:' : 'Candidate Party Symbol:'}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          if (selectedFormat === 'header') setBannerImage(ev.target.result);
-                          else setSymbolImage(ev.target.result);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="text-xs file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-bold hover:file:bg-blue-100"
-                  />
+            {/* Prominently Highlighted Banner/Symbol upload if applicable */}
+            {(hasHeaderFormat || selectedFormat === 'symbol') && (
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-purple-100 via-violet-50 to-indigo-50 rounded-2xl border-2 border-purple-400 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-600/30">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-purple-950 flex items-center gap-2">
+                      <span>{hasHeaderFormat ? 'Candidate Header / Banner Image' : 'Election Symbol Image'}</span>
+                      <span className="text-[10px] uppercase font-extrabold bg-purple-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                        {hasHeaderFormat ? 'Header Banner' : 'Symbol'}
+                      </span>
+                    </h4>
+                    <p className="text-xs text-purple-800 font-medium mt-0.5">
+                      {hasHeaderFormat 
+                        ? 'उम्मीदवार हेडर बैनर फोटो चुनें (यह सभी पर्चियों में स्वतः पेस्ट होगी)' 
+                        : 'उम्मीदवार चुनाव चिन्ह फोटो चुनें'}
+                    </p>
+                  </div>
                 </div>
-                {(bannerImage || symbolImage) && (
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
-                    ✓ Image attached (+2 paisa rate)
-                  </span>
-                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md shadow-purple-600/25 active:scale-95 transition-all">
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span>{(bannerImage || symbolImage) ? 'Change Image / फोटो बदलें' : 'Choose Image / फोटो चुनें'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            if (hasHeaderFormat) setBannerImage(ev.target.result);
+                            else setSymbolImage(ev.target.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+
+                  {(bannerImage || symbolImage) && (
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-emerald-300 shadow-xs">
+                      <img src={bannerImage || symbolImage} alt="Preview" className="w-8 h-6 object-cover rounded border border-purple-200" />
+                      <span className="text-emerald-700 font-black text-xs">✓ Attached (+2p)</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (hasHeaderFormat) setBannerImage(null);
+                          else setSymbolImage(null);
+                        }}
+                        className="text-xs text-rose-600 font-bold hover:underline ml-1 cursor-pointer"
+                        title="Remove attached image"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
