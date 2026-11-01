@@ -616,7 +616,7 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
                         {currentFormat.hasHeader && (
                           headerImage ? (
                             <div className="flex flex-col border-b border-black shrink-0 w-full">
-                              <div className="h-8 sm:h-10 w-full overflow-hidden bg-white flex items-center justify-center">
+                              <div className="h-14 sm:h-16 w-full overflow-hidden bg-white flex items-center justify-center">
                                 <img src={headerImage} alt="Header" className="w-full h-full object-fill block" />
                               </div>
                               <div className="w-full text-center text-[5px] sm:text-[6px] font-black text-black bg-white border-t border-black py-0.5 tracking-tight shrink-0">
@@ -625,7 +625,7 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
                             </div>
                           ) : (
                             <div className="flex flex-col border-b border-black shrink-0 w-full">
-                              <div className="h-8 sm:h-10 w-full bg-slate-50 flex items-center justify-center text-[6px] text-slate-500 font-bold border-b border-dashed border-slate-300">
+                              <div className="h-14 sm:h-16 w-full bg-slate-50 flex items-center justify-center text-[7px] text-slate-500 font-bold border-b border-dashed border-slate-300">
                                 [उम्मीदवार हेडर बैनर फोटो]
                               </div>
                               <div className="w-full text-center text-[5px] sm:text-[6px] font-black text-black bg-white py-0.5 tracking-tight shrink-0">

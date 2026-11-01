@@ -10,35 +10,38 @@ import { PDFDocument, rgb } from 'pdf-lib';
  * In pdf-lib, (0, 0) is the bottom-left corner of the page.
  */
 
-// Format: 6 per page Header Banner boxes (width: 276.75pt, exact original height: 37.5pt)
-// Perfectly aligned at y=757.0 (Row 1), y=494.5 (Row 2), y=232.0 (Row 3)
-// Leaves the "मतदान केंद्र जाने से पहले ऊपर वाले इस भाग को काट दे" bar and Ward/Part boxes 100% visible and untouched!
+// Format: 6 per page Header Banner boxes (width: 276.75pt)
+// Expanded height to give generous space to the candidate image without covering the cut notice or voter details.
+// Card top is at y=795.5; cut line starts at y=745.5.
+// Box height: 49.0pt (a ~31% increase over 37.5pt) starting at y=746.5.
 export const HEADER_SLIP_BOXES = [
   // Row 1 (top): col 0, col 1
-  { x: 15.75, y: 757.0, width: 276.75, height: 37.5 },
-  { x: 302.75, y: 757.0, width: 276.75, height: 37.5 },
+  { x: 15.75, y: 746.5, width: 276.75, height: 49.0 },
+  { x: 302.75, y: 746.5, width: 276.75, height: 49.0 },
   // Row 2 (middle): col 0, col 1
-  { x: 15.75, y: 494.5, width: 276.75, height: 37.5 },
-  { x: 302.75, y: 494.5, width: 276.75, height: 37.5 },
+  { x: 15.75, y: 484.0, width: 276.75, height: 49.0 },
+  { x: 302.75, y: 484.0, width: 276.75, height: 49.0 },
   // Row 3 (bottom): col 0, col 1
-  { x: 15.75, y: 232.0, width: 276.75, height: 37.5 },
-  { x: 302.75, y: 232.0, width: 276.75, height: 37.5 },
+  { x: 15.75, y: 221.5, width: 276.75, height: 49.0 },
+  { x: 302.75, y: 221.5, width: 276.75, height: 49.0 },
 ];
 
-// Format: 8 per page Header Banner boxes (width: 278.8pt, height: 27.0pt)
+// Format: 8 per page Header Banner boxes (width: 278.8pt)
+// Expanded height to maximize candidate image visibility without covering serial/ward numbers below.
+// Box height: 35.0pt (expanded up from 27.0pt) starting at y=758.0.
 export const HEADER8_SLIP_BOXES = [
   // Row 1 (top): col 0, col 1
-  { x: 14.9, y: 765.6, width: 278.8, height: 27.0 },
-  { x: 301.4, y: 765.6, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 758.0, width: 278.8, height: 35.0 },
+  { x: 301.4, y: 758.0, width: 278.8, height: 35.0 },
   // Row 2: col 0, col 1
-  { x: 14.9, y: 569.5, width: 278.8, height: 27.0 },
-  { x: 301.4, y: 569.5, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 561.5, width: 278.8, height: 35.0 },
+  { x: 301.4, y: 561.5, width: 278.8, height: 35.0 },
   // Row 3: col 0, col 1
-  { x: 14.9, y: 373.4, width: 278.8, height: 27.0 },
-  { x: 301.4, y: 373.4, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 365.4, width: 278.8, height: 35.0 },
+  { x: 301.4, y: 365.4, width: 278.8, height: 35.0 },
   // Row 4 (bottom): col 0, col 1
-  { x: 14.9, y: 177.3, width: 278.8, height: 27.0 },
-  { x: 301.4, y: 177.3, width: 278.8, height: 27.0 },
+  { x: 14.9, y: 169.3, width: 278.8, height: 35.0 },
+  { x: 301.4, y: 169.3, width: 278.8, height: 35.0 },
 ];
 
 // Format: 8 per page Symbol boxes (width: ~33pt, height: ~33pt)
