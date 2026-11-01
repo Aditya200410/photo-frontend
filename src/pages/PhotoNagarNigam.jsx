@@ -489,6 +489,24 @@ function PhotoNagarNigam({ onBack }) {
                     <p className="text-xs text-slate-500 mt-0.5">Showing electors filtered for selected ward and booth</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
+                    {/* Download Filtered Slips Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsBatchPrintModalOpen(true)}
+                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-5 py-3 rounded-2xl font-black shadow-xl shadow-teal-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-sm cursor-pointer group"
+                      title="Download slips for only currently filtered records"
+                    >
+                      <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <span>Download Filter Slip</span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
+                        {filteredVoters.length.toLocaleString('en-IN')} Voters
+                      </span>
+                    </button>
+
                     {activeExcelFile && activeExcelFile.generatedPdfs && Object.keys(activeExcelFile.generatedPdfs).length > 0 ? (
                       <button
                         type="button"
@@ -545,8 +563,8 @@ function PhotoNagarNigam({ onBack }) {
                           }}
                           className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer px-2 py-1 rounded-lg hover:bg-rose-50"
                         >
-                          <span className="hidden sm:inline">Reset All Filters âœ•</span>
-                          <span className="sm:hidden">Reset âœ•</span>
+                          <span className="hidden sm:inline">Reset All Filters ✕</span>
+                          <span className="sm:hidden">Reset ✕</span>
                         </button>
                       )}
 
