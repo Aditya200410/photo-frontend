@@ -561,35 +561,39 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
             <div className="w-full flex justify-center py-2">
               <div
                 ref={mockupRef}
-                className="w-full max-w-sm sm:max-w-md bg-white border-2 border-slate-300 rounded-xl shadow-lg p-3 sm:p-4 aspect-[1/1.414] flex flex-col justify-between overflow-hidden"
+                className="w-full max-w-[480px] bg-white border-2 border-slate-400 rounded-lg shadow-xl p-3 sm:p-4 aspect-[1/1.414] flex flex-col justify-between overflow-hidden text-black font-sans"
               >
-                {/* Simulated A4 Header */}
-                <div className="border-b-2 border-slate-800 pb-1.5 mb-2 flex items-center justify-between text-[8px] sm:text-[9px] font-bold text-slate-800">
-                  <span className="truncate">{title || 'मतदाता सूची पर्ची 2026'}</span>
-                  <span>Page 1 of {currentPdfData?.pages || 50}</span>
+                {/* Real A4 Sheet Top Header */}
+                <div className="border-b-2 border-black pb-1 mb-2 flex items-center justify-between text-[9px] sm:text-[10px] font-black text-black">
+                  <div className="flex items-center gap-4">
+                    <span className="text-[11px] font-black">{title || 'अजमेर'}</span>
+                    <span className="font-bold text-slate-700">वार्ड: -</span>
+                    <span className="font-bold text-slate-700">भाग / बूथ: -</span>
+                  </div>
+                  <span className="font-bold">Page 1 of {currentPdfData?.pages || 584}</span>
                 </div>
 
                 {/* Dynamic Slip Grid Preview */}
                 {currentFormat.id === 'alphabetical' ? (
-                  <div className="flex-1 border border-slate-200 rounded overflow-hidden flex flex-col">
-                    <div className="bg-slate-100 font-extrabold text-[6px] sm:text-[7px] grid grid-cols-6 p-0.5 border-b border-slate-300 text-slate-700">
+                  <div className="flex-1 border border-black rounded overflow-hidden flex flex-col">
+                    <div className="bg-slate-100 font-black text-[7px] grid grid-cols-6 p-1 border-b border-black text-black">
                       <span>क्र०</span>
                       <span className="col-span-2">मतदाता नाम</span>
                       <span>संबंधी</span>
                       <span>आयु/लिंग</span>
                       <span className="text-right">पहचान पत्र</span>
                     </div>
-                    <div className="divide-y divide-slate-100 text-[5px] sm:text-[6px] text-slate-600 flex-1 overflow-hidden">
+                    <div className="divide-y divide-slate-200 text-[6.5px] text-black flex-1 overflow-hidden">
                       {['अनिल कुमार', 'अशोक शर्मा', 'कमलेश देवी', 'दिनेश जाट', 'पूजा कुमारी', 'राकेश वर्मा', 'सुरेश सिंह', 'सुनीता बाई'].map((name, idx) => (
-                        <div key={idx} className="grid grid-cols-6 p-0.5 items-center">
-                          <span className="font-bold text-slate-800">{idx + 1}</span>
-                          <span className="col-span-2 font-semibold text-slate-900">{name}</span>
+                        <div key={idx} className="grid grid-cols-6 p-1 items-center font-medium">
+                          <span className="font-black text-black">{idx + 1}</span>
+                          <span className="col-span-2 font-black text-black">{name}</span>
                           <span className="truncate">रामेश्वर</span>
                           <span>34 / पु०</span>
-                          <span className="text-right font-mono font-bold text-slate-700">RJ/02/10{idx}</span>
+                          <span className="text-right font-mono font-black text-black">RJ/02/10{idx}</span>
                         </div>
                       ))}
-                      <div className="p-1 text-center text-slate-400 italic text-[5px]">
+                      <div className="p-1.5 text-center text-slate-400 font-semibold italic text-[6px]">
                         + 32 more voters on this A4 sheet (Total 40 / page)
                       </div>
                     </div>
@@ -599,49 +603,85 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
                     currentFormat.cardsPerPage >= 12
                       ? 'gap-1'
                       : currentFormat.cardsPerPage >= 10
-                        ? 'gap-1'
-                        : 'gap-1.5'
+                        ? 'gap-1.5'
+                        : 'gap-2'
                   }`}>
                     {[...Array(currentFormat.cardsPerPage || 8)].map((_, i) => (
                       <div 
                         key={i} 
-                        className={`border rounded overflow-hidden flex flex-col justify-between bg-white ${
-                          currentFormat.hasHeader ? 'border-purple-300' : 'border-slate-300'
-                        }`}
-                        style={{ fontSize: currentFormat.cardsPerPage >= 12 ? '6px' : currentFormat.cardsPerPage >= 10 ? '6.5px' : '7.5px' }}
+                        className="border-[1.5px] border-black bg-white flex flex-col justify-between overflow-hidden shadow-2xs"
+                        style={{ fontSize: currentFormat.cardsPerPage >= 12 ? '6.5px' : currentFormat.cardsPerPage >= 10 ? '7.5px' : '8.5px' }}
                       >
                         {/* Header Banner if format has header */}
                         {currentFormat.hasHeader && (
                           headerImage ? (
-                            <div className="h-4 sm:h-5 w-full border-b border-purple-200 overflow-hidden bg-white flex items-center justify-center shrink-0">
-                              <img src={headerImage} alt="Header" className="w-full h-full object-fill block" />
+                            <div className="flex flex-col border-b border-black shrink-0 w-full">
+                              <div className="h-8 sm:h-10 w-full overflow-hidden bg-white flex items-center justify-center">
+                                <img src={headerImage} alt="Header" className="w-full h-full object-fill block" />
+                              </div>
+                              <div className="w-full text-center text-[5px] sm:text-[6px] font-black text-black bg-white border-t border-black py-0.5 tracking-tight shrink-0">
+                                मतदान केंद्र जाने से पहले ऊपर वाले इस भाग को काट दे
+                              </div>
                             </div>
                           ) : (
-                            <div className="h-4 sm:h-5 w-full bg-slate-100 border-b border-slate-300 flex items-center justify-center text-[6px] text-slate-500 font-bold shrink-0">
-                              [Header Banner Image Space]
+                            <div className="flex flex-col border-b border-black shrink-0 w-full">
+                              <div className="h-8 sm:h-10 w-full bg-slate-50 flex items-center justify-center text-[6px] text-slate-500 font-bold border-b border-dashed border-slate-300">
+                                [उम्मीदवार हेडर बैनर फोटो]
+                              </div>
+                              <div className="w-full text-center text-[5px] sm:text-[6px] font-black text-black bg-white py-0.5 tracking-tight shrink-0">
+                                मतदान केंद्र जाने से पहले ऊपर वाले इस भाग को काट दे
+                              </div>
                             </div>
                           )
                         )}
 
-                        {/* Slip Body */}
-                        <div className="p-1 space-y-0.5 text-slate-500 flex-1 flex flex-col justify-between">
-                          <div className="flex justify-between font-bold text-slate-700 pb-0.5 border-b border-slate-100">
-                            <span>वार्ड {i + 1}</span>
-                            <span className="text-violet-700">क्र० {i + 1}</span>
-                          </div>
+                        {/* Real Electoral Slip Body */}
+                        <div className="p-1 sm:p-2 flex-1 flex flex-col justify-between text-black leading-tight min-h-0 bg-white">
+                          {/* Row 1: Ward & Part */}
                           <div className="flex justify-between items-center">
-                            <span className="font-bold text-slate-900 truncate">मतदाता नाम #{i + 1}</span>
-                            <span className="font-mono text-slate-700 font-bold">UCW0{i}</span>
+                            <div className="flex items-center gap-1 font-bold">
+                              <span>वार्ड नं० :</span>
+                              <span className="border border-black px-2 py-0.5 font-black text-[1.1em] min-w-[24px] text-center inline-block">{i + 1}</span>
+                            </div>
+                            <div className="flex items-center gap-1 font-bold">
+                              <span>भाग नं० :</span>
+                              <span className="border border-black px-2 py-0.5 font-black text-[1.1em] min-w-[24px] text-center inline-block">26</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between text-[6px] text-slate-400">
-                            <span>पिता: रामस्वरूप</span>
-                            <span>आयु: 3{i}</span>
-                          </div>
-                        </div>
 
-                        {/* Footer booth label */}
-                        <div className="bg-slate-50 px-1 py-0.5 border-t border-slate-200 text-right font-mono text-[5.5px] text-slate-500">
-                          भाग संख्या {i + 1}
+                          {/* Row 2: Serial & EPIC */}
+                          <div className="flex justify-between items-center my-0.5">
+                            <div className="flex items-center gap-1 font-bold">
+                              <span>क्रम संख्या :</span>
+                              <span className="border border-black px-2 py-0.5 font-black text-[1.1em] min-w-[28px] text-center inline-block">{13 + i}</span>
+                            </div>
+                            <span className="font-black font-mono tracking-wider text-[1.05em]">UCW09351{14 + i}</span>
+                          </div>
+
+                          {/* Row 3: Elector Name */}
+                          <div className="font-medium truncate my-0.5">
+                            <span className="font-bold mr-1">मतदाता का नाम :</span>
+                            <span className="font-black text-[1.05em]">{['NYALA', 'RODU', 'LILI', 'GORULAL', 'RAMRAJ', 'KISHAN', 'KAILASH', 'SHANTI'][i % 8]}</span>
+                          </div>
+
+                          {/* Row 4: Father/Husband Name */}
+                          <div className="font-medium truncate my-0.5">
+                            <span className="font-bold mr-1">पिता / पति का नाम :</span>
+                            <span className="font-bold">{['RAMRAJ', 'IRA', 'SITARAM', 'JIWAN', 'RUPA', 'NARAYAN', 'GOPAL', 'BHANWAR'][i % 8]}</span>
+                          </div>
+
+                          {/* Row 5: House, Gender, Age */}
+                          <div className="flex justify-between items-center text-[0.95em] pt-0.5">
+                            <div><span className="font-bold">मकान नं० : </span><span className="font-black">87 क</span></div>
+                            <div><span className="font-bold">लिंग: </span><span className="font-bold">{i % 2 === 0 ? 'महिला' : 'पुरुष'}</span></div>
+                            <div><span className="font-bold">आयु: </span><span className="font-black">{30 + i}</span></div>
+                          </div>
+
+                          {/* Row 6: Polling Station */}
+                          <div className="text-[0.82em] font-medium truncate text-slate-800 pt-0.5 border-t border-slate-100">
+                            <span className="font-bold text-black">मतदान केंद्र: </span>
+                            <span>26 - राज० उच्च माध्यमिक विद्यालय, अकोडिया कमरा न० 22</span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -649,9 +689,9 @@ export default function InstantPdfModal({ isOpen, onClose, activeExcelFile, titl
                 )}
 
                 {/* Simulated Footer */}
-                <div className="border-t border-slate-200 pt-1 mt-1 text-[7px] text-slate-400 flex justify-between">
-                  <span>Election 2026</span>
-                  <span>100% Vector Crystal Clear</span>
+                <div className="border-t border-slate-300 pt-1 mt-1 text-[7px] text-slate-500 flex justify-between font-medium">
+                  <span>Election 2026 Voter Slip Format</span>
+                  <span>100% Vector Print Quality</span>
                 </div>
               </div>
             </div>

@@ -10,8 +10,9 @@ import { PDFDocument, rgb } from 'pdf-lib';
  * In pdf-lib, (0, 0) is the bottom-left corner of the page.
  */
 
-// Format: 6 per page Header Banner boxes (width: 276.75pt, height: 37.5pt)
-// Wipe box expands slightly (+1pt) to guarantee 100% eradication of orange banner & text
+// Format: 6 per page Header Banner boxes (width: 276.75pt, exact original height: 37.5pt)
+// Perfectly aligned at y=757.0 (Row 1), y=494.5 (Row 2), y=232.0 (Row 3)
+// Leaves the "मतदान केंद्र जाने से पहले ऊपर वाले इस भाग को काट दे" bar and Ward/Part boxes 100% visible and untouched!
 export const HEADER_SLIP_BOXES = [
   // Row 1 (top): col 0, col 1
   { x: 15.75, y: 757.0, width: 276.75, height: 37.5 },
@@ -24,7 +25,7 @@ export const HEADER_SLIP_BOXES = [
   { x: 302.75, y: 232.0, width: 276.75, height: 37.5 },
 ];
 
-// Format: 8 per page Header Banner boxes (width: ~278.8pt, height: ~27.0pt)
+// Format: 8 per page Header Banner boxes (width: 278.8pt, height: 27.0pt)
 export const HEADER8_SLIP_BOXES = [
   // Row 1 (top): col 0, col 1
   { x: 14.9, y: 765.6, width: 278.8, height: 27.0 },
