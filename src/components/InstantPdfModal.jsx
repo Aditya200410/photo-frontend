@@ -7,13 +7,13 @@ const FORMAT_DETAILS = [
   // --- Without Header Options ---
   {
     id: 'simple8',
-    legacyId: 'symbol', // maps to authentic 8 slips per page pregenerated pdf
+    legacyId: null,
     group: 'withoutHeader',
     title: 'Without Header',
     hindiTitle: 'बिना हेडर मतदाता पर्ची',
     badge: '8 Per Page',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    description: 'Clean standard voter card layout on A4 paper (8 slips per page) without candidate header or symbol mark.',
+    description: 'Clean standard voter card layout on A4 paper (8 slips per page) without candidate header.',
     cardsPerPage: 8,
     hasHeader: false,
     accentColor: 'from-emerald-600 to-teal-600',
@@ -21,7 +21,7 @@ const FORMAT_DETAILS = [
   },
   {
     id: 'simple10',
-    legacyId: 'simple',
+    legacyId: null,
     group: 'withoutHeader',
     title: 'Without Header',
     hindiTitle: 'बिना हेडर मतदाता पर्ची',
@@ -35,7 +35,7 @@ const FORMAT_DETAILS = [
   },
   {
     id: 'simple12',
-    legacyId: 'simple',
+    legacyId: null,
     group: 'withoutHeader',
     title: 'Without Header',
     hindiTitle: 'बिना हेडर मतदाता पर्ची',
