@@ -804,206 +804,152 @@ function PhotoGramPanchayat({ onBack }) {
             {/* Voter Results Section */}
             {voters.length > 0 && (
               <div className="mt-10 pt-8 border-t border-slate-200">
-                {/* KPI Overview Tiles (Total, Active, Deleted) */}
-                {(() => {
-                  const currentList = filteredVoters;
-                  const totalCount = currentList.length;
-                  const delCount = currentList.filter(v => v.IS_DELETED || /delet|विलोपित|हटाया/i.test(String(v.STATUS || v.status || '')) || String(v.STATUS || v.status || '').trim().toUpperCase() === 'D').length;
-                  const activeCount = totalCount - delCount;
+                {/* Filter by & Scope Bar */}
+                <div className="mb-6 p-3 bg-slate-50 border border-slate-200/90 rounded-2xl shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Filter by:
+                      </span>
 
-                  const scopeLabels = {
-                    all: 'All Administrative Levels',
-                    zila: 'Zila Parishad',
-                    samiti: 'Panchayat Samiti',
-                    panchayat: 'Panchayat / ULB only'
-                  };
-
-                  return (
-                    <div className="mb-6 p-4 bg-slate-50 border border-slate-200/90 rounded-2xl shadow-xs">
-                      {/* Top KPI Cards Row */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200/70">
-                        <div className="flex flex-wrap items-center gap-6">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Records</span>
-                            <span className="text-2xl font-black text-slate-900 leading-tight">{totalCount.toLocaleString('en-IN')}</span>
-                          </div>
-                          <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Active Voters</span>
-                            <span className="text-2xl font-black text-emerald-700 leading-tight">{activeCount.toLocaleString('en-IN')}</span>
-                          </div>
-                          <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Deleted</span>
-                            <span className="text-2xl font-black text-rose-700 leading-tight">{delCount.toLocaleString('en-IN')}</span>
-                          </div>
-                        </div>
-
-                        {/* Instant PDF Download button */}
-                        {activeExcelFile && activeExcelFile.generatedPdfs && Object.keys(activeExcelFile.generatedPdfs).length > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => setIsInstantPdfModalOpen(true)}
-                            className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-600/20 active:scale-[0.98] transition-all flex items-center gap-2 text-xs cursor-pointer"
-                          >
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span>Download Pre-Generated PDF</span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-white/20">
-                              {Object.keys(activeExcelFile.generatedPdfs).length} Formats
-                            </span>
-                          </button>
-                        ) : null}
-                      </div>
-
-                      {/* Filter by Dropdown Bar (As seen in image) */}
-                      <div className="pt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
-                            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            Filter by:
+                      {/* Scope Filter Dropdown */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsScopeMenuOpen(prev => !prev)}
+                          className="bg-white border border-slate-300 hover:border-violet-500 rounded-lg px-3 py-1.5 font-bold text-slate-800 shadow-2xs flex items-center gap-2 cursor-pointer transition-colors"
+                        >
+                          <span>
+                            {scopeFilter === 'zila' && '🏛️ Zila Parishad'}
+                            {scopeFilter === 'samiti' && '🏢 Panchayat Samiti'}
+                            {scopeFilter === 'panchayat' && '🏘️ Panchayat / ULB only'}
+                            {scopeFilter === 'all' && '🌐 All Administrative Levels'}
                           </span>
+                          <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
 
-                          {/* Scope Filter Dropdown */}
-                          <div className="relative">
+                        {/* Dropdown Menu */}
+                        {isScopeMenuOpen && (
+                          <div className="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
                             <button
                               type="button"
-                              onClick={() => setIsScopeMenuOpen(prev => !prev)}
-                              className="bg-white border border-slate-300 hover:border-violet-500 rounded-lg px-3 py-1.5 font-bold text-slate-800 shadow-2xs flex items-center gap-2 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setScopeFilter('zila');
+                                setIsScopeMenuOpen(false);
+                                setSelectedZpWard('');
+                                setPageCount(1);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'zila' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
                             >
-                              <span>
-                                {scopeFilter === 'zila' && '🏛️ Zila Parishad'}
-                                {scopeFilter === 'samiti' && '🏢 Panchayat Samiti'}
-                                {scopeFilter === 'panchayat' && '🏘️ Panchayat / ULB only'}
-                                {scopeFilter === 'all' && '🌐 All Administrative Levels'}
-                              </span>
-                              <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
+                              <span className="text-sm">🏛️</span>
+                              <span>Zila Parishad</span>
                             </button>
-
-                            {/* Dropdown Menu */}
-                            {isScopeMenuOpen && (
-                              <div className="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setScopeFilter('zila');
-                                    setIsScopeMenuOpen(false);
-                                    setSelectedZpWard('');
-                                    setPageCount(1);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'zila' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
-                                >
-                                  <span className="text-sm">🏛️</span>
-                                  <span>Zila Parishad</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setScopeFilter('samiti');
-                                    setIsScopeMenuOpen(false);
-                                    setSelectedPsWard('');
-                                    setPageCount(1);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'samiti' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
-                                >
-                                  <span className="text-sm">🏢</span>
-                                  <span>Panchayat Samiti</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setScopeFilter('panchayat');
-                                    setIsScopeMenuOpen(false);
-                                    setSelectedScopePanchayat('');
-                                    setPageCount(1);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'panchayat' ? 'bg-violet-100 text-violet-800 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
-                                >
-                                  <span className="text-sm">🏘️</span>
-                                  <span>Panchayat / ULB only</span>
-                                </button>
-                                <div className="border-t border-slate-100 my-1"></div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setScopeFilter('all');
-                                    setIsScopeMenuOpen(false);
-                                    setSelectedZpWard('');
-                                    setSelectedPsWard('');
-                                    setSelectedScopePanchayat('');
-                                    setPageCount(1);
-                                  }}
-                                  className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'all' ? 'bg-slate-100 text-slate-800 font-bold' : 'text-slate-500 hover:bg-slate-50'}`}
-                                >
-                                  <span className="text-sm">🌐</span>
-                                  <span>Show All Records</span>
-                                </button>
-                              </div>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setScopeFilter('samiti');
+                                setIsScopeMenuOpen(false);
+                                setSelectedPsWard('');
+                                setPageCount(1);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'samiti' ? 'bg-violet-50 text-violet-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
+                            >
+                              <span className="text-sm">🏢</span>
+                              <span>Panchayat Samiti</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setScopeFilter('panchayat');
+                                setIsScopeMenuOpen(false);
+                                setSelectedScopePanchayat('');
+                                setPageCount(1);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'panchayat' ? 'bg-violet-100 text-violet-800 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
+                            >
+                              <span className="text-sm">🏘️</span>
+                              <span>Panchayat / ULB only</span>
+                            </button>
+                            <div className="border-t border-slate-100 my-1"></div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setScopeFilter('all');
+                                setIsScopeMenuOpen(false);
+                                setSelectedZpWard('');
+                                setSelectedPsWard('');
+                                setSelectedScopePanchayat('');
+                                setPageCount(1);
+                              }}
+                              className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${scopeFilter === 'all' ? 'bg-slate-100 text-slate-800 font-bold' : 'text-slate-500 hover:bg-slate-50'}`}
+                            >
+                              <span className="text-sm">🌐</span>
+                              <span>Show All Records</span>
+                            </button>
                           </div>
-
-                          {/* Dynamic Ward / Sub-level Selectors based on chosen scope */}
-                          {scopeFilter === 'zila' && availableZpWards.length > 0 && (
-                            <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
-                              <span className="text-slate-500 font-medium">जि.प. वार्ड:</span>
-                              <select
-                                value={selectedZpWard}
-                                onChange={(e) => { setSelectedZpWard(e.target.value); setPageCount(1); }}
-                                className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
-                              >
-                                <option value="">All Zila Wards ({availableZpWards.length})</option>
-                                {availableZpWards.map(w => (
-                                  <option key={w} value={w}>Ward No {w}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-
-                          {scopeFilter === 'samiti' && availablePsWards.length > 0 && (
-                            <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
-                              <span className="text-slate-500 font-medium">पं.स. वार्ड:</span>
-                              <select
-                                value={selectedPsWard}
-                                onChange={(e) => { setSelectedPsWard(e.target.value); setPageCount(1); }}
-                                className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
-                              >
-                                <option value="">All Samiti Wards ({availablePsWards.length})</option>
-                                {availablePsWards.map(w => (
-                                  <option key={w} value={w}>Ward No {w}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-
-                          {scopeFilter === 'panchayat' && availableScopePanchayats.length > 0 && (
-                            <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
-                              <span className="text-slate-500 font-medium">ग्राम पंचायत:</span>
-                              <select
-                                value={selectedScopePanchayat}
-                                onChange={(e) => { setSelectedScopePanchayat(e.target.value); setPageCount(1); }}
-                                className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
-                              >
-                                <option value="">All Panchayats ({availableScopePanchayats.length})</option>
-                                {availableScopePanchayats.map(p => (
-                                  <option key={p} value={p}>{p}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="text-slate-500 font-semibold">
-                          Showing <strong className="text-slate-800">{filteredVoters.length.toLocaleString('en-IN')}</strong> of {voters.length.toLocaleString('en-IN')}
-                        </div>
+                        )}
                       </div>
+
+                      {/* Dynamic Ward / Sub-level Selectors based on chosen scope */}
+                      {scopeFilter === 'zila' && availableZpWards.length > 0 && (
+                        <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
+                          <span className="text-slate-500 font-medium">जि.प. वार्ड:</span>
+                          <select
+                            value={selectedZpWard}
+                            onChange={(e) => { setSelectedZpWard(e.target.value); setPageCount(1); }}
+                            className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                          >
+                            <option value="">All Zila Wards ({availableZpWards.length})</option>
+                            {availableZpWards.map(w => (
+                              <option key={w} value={w}>Ward No {w}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {scopeFilter === 'samiti' && availablePsWards.length > 0 && (
+                        <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
+                          <span className="text-slate-500 font-medium">पं.स. वार्ड:</span>
+                          <select
+                            value={selectedPsWard}
+                            onChange={(e) => { setSelectedPsWard(e.target.value); setPageCount(1); }}
+                            className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                          >
+                            <option value="">All Samiti Wards ({availablePsWards.length})</option>
+                            {availablePsWards.map(w => (
+                              <option key={w} value={w}>Ward No {w}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {scopeFilter === 'panchayat' && availableScopePanchayats.length > 0 && (
+                        <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-150">
+                          <span className="text-slate-500 font-medium">ग्राम पंचायत:</span>
+                          <select
+                            value={selectedScopePanchayat}
+                            onChange={(e) => { setSelectedScopePanchayat(e.target.value); setPageCount(1); }}
+                            className="bg-white border border-violet-300 font-bold text-violet-900 rounded-lg px-2.5 py-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                          >
+                            <option value="">All Panchayats ({availableScopePanchayats.length})</option>
+                            {availableScopePanchayats.map(p => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
-                  );
-                })()}
+
+                    <div className="text-slate-500 font-semibold">
+                      Showing <strong className="text-slate-800">{filteredVoters.length.toLocaleString('en-IN')}</strong> of {voters.length.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                   <div>
